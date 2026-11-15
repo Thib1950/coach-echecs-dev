@@ -191,6 +191,7 @@ async function startExercise(group){
  const candidate=()=>candidates[currentIndex];
  const moveFor=(position,moveUci)=>position.moves({verbose:true}).find(m=>m.from+m.to+(m.promotion||"")===moveUci);
  const describeMove=(position,move,moveIndex)=>{
+  const family=String(group.family||"").toLowerCase();
   const piece=position.get(move.from),name=pieceNames[piece?.type]||"pièce";
   const actor=move.color===side?"Tu":"L’adversaire",enemy=move.color==="w"?"b":"w";
   const center=["d4","e4","d5","e5"],nearCenter=["c4","f4","c5","f5"];
@@ -270,7 +271,7 @@ async function startExercise(group){
   root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Depuis le début · "+Math.min(guidePly+1,line.length)+" / "+line.length+" demi-coups · La flèche montre ton prochain coup.":"Rejoue depuis le début · "+practicePly+" / "+line.length+" demi-coups")+'</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'<button type="button" class="opening-exercise-return" data-exercise-close>← Retour aux ouvertures</button></aside></div></article>';
   root.querySelectorAll(".chess-piece-image").forEach(img=>img.addEventListener("error",()=>{const fallback=document.createElement("span");fallback.className="piece";fallback.textContent=img.alt;img.replaceWith(fallback);},{once:true}));
  };
- const playAutomaticReplies=()=>{while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}};
+ const playAutomaticReplies=()=>{const notes=[];while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;notes.push(describeMove(board,reply,guidePly));const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}if(notes.length)feedback="Réponse adverse : "+notes.join(" ");};
  const playPracticeReplies=()=>{while(practicePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[practicePly]);if(!reply)break;const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);practicePly++;}};
  const beginPosition=()=>{
   board=new Chess();selected=null;phase="guide";guidePly=0;practicePly=0;busy=false;finished=false;candidateFailed=false;feedback="";playAutomaticReplies();draw();
@@ -296,9 +297,9 @@ async function startExercise(group){
    const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;draw();return;}
    const expected=candidate().line[guidePly],played=move.from+move.to+(move.promotion||"");
    if(played!==expected){selected=null;feedback="Pas ce coup. Suis précisément la flèche et réessaie.";draw();return;}
-   const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);guidePly++;selected=null;
-   while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}
-   feedback=guidePly>=candidate().line.length?"Tu as joué toute la démonstration. Passe maintenant à la reproduction sans flèches.":"Bien joué ! Observe la nouvelle flèche et joue le coup suivant.";
+   const ownIdea=describeMove(board,move,guidePly);const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);guidePly++;selected=null;
+   let replyIdea="";while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;replyIdea=describeMove(board,reply,guidePly);const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}
+   feedback="Ton idée : "+ownIdea+(replyIdea?" Réponse adverse : "+replyIdea:"")+(guidePly>=candidate().line.length?" La démonstration est terminée.":" Observe maintenant la nouvelle position.");
    draw();return;
   }
   if(phase!=="practice"||busy||finished)return;
