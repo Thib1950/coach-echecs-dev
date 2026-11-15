@@ -185,9 +185,10 @@ function renderResults(g, report){
   const kinds=["brilliant","great","best","excellent","good","book","inaccuracy","mistake","miss","blunder"];
   const counts=Object.fromEntries(kinds.map(k=>[k,0]));
   report.moves.forEach(m=>{if(counts[m.kind]!==undefined)counts[m.kind]++;});
-  const meta={brilliant:["✦","Brillants"],great:["!","Grands coups"],best:["★","Meilleurs"],excellent:["◆","Excellents"],good:["✓","Bons coups"],book:["▤","Théorie"],inaccuracy:["?!","Imprécisions"],mistake:["?","Erreurs"],miss:["×","Occasions manquées"],blunder:["‼","Gaffes"]};
+  const meta={brilliant:["✦","Brillants"],great:["!","Grands coups"],best:["★","Meilleurs coups"],excellent:["◆","Excellents"],good:["✓","Bons coups"],book:["▤","Théorie"],inaccuracy:["?!","Imprécisions"],mistake:["?","Erreurs"],miss:["×","Occasions manquées"],blunder:["‼","Gaffes"]};
   const tiles=kinds.filter(k=>counts[k]>0).map(k=>'<div class="summary-metric '+k+'"><div class="summary-top"><span class="metric-icon">'+meta[k][0]+'</span><strong>'+counts[k]+'</strong></div><span class="metric-label">'+meta[k][1]+'</span></div>').join("");
-  $("analysis-results").innerHTML='<div class="analysis-summary">'+tiles+'</div>';
+  window.CoachAnalysisSummaryHTML=tiles?'<div class="analysis-summary">'+tiles+'</div>':"";
+  $("analysis-results").innerHTML="";
   if(window.CoachReview?.updateAnalysis)window.CoachReview.updateAnalysis(report.moves,g);
 }
 function accuracyFromMoves(moves){return gameAccuracyFromMoves(moves);}
@@ -305,6 +306,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
     }
   }finally{
     busy=false;refreshGamePicker();
+scheduleRecentAccuracy();
     if(!background){
       $("analyse-game-button").disabled=false;$("analyse-game-button").textContent="Analyser cette partie";
 
@@ -336,6 +338,30 @@ async function analyzeMissingAccuracies(){
  accuracyQueueRunning=false;updateAccuracyQueueStatus();window.CoachApp?.refresh?.();
 }
 $("accuracy-queue-button")?.addEventListener("click",analyzeMissingAccuracies);
+
+let autoRecentAnalysisSignature="";
+let autoRecentAnalysisRunning=false;
+async function analyzeRecentGamesInBackground(){
+ if(autoRecentAnalysisRunning||busy||accuracyQueueRunning)return;
+ const recent=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).filter(g=>g.pgn).slice(0,5);
+ const signature=user()+":"+recent.map(g=>String(g.id)).join("|");
+ if(!recent.length||signature===autoRecentAnalysisSignature)return;
+ autoRecentAnalysisSignature=signature;
+ const pending=recent.filter(g=>!g.analysis||!Array.isArray(g.analysis.moves)||g.analysis.partial);
+ if(!pending.length)return;
+ autoRecentAnalysisRunning=true;
+ try{
+  for(const game of pending){
+   if(busy)break;
+   try{await analyseSelectedGame(game.id,{background:true,movetime:320});}
+   catch(error){console.info("Précision différée pour",game.id,error);}
+  }
+ }finally{autoRecentAnalysisRunning=false;window.CoachApp?.refresh?.();}
+}
+function scheduleRecentAccuracy(){setTimeout(analyzeRecentGamesInBackground,1800);}
+window.addEventListener("coach:games-updated",scheduleRecentAccuracy);
+window.addEventListener("coach:account-changed",()=>{autoRecentAnalysisSignature="";scheduleRecentAccuracy();});
+
 function openGameInCoach(gameId){
   const id=String(gameId??"");
   document.querySelector('[data-tab="games"]')?.click();
