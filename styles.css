@@ -2093,3 +2093,7 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
  #panel-progress .progress-kpis{grid-template-columns:minmax(0,1fr)!important}
  #panel-progress .progress-content-grid{grid-template-columns:minmax(0,1fr)!important}
 }
+
+/* v84 — la progression garde les chiffres et résultats, sans conseil générique. */
+#panel-progress .progress-content-grid{grid-template-columns:minmax(0,1fr)!important}
+#panel-progress .progress-results-card{width:100%!important}
