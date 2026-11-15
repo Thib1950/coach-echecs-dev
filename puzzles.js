@@ -39,27 +39,70 @@ function render(){
  $("puzzle-board-area").innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div>'+hintArrow+'</div>'+panel;
 }
 function message(text){$("puzzle-feedback").textContent=text;}
+const localPuzzleBuckets=[1200,1300,1400,1500];
+const localPuzzleCache=new Map();
+async function getLocalPuzzleBucket(rating){
+ const band=localPuzzleBuckets.includes(rating)?rating:1200;
+ if(localPuzzleCache.has(band))return localPuzzleCache.get(band);
+ const promise=fetch("./data/puzzles/r"+band+".json",{cache:"force-cache"})
+  .then(response=>{if(!response.ok)throw new Error("Données de puzzles indisponibles (HTTP "+response.status+").");return response.json();})
+  .then(rows=>{if(!Array.isArray(rows)||!rows.length)throw new Error("La banque locale de puzzles est vide.");return rows;})
+  .catch(error=>{localPuzzleCache.delete(band);throw error;});
+ localPuzzleCache.set(band,promise);
+ return promise;
+}
+function puzzleFromLocalRow(row){
+ if(!Array.isArray(row)||row.length<5)throw new Error("Format de puzzle invalide.");
+ const [id,fen,moves,rating,themes]=row;
+ const sequence=String(moves||"").trim().split(/\\s+/).filter(Boolean);
+ if(!fen||sequence.length<2)throw new Error("Puzzle incomplet.");
+ const test=new Chess(fen);
+ for(const u of sequence){
+  const move=legalSolutionMove(test,u);
+  if(!move)throw new Error("La combinaison contient un coup illégal.");
+  test.move({from:move.from,to:move.to,promotion:move.promotion||"q"});
+ }
+ return {id:String(id),fen,solution:sequence,rating:Number(rating)||1400,themes:String(themes||"").split(/\\s+/).filter(Boolean)};
+}
+async function loadLocalDailyPuzzle(){
+ const bands=[1200,1300,1400,1500];
+ const band=bands[Math.floor(Math.random()*bands.length)];
+ const rows=await getLocalPuzzleBucket(band);
+ // Shuffle a short sample and skip any corrupt row rather than failing the whole session.
+ const startAt=Math.floor(Math.random()*rows.length);
+ let lastError=null;
+ for(let n=0;n<Math.min(24,rows.length);n++){
+  try{return puzzleFromLocalRow(rows[(startAt+n)%rows.length]);}
+  catch(error){lastError=error;}
+ }
+ throw lastError||new Error("Aucun puzzle exploitable dans cette banque.");
+}
 async function loadDaily(){
- if(loading)return;loading=true;currentPuzzle=null;sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;board=null;$("puzzle-board-area").innerHTML='<div class="empty-state">Chargement du puzzle du jour…</div>';message("Connexion à la base publique de puzzles Lichess…");
+ if(loading)return;loading=true;currentPuzzle=null;sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;board=null;
+ $("puzzle-board-area").innerHTML='<div class="empty-state">Chargement de la banque tactique…</div>';
+ message("Chargement des puzzles intégrés à l’application…");
  try{
-  const response=await fetch("https://lichess.org/api/puzzle/daily",{headers:{Accept:"application/json"}});
-  if(!response.ok)throw new Error("Lichess a répondu HTTP "+response.status);
-  const data=await response.json();solution=data.puzzle?.solution||[];currentDailyId=String(data.puzzle?.id||"");if(!solution.length||!data.game?.pgn)throw new Error("Le puzzle reçu est incomplet.");
-  board=loadPosition(data.game.pgn,Number(data.puzzle.initialPly)||0);selected=null;hinted=false;solved=false;
-  // Lichess stores the opponent setup move first. Open Chess follows the same
-  // flow: play that move automatically, then let the solver move from ply 1.
+  const data=await loadLocalDailyPuzzle();
+  solution=data.solution;currentDailyId=data.id;
+  board=new Chess(data.fen);selected=null;hinted=false;solved=false;
   const setupMove=legalSolutionMove(board,solution[0]);
-  if(!setupMove)throw new Error("La position de départ ne correspond pas au premier coup de la solution Lichess.");
-  board.move({from:setupMove.from,to:setupMove.to,promotion:setupMove.promotion||"q"});ply=1;
-  if(!solution[ply]||!legalSolutionMove(board,solution[ply]))throw new Error("Le coup à trouver ne correspond pas au camp au trait.");
-  orientation=board.turn()==="w"?"white":"black";puzzleProgress.attempts++;savePuzzleProgress();
-  $("puzzle-title").textContent="Puzzle du jour · "+data.puzzle.id;
-  $("puzzle-rating").textContent=(data.puzzle.rating||"—")+" Elo";
-  $("puzzle-themes").textContent="Thèmes : "+(data.puzzle.themes||[]).join(" · ");
-  message(puzzleProgress.dailySolved.includes(currentDailyId)?"Tu as déjà résolu le puzzle du jour. Tu peux le refaire pour t’entraîner.":"Puzzle chargé. À toi de trouver la combinaison !");
+  if(!setupMove)throw new Error("Le coup de préparation n’est pas légal dans la position.");
+  board.move({from:setupMove.from,to:setupMove.to,promotion:setupMove.promotion||"q"});
+  ply=1;
+  if(!solution[ply]||!legalSolutionMove(board,solution[ply]))throw new Error("Le camp au trait ne correspond pas à la combinaison.");
+  // L'orientation est toujours celle du joueur qui doit résoudre, après le coup adverse.
+  orientation=board.turn()==="w"?"white":"black";
+  puzzleProgress.attempts++;savePuzzleProgress();
+  $("puzzle-title").textContent="Puzzle tactique · "+data.id;
+  $("puzzle-rating").textContent=data.rating+" Elo";
+  $("puzzle-themes").textContent="Thèmes : "+data.themes.join(" · ");
+  message(puzzleProgress.dailySolved.includes(currentDailyId)?"Tu as déjà résolu ce puzzle. Tu peux le refaire pour t’entraîner.":"Puzzle chargé. À toi de trouver la combinaison !");
   render();renderPersonalized();renderPuzzleProgress();
- }catch(error){$("puzzle-title").textContent="Puzzle indisponible";$("puzzle-board-area").innerHTML='<div class="empty-state">Impossible de charger le puzzle : '+esc(error.message)+'. Vérifie ta connexion puis réessaie.</div>';message("Le problème tactique n’a pas pu être chargé.");}
- finally{loading=false;}
+ }catch(error){
+  $("puzzle-title").textContent="Puzzle indisponible";
+  $("puzzle-board-area").innerHTML='<div class="empty-state">Impossible de charger la banque locale : '+esc(error.message)+'. Réessaie dans un instant.</div>';
+  message("Le chargement local des exercices a échoué.");
+ }finally{loading=false;}
 }
 
 function personalCandidates(){
