@@ -1529,3 +1529,26 @@ body:has(#panel-openings.opening-exercise-active) .tab{min-height:40px;padding-t
  #panel-puzzles .puzzle-actions button{white-space:normal;padding:7px 5px;font-size:9px}
  #panel-puzzles .puzzle-title-row{flex-wrap:wrap}
 }
+
+
+/* v68 — cartes d'entraînement plus visuelles, contraste renforcé */
+#panel-puzzles .puzzle-hub{max-width:1120px;gap:18px}
+#panel-puzzles .puzzle-hub .section-heading h2{color:#f7f9fc;font-size:clamp(23px,3vw,32px);letter-spacing:-.5px}
+#panel-puzzles .puzzle-hub .section-heading .muted{color:#c1cfdf}
+#panel-puzzles .puzzle-mode-grid{gap:15px}
+#panel-puzzles .puzzle-mode-card{position:relative;isolation:isolate;min-height:128px;padding:20px;overflow:hidden;border-radius:18px;background:linear-gradient(120deg,#203d5a 0%,#172b42 68%,#213c58 100%);border:1px solid #486887;box-shadow:0 7px 18px #07111e55}
+#panel-puzzles .puzzle-mode-card:after{content:"♞";position:absolute;z-index:-1;right:16px;bottom:-32px;font-size:112px;line-height:1;color:#ffffff0d;transform:rotate(-12deg);pointer-events:none}
+#panel-puzzles .puzzle-mode-card.puzzle-mode-featured{background:linear-gradient(115deg,#e56a13 0%,#c94d12 55%,#813719 100%);border-color:#ffad55}
+#panel-puzzles .puzzle-mode-card.puzzle-mode-featured:after{content:"♟";color:#ffffff17;font-size:128px}
+#panel-puzzles .puzzle-mode-icon{width:54px;height:54px;border-radius:15px;background:#ffffff20;border:1px solid #ffffff30;font-size:31px;box-shadow:inset 0 1px #ffffff25}
+#panel-puzzles .puzzle-mode-card strong{font-size:17px;letter-spacing:.1px}
+#panel-puzzles .puzzle-mode-card small{max-width:290px;font-size:12px;color:#dce8f4}
+#panel-puzzles .puzzle-hub-stats>div{background:linear-gradient(145deg,#203a55,#15283d);border-color:#405d7b}
+#panel-puzzles .puzzle-hub-stats strong{color:#fff}
+#panel-puzzles .puzzle-hub-stats span{color:#c7d6e5}
+#panel-puzzles .puzzle-data-note{background:#182e45;color:#d9e6f2;border-color:#36b9e9}
+@media(max-width:760px){
+ #panel-puzzles .puzzle-mode-card{min-height:92px;padding:13px 15px}
+ #panel-puzzles .puzzle-mode-icon{width:44px;height:44px}
+ #panel-puzzles .puzzle-mode-card:after{font-size:82px}
+}
