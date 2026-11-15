@@ -157,7 +157,7 @@ async function startExercise(group){
  const arrowFor=move=>{
   if(!move)return "";
   const a=squareCenter(move.slice(0,2)),b=squareCenter(move.slice(2,4));
-  return '<svg class="opening-exercise-arrow" viewBox="0 0 800 800" aria-hidden="true"><defs><marker id="openingExerciseArrowHead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#f6c85f"/></marker></defs><line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#f6c85f" stroke-width="15" stroke-linecap="round" opacity=".96" marker-end="url(#openingExerciseArrowHead)"/></svg>';
+  return '<svg class="opening-exercise-arrow" viewBox="0 0 800 800" aria-hidden="true"><defs><marker id="openingExerciseArrowHead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto"><path d="M0 0L4 2L0 4Z" fill="#f6c85f"/></marker></defs><line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#f6c85f" stroke-width="5" stroke-linecap="round" opacity=".92" marker-end="url(#openingExerciseArrowHead)"/></svg>';
  };
  const draw=()=>{
   if(!board)return;
@@ -175,8 +175,8 @@ async function startExercise(group){
    const move=activeMove?moveFor(board,activeMove):null;
    status="ÉTAPE 1 · DÉMONSTRATION GUIDÉE";
    coachTitle=guidePly>=line.length?"Démonstration terminée":"Observe ce coup";
-   coachText=move?"La flèche indique le déplacement : "+move.san+", de "+move.from.toUpperCase()+" vers "+move.to.toUpperCase()+". "+describeMove(board,move):"La séquence est terminée. Tu vas maintenant la rejouer sans aide.";
-   actionLabel=guidePly>=line.length?"Rejouer sans les flèches":"Voir le coup suivant →";
+   coachText=feedback||(move?"Joue le déplacement indiqué par la flèche : "+move.san+", de "+move.from.toUpperCase()+" vers "+move.to.toUpperCase()+". "+describeMove(board,move):"La séquence est terminée. Tu vas maintenant la rejouer sans aide.");
+   actionLabel=guidePly>=line.length?"Rejouer sans les flèches":"";
   }else{
    status="ÉTAPE 2 · À TOI DE JOUER";
    coachTitle=finished?"Séquence maîtrisée !":"Reproduis la ligne sans aide";
@@ -197,12 +197,23 @@ async function startExercise(group){
    if(phase==="guide"){
     const line=candidate().line;
     if(guidePly>=line.length){phase="practice";board=new Chess(candidate().fen);selected=null;practicePly=0;finished=false;feedback="À toi de retrouver la séquence, cette fois sans flèches.";draw();return;}
-    const move=moveFor(board,line[guidePly]);if(!move){feedback="La suite enregistrée n’est plus légale dans cette position.";draw();return;}
-    board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});guidePly++;
-    if(guidePly>=line.length){feedback="Tu as vu toute la séquence. À toi de la rejouer sans les flèches.";}
-    draw();return;
+    return;
    }
    if(finished){currentIndex=(currentIndex+1)%candidates.length;beginPosition();return;}
+  }
+  if(phase==="guide"){
+   if(guidePly>=candidate().line.length)return;
+   const button=event.target.closest("[data-opening-square]");if(!button)return;
+   const square=button.dataset.openingSquare,piece=board.get(square);
+   if(!selected){if(piece&&piece.color===side){selected=square;feedback="Choisis la case d’arrivée indiquée par la flèche.";draw();}return;}
+   if(piece&&piece.color===side){selected=square;draw();return;}
+   const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;draw();return;}
+   const expected=candidate().line[guidePly],played=move.from+move.to+(move.promotion||"");
+   if(played!==expected){selected=null;feedback="Pas ce coup. Suis précisément la flèche et réessaie.";draw();return;}
+   board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});guidePly++;selected=null;
+   while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});guidePly++;}
+   feedback=guidePly>=candidate().line.length?"Tu as joué toute la démonstration. Passe maintenant à la reproduction sans flèches.":"Bien joué ! Observe la nouvelle flèche et joue le coup suivant.";
+   draw();return;
   }
   if(phase!=="practice"||busy||finished)return;
   const button=event.target.closest("[data-opening-square]");if(!button)return;
