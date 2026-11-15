@@ -22,6 +22,11 @@ Le déploiement est automatisé par GitHub Actions à chaque mise à jour de la 
 ## Confidentialité
 Le dépôt contient le code de l'application, pas les parties personnelles. Les parties importées sont conservées dans le stockage local du navigateur. La version de développement utilise une clé distincte (`coach-echecs-dev-v1`). Au premier lancement, elle copie les parties de la version stable si elles sont présentes dans ce navigateur, sans modifier la clé stable. Les deux versions évoluent ensuite indépendamment. Ne publie pas de fichiers PGN personnels dans le dépôt.
 
+## Refonte de l'interface
+- Navigation simplifiée et accueil redessiné avec tableau de bord, accès rapides et historique récent.
+- Palette claire et discrète, cartes homogènes et adaptation ordinateur / iPad.
+- Précision d'analyse recalculée sur les coups évaluables, sans intégrer les coups d'ouverture classés en théorie.
+
 ## Fonctionnalités en développement
 - Tableau de bord, historique et statistiques des parties.
 - Analyse des parties avec Stockfish et relecture des coups.
