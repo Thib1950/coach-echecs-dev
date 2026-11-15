@@ -2520,3 +2520,27 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 #panel-openings.opening-exercise-active .opening-practice-coach>p:not(.eyebrow){color:#526457!important}
 #panel-openings.opening-exercise-active .opening-practice-coach small{color:#718074!important}
 #panel-openings.opening-exercise-active .opening-practice-coach .opening-quality-badge{color:#4e6c55!important}
+
+.learn-training-focus-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0 24px}
+.learn-training-focus{display:flex;flex-direction:column;align-items:flex-start;gap:9px;min-height:170px;padding:19px;border:1px solid #344b64;border-radius:16px;background:linear-gradient(150deg,#1d334a,#142438);color:#f1f5fa;text-align:left;cursor:pointer}
+.learn-training-focus>span{font-size:27px;color:#f2d58c}
+.learn-training-focus strong{font-size:16px;font-weight:850;color:#f7f9fc}
+.learn-training-focus small{font-size:12px;line-height:1.5;color:#bdcad8}
+.learn-training-focus b{margin-top:auto;color:#f2d58c;font-size:12px}
+.learn-training-focus.active{border-color:#e3bd66;box-shadow:0 0 0 2px #e3bd6630}
+.learn-personal-list-wrap{margin-top:18px;padding:20px;border:1px solid #30465e;border-radius:16px;background:#132337}
+.learn-personal-list-wrap .surface-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.learn-personal-list-wrap .surface-heading h3{margin:3px 0;color:#f4f7fb}
+.learn-personal-list-wrap .personal-puzzle-row{border-bottom:1px solid #2b4057}
+.learn-personal-list-wrap .personal-puzzle-info strong{color:#f3d58e}
+.learn-personal-list-wrap .personal-puzzle-info span{color:#c3cfdb}
+.learn-personal-list-wrap .personal-puzzle-info small{color:#9cacc0}
+#learn-training-exercise .learn-training-board-area{margin-top:12px;min-height:400px}
+#learn-training-exercise .puzzle-side-back{max-width:680px;margin:12px auto}
+#learn-training-exercise .puzzle-side-back button{width:100%;min-height:48px}
+#panel-puzzles .puzzle-hearts{display:inline-block;font-size:25px;letter-spacing:5px;line-height:1.2;font-weight:950;color:#ef6680;text-shadow:0 2px 8px #0003}
+#panel-puzzles .puzzle-timer-label{font-size:24px;font-weight:950;letter-spacing:1px;color:#f2d58c;font-variant-numeric:tabular-nums}
+#panel-puzzles .puzzle-session-status{display:flex;align-items:center;justify-content:center;min-height:46px}
+#panel-puzzles .puzzle-side-back{display:block;width:min(100%,680px);margin:12px auto 0;padding:0}
+#panel-puzzles .puzzle-side-back button{width:100%}
+@media(max-width:760px){.learn-training-focus-grid{grid-template-columns:1fr}.learn-training-focus{min-height:125px}}
