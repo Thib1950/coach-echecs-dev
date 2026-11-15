@@ -146,9 +146,11 @@ function showLearnSubview(view){
  }
 }
 function isRecognizedOpening(op){
- const raw=String(op?.name||op?.display||"").trim().toLowerCase();
- const generic=new Set(["formation","opening","ouverture","unknown","unclassified","not classified","not identified","unidentified opening","ouverture non identifiée","ouverture non classée","autre","other","game","chess"]);
- return !!raw&&!generic.has(raw)&&(!/^code\s+[a-e]\d{2}$/i.test(raw)||!!(op?.eco&&/^[A-E]\d{2}$/.test(op.eco)));
+ const raw=String(op?.name||op?.display||op?.family||"").trim().toLowerCase();
+ // "Formation" et les codes ECO seuls ne désignent pas une ouverture identifiable.
+ if(!raw||/^formation(?:\\b|[\\s:–—-])/i.test(raw)||/^code\\s+[a-e]\\d{2}$/i.test(raw))return false;
+ const generic=new Set(["opening","ouverture","unknown","unclassified","not classified","not identified","unidentified opening","ouverture non identifiée","ouverture non classée","autre","other","game","chess"]);
+ return !generic.has(raw);
 }
 function buildGroups(){
  const map=new Map(),games=window.CoachApp?.getGames?.()||[];
