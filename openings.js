@@ -205,6 +205,7 @@ function exercisePositions(group,side){
  return [...unique.values()];
 }
 async function startExercise(group){
+ await strategicIdeasPromise;
  currentKey=group.key;
  $("panel-openings")?.classList.add("opening-exercise-active");
  const backTab=$("[data-opening-back]");if(backTab)backTab.hidden=false;
@@ -303,7 +304,7 @@ async function startExercise(group){
    coachText=finished?"Bravo, tu as retrouvé toute la séquence de cette ouverture. Tu peux passer à une autre position.":(feedback||"Joue les coups que tu viens d’observer. Les réponses adverses seront jouées automatiquement.");
    actionLabel=finished?"Nouvelle position":"";
   }
-  root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Depuis le début · "+Math.min(guidePly+1,line.length)+" / "+line.length+" demi-coups · La flèche montre ton prochain coup.":"Rejoue depuis le début · "+practicePly+" / "+line.length+" demi-coups")+'</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'<button type="button" class="opening-exercise-return" data-exercise-close>← Retour aux ouvertures</button></aside></div></article>';
+  root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Depuis le début · "+Math.min(guidePly+1,line.length)+" / "+line.length+" demi-coups · La flèche montre ton prochain coup.":"Rejoue depuis le début · "+practicePly+" / "+line.length+" demi-coups")+'</small><small class="opening-ideas-credit">Référentiel stratégique : Maahi420 · CC BY 4.0</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'<button type="button" class="opening-exercise-return" data-exercise-close>← Retour aux ouvertures</button></aside></div></article>';
   root.querySelectorAll(".chess-piece-image").forEach(img=>img.addEventListener("error",()=>{const fallback=document.createElement("span");fallback.className="piece";fallback.textContent=img.alt;img.replaceWith(fallback);},{once:true}));
  };
  const playAutomaticReplies=()=>{const notes=[];while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;notes.push(describeForCoach(board,reply,guidePly));const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}if(notes.length)feedback="Réponse adverse : "+notes.join(" ");};
