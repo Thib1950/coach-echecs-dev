@@ -312,7 +312,9 @@ async function analyseSelectedGame(gameIdOverride,options={}){
 }
 function openGameInCoach(gameId){
   const id=String(gameId??"");
-  document.querySelector('[data-tab="training"]')?.click();
+  document.querySelector('[data-tab="games"]')?.click();
+  const panel=$("panel-games");
+  panel?.classList.add("reviewing-game");
   refreshGamePicker();
   const select=$("analysis-game-select");
   const game=(window.CoachApp?.getGames?.()||[]).find(g=>String(g.id)===id);
@@ -321,7 +323,8 @@ function openGameInCoach(gameId){
     return false;
   }
   if(select)select.value=id;
-  $("analyse-game-button")?.scrollIntoView({behavior:"smooth",block:"center"});
+  if(window.CoachReview?.open)window.CoachReview.open(id);
+  $("games-analysis-workspace")?.scrollIntoView({behavior:"smooth",block:"start"});
   analyseSelectedGame(id);
   return true;
 }
