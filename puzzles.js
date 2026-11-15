@@ -7,7 +7,9 @@ let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,
 let puzzleProgress={dailySolved:[],personalSolved:[],attempts:0,wrongMoves:0};
 function loadPuzzleProgress(){try{const p=JSON.parse(localStorage.getItem(PROGRESS_KEY)||"{}");puzzleProgress={dailySolved:Array.isArray(p.dailySolved)?p.dailySolved:[],personalSolved:Array.isArray(p.personalSolved)?p.personalSolved:[],attempts:Number(p.attempts)||0,wrongMoves:Number(p.wrongMoves)||0};}catch{}}
 function savePuzzleProgress(){try{localStorage.setItem(PROGRESS_KEY,JSON.stringify(puzzleProgress));}catch{}renderPuzzleProgress();}
-function renderPuzzleProgress(){const node=$("puzzle-progress");if(!node)return;const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length;node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" tentative"+(puzzleProgress.attempts>1?"s":"")+" · "+puzzleProgress.wrongMoves+" erreur"+(puzzleProgress.wrongMoves>1?"s":"");}
+function renderPuzzleProgress(){const node=$("puzzle-progress");const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length;if(node)node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" tentative"+(puzzleProgress.attempts>1?"s":"")+" · "+puzzleProgress.wrongMoves+" erreur"+(puzzleProgress.wrongMoves>1?"s":"");const solved=$("puzzle-hub-solved"),attempts=$("puzzle-hub-attempts"),errors=$("puzzle-hub-errors");if(solved)solved.textContent=String(total);if(attempts)attempts.textContent=String(puzzleProgress.attempts);if(errors)errors.textContent=String(puzzleProgress.wrongMoves);}
+function openPuzzleExercise(){const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(hub)hub.hidden=true;if(exercise)exercise.hidden=false;$("panel-puzzles")?.classList.add("puzzle-exercise-active");}
+function closePuzzleExercise(){const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(exercise)exercise.hidden=true;if(hub)hub.hidden=false;$("panel-puzzles")?.classList.remove("puzzle-exercise-active");}
 function personalKey(game,detail){return String(game.id)+"|"+detail.fen+"|"+detail.bestUci;}
 function markPuzzleSolved(){const key=currentPuzzle?personalKey(currentPuzzle.game,currentPuzzle.detail):currentDailyId;if(!key)return;const list=currentPuzzle?puzzleProgress.personalSolved:puzzleProgress.dailySolved;if(!list.includes(key)){list.push(key);savePuzzleProgress();}else renderPuzzleProgress();renderPersonalized();}
 function uci(move){return move.from+move.to+(move.promotion||"");}
@@ -137,6 +139,7 @@ function renderPersonalized(){
 }
 function startPersonalPuzzle(item,fromSession=false){
  if(!item?.detail?.fen||!item.detail.bestUci)return;
+ openPuzzleExercise();
  if(!fromSession){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;}
  currentPuzzle=item;board=new Chess(item.detail.fen);solution=[item.detail.bestUci];puzzleProgress.attempts++;savePuzzleProgress();ply=0;selected=null;hinted=false;solved=false;loading=false;
  orientation=board.turn()==="w"?"white":"black";
@@ -174,6 +177,9 @@ function play(square){
  render();
 }
 document.addEventListener("click",event=>{
+ const mode=event.target.closest("[data-puzzle-mode]");
+ if(mode){openPuzzleExercise();if(mode.dataset.puzzleMode==="session"||mode.dataset.puzzleMode==="mistakes")startPuzzleSession();else loadDaily();return;}
+ if(event.target.closest("[data-puzzle-back]")){closePuzzleExercise();return;}
  if(event.target.closest("[data-start-puzzle-session]")){startPuzzleSession();return;}
  if(event.target.closest("[data-session-next]")){loadNextSessionPuzzle();return;}
  const square=event.target.closest("[data-puzzle-square]");if(square){play(square.dataset.puzzleSquare);return;}
@@ -184,4 +190,3 @@ document.addEventListener("click",event=>{
 });
 window.addEventListener("coach:games-updated",renderPersonalized);
 loadPuzzleProgress();renderPuzzleProgress();renderPersonalized();
-loadDaily();
