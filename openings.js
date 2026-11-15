@@ -121,17 +121,18 @@ function exercisePositions(group,side){
 }
 async function startExercise(group){
  currentKey=group.key;
+ $("panel-openings")?.classList.add("opening-exercise-active");
  const filter=$("opening-color-filter").value,white=group.games.filter(g=>sideOf(g)==="white").length,black=group.games.length-white;
  let side=filter==="white"?"w":filter==="black"?"b":(white>=black?"w":"b");
  let candidates=exercisePositions(group,side);if(!candidates.length){side=side==="w"?"b":"w";candidates=exercisePositions(group,side);}
  const root=$("opening-detail");
  if(!candidates.length){
   root.innerHTML='<article class="surface opening-detail-card"><div class="surface-heading"><div><p class="eyebrow">ENTRAÎNEMENT PERSONNALISÉ</p><h3>'+esc(group.family)+'</h3></div><button type="button" class="text-button" id="close-opening-exercise">Retour</button></div><p class="muted">Je n’ai pas trouvé de position exploitable dans tes parties pour cette ouverture.</p></article>';
-  root.querySelector("#close-opening-exercise").onclick=()=>renderDetail(group);return;
+  root.querySelector("#close-opening-exercise").onclick=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");renderDetail(group);};return;
  }
  let currentIndex=Math.floor(Math.random()*candidates.length),board=null,selected=null,best=null,busy=false,finished=false;
  let feedback="Le coach prépare une position issue de tes parties et cherche le meilleur coup avec Stockfish.";
- const close=()=>renderDetail(group);
+ const close=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");renderDetail(group);};
  const draw=()=>{
   if(!board)return;
   const files=side==="w"?["a","b","c","d","e","f","g","h"]:["h","g","f","e","d","c","b","a"],ranks=side==="w"?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8];
