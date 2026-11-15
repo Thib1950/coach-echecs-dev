@@ -46,7 +46,7 @@ const localPuzzleCache=new Map();
 async function getLocalPuzzleBucket(rating){
  const band=localPuzzleBuckets.includes(rating)?rating:1200;
  if(localPuzzleCache.has(band))return localPuzzleCache.get(band);
- const promise=fetch("./data/puzzles/r"+band+".json",{cache:"force-cache"})
+ const promise=fetch(new URL("./data/puzzles/r"+band+".json",import.meta.url),{cache:"force-cache"})
   .then(response=>{if(!response.ok)throw new Error("Données de puzzles indisponibles (HTTP "+response.status+").");return response.json();})
   .then(rows=>{if(!Array.isArray(rows)||!rows.length)throw new Error("La banque locale de puzzles est vide.");return rows;})
   .catch(error=>{localPuzzleCache.delete(band);throw error;});
@@ -56,7 +56,7 @@ async function getLocalPuzzleBucket(rating){
 function puzzleFromLocalRow(row){
  if(!Array.isArray(row)||row.length<5)throw new Error("Format de puzzle invalide.");
  const [id,fen,moves,rating,themes]=row;
- const sequence=String(moves||"").trim().split(/\\s+/).filter(Boolean);
+ const sequence=String(moves||"").trim().split(/\s+/).filter(Boolean);
  if(!fen||sequence.length<2)throw new Error("Puzzle incomplet.");
  const test=new Chess(fen);
  for(const u of sequence){
@@ -64,7 +64,7 @@ function puzzleFromLocalRow(row){
   if(!move)throw new Error("La combinaison contient un coup illégal.");
   test.move({from:move.from,to:move.to,promotion:move.promotion||"q"});
  }
- return {id:String(id),fen,solution:sequence,rating:Number(rating)||1400,themes:String(themes||"").split(/\\s+/).filter(Boolean)};
+ return {id:String(id),fen,solution:sequence,rating:Number(rating)||1400,themes:String(themes||"").split(/\s+/).filter(Boolean)};
 }
 async function loadLocalDailyPuzzle(randomize=false){
  const bands=[1200,1300,1400,1500,1600,1700];
