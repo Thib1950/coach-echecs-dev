@@ -182,6 +182,7 @@ function importPgnFile(file){if(!file)return;const reader=new FileReader();reade
 let openingsModuleLoaded=false;
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{
  if(btn.hasAttribute("data-opening-back"))return;
+ window.dispatchEvent(new CustomEvent("coach:tab-changing",{detail:{tab:btn.dataset.tab,fromPanel:document.querySelector(".panel.active")?.id||""}}));
  // Nettoyage explicite des états propres aux écrans d'ouverture avant tout changement de page.
  document.querySelectorAll(".opening-study-overlay").forEach(overlay=>overlay.remove());
  $("panel-openings")?.classList.remove("opening-exercise-active");
