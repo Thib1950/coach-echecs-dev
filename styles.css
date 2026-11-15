@@ -1677,3 +1677,68 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 @media(max-width:650px){.dashboard-hero{min-height:190px;padding:22px;border-radius:18px}.dashboard-hero-emblem{width:92px;height:92px;flex-basis:92px;opacity:.72}.dashboard-hero-emblem span{font-size:48px}.dashboard-hero-emblem small{font-size:6px}.hero-orbit-one{right:-105px}.hero-orbit-two{right:-160px}.dashboard-hero-copy>p:not(.eyebrow){max-width:390px;font-size:12px}.dashboard-hero-actions{gap:5px}.dashboard-hero-actions .primary-button{font-size:10px;padding:11px 12px}.hero-quiet-button{font-size:10px;padding:9px}.dashboard-section-line h2{font-size:16px}.dashboard-metrics{gap:8px}.dashboard-metrics article{min-height:98px;padding:12px}.dashboard-metrics article strong{font-size:25px}.home-menu{grid-template-columns:1fr}.home-menu-item{min-height:68px}.dashboard-destinations,.dashboard-recent-card{padding:14px}.dashboard-recent-list{grid-template-columns:1fr}.dashboard-recent-card .recent-game-row{grid-template-columns:minmax(0,1fr) auto}.dashboard-recent-card .recent-game-precision{display:none}.dashboard-import-strip{align-items:stretch;flex-direction:column}.dashboard-import-strip>div:last-child{width:100%}.dashboard-import-strip .secondary-button{flex:1;justify-content:center}.page-intro-row{margin-bottom:15px}.page-intro-row h1{font-size:27px}.page-intro-mark{width:48px;height:48px;flex-basis:48px;font-size:27px}.games-overview-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.games-overview-strip article{padding:10px 12px}.games-overview-strip strong{font-size:21px}.games-library-card{max-height:54vh;min-height:260px;padding:13px}.library-toolbar .filter-row{flex-direction:column}.library-toolbar .filter-row input,.library-toolbar .filter-row select{width:100%;min-width:0}.opening-feature-banner{padding:15px;gap:12px}.opening-feature-icon{width:43px;height:43px;flex-basis:43px;font-size:25px}.opening-feature-banner h2{font-size:16px}.opening-feature-banner p:not(.eyebrow){font-size:10px}.opening-feature-side{display:none}.opening-family-row{padding:13px 5px}.opening-family-actions{flex-direction:column}.opening-family-button{padding:7px 8px;font-size:9px}.progress-highlight{padding:18px}.progress-highlight h2{font-size:18px}.progress-highlight-mark{width:52px;height:52px;font-size:31px}.progress-page .progress-kpis{grid-template-columns:1fr 1fr;gap:8px}.progress-page .training-kpi{padding:14px}.progress-page .training-kpi strong{font-size:26px}.progress-content-grid{gap:10px}}
 @media(max-width:390px){.dashboard-hero-emblem{display:none}.dashboard-hero{min-height:175px}.dashboard-hero-actions .primary-button{width:100%}.games-overview-strip span{font-size:8px}}
 @media(max-height:760px) and (min-width:761px){.dashboard-hero{min-height:175px;padding:24px 32px}.dashboard-hero-emblem{width:125px;height:125px;flex-basis:125px}.dashboard-hero-emblem span{font-size:65px}.dashboard-metrics article{min-height:92px}.dashboard-workspace-grid{gap:12px}}
+
+
+/* v71 — dimensionnement sûr des échiquiers et commandes tactiles agrandies */
+/* Les 64 cases restent dans une grille carrée, sans dépendre de hauteurs héritées. */
+#panel-openings.opening-exercise-active .opening-practice-layout{
+ display:grid!important;grid-template-columns:minmax(0,1fr) 250px!important;grid-template-rows:minmax(0,1fr)!important;
+ align-items:center!important;justify-items:stretch!important;gap:clamp(10px,2vw,22px)!important;
+ flex:1 1 auto!important;min-width:0!important;min-height:0!important;width:100%!important;
+ padding:10px clamp(8px,2vw,22px)!important;overflow:auto!important;
+}
+#panel-openings.opening-exercise-active .opening-practice-board{
+ display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;grid-template-rows:repeat(8,minmax(0,1fr))!important;
+ width:min(100%,min(68vh,calc(100vw - 320px),720px))!important;height:auto!important;max-width:720px!important;max-height:none!important;
+ aspect-ratio:1/1!important;min-width:0!important;min-height:0!important;justify-self:center!important;align-self:center!important;
+ overflow:hidden!important;box-sizing:border-box!important;
+}
+#panel-openings.opening-exercise-active .opening-practice-board .opening-square{
+ width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;aspect-ratio:1/1!important;
+}
+#panel-openings.opening-exercise-active .opening-practice-coach{max-height:min(72vh,720px)!important;overflow-y:auto!important;align-self:center!important}
+/* Étude d'une ligne : l'échiquier garde son carré même lorsque la fiche passe en colonne. */
+.opening-study-overlay{box-sizing:border-box!important;align-items:flex-start!important;overflow-x:hidden!important;overflow-y:auto!important;padding:clamp(12px,2.5vw,28px)!important}
+.opening-study-page{width:min(1180px,100%)!important;min-width:0!important;margin:0 auto!important}
+.opening-study-content{display:grid!important;grid-template-columns:minmax(0,min(66vh,700px)) minmax(220px,1fr)!important;align-items:center!important;justify-content:center!important;gap:clamp(14px,2.5vw,28px)!important;min-width:0!important}
+.opening-study-board-wrap{position:relative!important;width:min(100%,min(66vh,700px))!important;height:auto!important;max-width:700px!important;aspect-ratio:1/1!important;flex:none!important;box-sizing:border-box!important;margin:0 auto!important}
+.opening-study-board{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;grid-template-rows:repeat(8,minmax(0,1fr))!important;width:100%!important;height:100%!important;aspect-ratio:1/1!important}
+.opening-study-board .opening-square{width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;aspect-ratio:1/1!important}
+.opening-study-board .opening-square img{display:block!important;width:88%!important;height:88%!important;object-fit:contain!important}
+@media(max-width:900px){
+ .opening-study-content{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;gap:14px!important}
+ .opening-study-board-wrap{width:min(100%,min(58vh,76vw,650px))!important;max-width:650px!important}
+ .opening-study-side{width:100%!important;box-sizing:border-box!important}
+ #panel-openings.opening-exercise-active .opening-practice-layout{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;justify-items:center!important;align-content:start!important;gap:10px!important;overflow-y:auto!important;padding:10px 8px 18px!important}
+ #panel-openings.opening-exercise-active .opening-practice-board{width:min(100%,min(58vh,76vw,650px))!important;max-width:650px!important;max-height:none!important}
+ #panel-openings.opening-exercise-active .opening-practice-coach{width:min(100%,650px)!important;max-width:650px!important;max-height:none!important;padding:12px 16px!important}
+}
+@media(max-width:620px){
+ .opening-study-top{align-items:flex-start!important;flex-direction:column!important}
+ .opening-study-top button{width:100%!important}
+ .opening-study-board-wrap{width:min(100%,min(54vh,92vw))!important}
+ #panel-openings.opening-exercise-active .opening-practice-board{width:min(100%,min(54vh,92vw))!important}
+ #panel-openings.opening-exercise-active .opening-practice-layout{padding:5px 2px 14px!important}
+}
+/* Commandes du puzzle : vrais boutons tactiles, lisibles et faciles à atteindre sur iPad. */
+#panel-puzzles .puzzle-footer{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:12px!important;margin:8px 0 0!important;padding:12px 0 2px!important;min-height:0!important}
+#panel-puzzles .puzzle-footer>p{max-width:none!important;width:100%!important;margin:0!important;font-size:14px!important;line-height:1.45!important}
+#panel-puzzles .puzzle-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;width:100%!important;min-width:0!important}
+#panel-puzzles .puzzle-actions button{display:flex!important;align-items:center!important;justify-content:center!important;min-width:0!important;min-height:54px!important;padding:13px 12px!important;border-radius:13px!important;font-size:14px!important;line-height:1.25!important;font-weight:800!important;white-space:normal!important;text-align:center!important;box-shadow:0 5px 14px #0003!important}
+#panel-puzzles .puzzle-actions #puzzle-reload{font-size:15px!important;background:linear-gradient(135deg,#087bdc,#0752a8)!important;border:1px solid #49a5ff!important;color:#fff!important}
+#panel-puzzles .puzzle-actions #puzzle-hint{background:#263c56!important;border:1px solid #58728f!important;color:#f4f7fb!important}
+#panel-puzzles .puzzle-actions [data-start-puzzle-session]{background:linear-gradient(135deg,#176b4a,#0e5139)!important;border:1px solid #52c68a!important;color:#fff!important}
+@media(max-width:900px){
+ #panel-puzzles .puzzle-board-area{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;align-content:start!important;justify-items:center!important;gap:10px!important;overflow-y:auto!important}
+ #panel-puzzles .puzzle-board-wrap{width:min(100%,min(58vh,76vw,650px))!important;height:auto!important;max-width:650px!important;aspect-ratio:1/1!important}
+ #panel-puzzles .puzzle-side{width:min(100%,650px)!important;box-sizing:border-box!important}
+ #panel-puzzles .puzzle-footer{flex:none!important}
+}
+@media(max-width:620px){
+ #panel-puzzles .puzzle-surface{padding:10px!important}
+ #panel-puzzles .puzzle-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+ #panel-puzzles .puzzle-actions button{min-height:50px!important;padding:11px 8px!important;font-size:13px!important}
+ #panel-puzzles .puzzle-actions #puzzle-reload{grid-column:span 2;grid-row:1}
+ #panel-puzzles .puzzle-board-wrap{width:min(100%,min(52vh,92vw))!important}
+ #panel-puzzles .puzzle-board-area{gap:8px!important}
+}
