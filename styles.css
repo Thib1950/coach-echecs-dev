@@ -817,3 +817,14 @@ html,body,button,a,input,select{touch-action:manipulation}
 .puzzle-actions{display:flex;gap:9px;flex-wrap:wrap}
 @media(max-width:900px){.dashboard-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.opening-study-content{grid-template-columns:1fr}.opening-study-board-wrap{max-width:min(76vw,700px)}.opening-study-side{width:100%}.puzzle-board-area{grid-template-columns:1fr}.puzzle-board{margin:auto;max-width:min(78vw,620px)}}
 @media(max-width:620px){.recent-game-player{grid-template-columns:minmax(0,1fr) 82px minmax(56px,.7fr);gap:5px}.recent-game-player .recent-game-result{font-size:11px}.recent-game-player .recent-game-elo{font-size:14px;padding:4px}.dashboard-shortcut{padding:11px 9px;gap:8px}.dashboard-shortcut strong{font-size:11px}.dashboard-shortcut small{font-size:9px}.shortcut-icon{flex-basis:30px;width:30px;height:30px}.opening-study-top{align-items:flex-start;flex-direction:column}.opening-study-top button{width:100%}.opening-study-board-wrap{max-width:94vw}.puzzle-footer{align-items:flex-start;flex-direction:column}.puzzle-actions{width:100%}.puzzle-actions button{flex:1}}
+
+
+/* Exercices personnels : une liste compacte, lisible et cohérente avec les surfaces existantes. */
+.personal-puzzles-surface{margin-top:16px}
+.personal-puzzle-list{display:grid;gap:8px;margin-top:14px}
+.personal-puzzle-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border:1px solid var(--line,rgba(255,255,255,.09));border-radius:12px;background:rgba(255,255,255,.025)}
+.personal-puzzle-info{display:grid;gap:3px;min-width:0}
+.personal-puzzle-info strong{font-size:13px;color:var(--text,#edf3f8)}
+.personal-puzzle-info span,.personal-puzzle-info small{font-size:11px;color:var(--muted,#93a4b5)}
+.personal-puzzle-row button{flex:0 0 auto;white-space:nowrap}
+@media(max-width:520px){.personal-puzzle-row{align-items:flex-start;flex-direction:column}.personal-puzzle-row button{width:100%}}
