@@ -94,6 +94,7 @@ function render(){
   const wins=games.filter(g=>outcome(g)==="win").length, draws=games.filter(g=>outcome(g)==="draw").length, losses=games.filter(g=>outcome(g)==="loss").length;
   $("stat-games").textContent=games.length;$("stat-wins").textContent=wins;$("stat-losses").textContent=losses;
   const dashValues={"dash-total-games":games.length,"dash-wins":wins,"dash-losses":losses,"dash-win-rate":games.length?Math.round(wins/games.length*100)+" %":"—"};Object.entries(dashValues).forEach(([id,value])=>{const node=$(id);if(node)node.textContent=String(value);});
+  const visibleStats={"games-total-visible":games.length,"games-wins-visible":wins,"games-losses-visible":losses,"games-draws-visible":draws};Object.entries(visibleStats).forEach(([id,value])=>{const node=$(id);if(node)node.textContent=String(value);});
   const greeting=$("dashboard-greeting-name");if(greeting)greeting.textContent=USERNAME;
   $("sync-state").textContent="Version développement · v40";
   const sorted=[...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
