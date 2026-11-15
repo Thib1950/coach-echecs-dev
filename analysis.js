@@ -127,6 +127,7 @@ function moveAccuracyFromWinLoss(loss){
 }
 function classify(winLoss,bestMove=false){
   if(bestMove)return {label:"Meilleur coup",kind:"best"};
+  if(winLoss<0.5)return {label:"Coup correct",kind:"normal"};
   if(winLoss<2)return {label:"Excellent",kind:"excellent"};
   if(winLoss<5)return {label:"Bon coup",kind:"good"};
   if(winLoss<10)return {label:"Imprécision",kind:"inaccuracy"};
@@ -210,6 +211,10 @@ async function analyseSelectedGame(gameIdOverride,options={}){
   const id=gameIdOverride===undefined?$("analysis-game-select").value:String(gameIdOverride);
   const game=games.find(g=>String(g.id)===id);
   if(!game){$("analysis-results").innerHTML='<div class="empty-state">Aucune partie sélectionnée.</div>';return;}
+  if(!options.force&&game.analysis&&game.analysis.partial===false&&Array.isArray(game.analysis.moves)){
+    if(!background){if(window.CoachReview?.open)window.CoachReview.open(game.id);renderResults(game,{moves:game.analysis.moves});$("analysis-progress").hidden=false;$("analysis-progress-fill").style.width="100%";$("analysis-progress-label").textContent="Analyse déjà terminée · résultat conservé.";}
+    return;
+  }
   if(!background)$("analysis-game-select").value=String(game.id);
   if(!game.pgn){if(!background)$("analysis-results").innerHTML='<div class="empty-state">Le PGN de cette partie n’est pas disponible. Réimporte la partie depuis Chess.com pour l’analyser.</div>';return;}
   busy=true;const startedAt=Date.now();
@@ -259,7 +264,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
       const afterWinPercent=winPercent(afterEval.scoreWhite*moverSign);
       const isOpeningPhase=i<6&&!!(game.eco||game.opening);
       const quality=(isOpeningPhase&&winLossPercent<5)?{label:"Théorie",kind:"book"}:classify(winLossPercent,playedUci===beforeEval.bestmove);
-      if(quality.kind!=="book"&&playedUci===beforeEval.bestmove&&((winPercentBefore<35&&afterWinPercent>=45)||(winPercentBefore>=45&&winPercentBefore<65&&afterWinPercent>=75))){quality.label="Grand coup";quality.kind="great";}
+      if(quality.kind!=="book"&&playedUci===beforeEval.bestmove&&((winPercentBefore<30&&afterWinPercent>=50)||(winPercentBefore>=45&&winPercentBefore<55&&afterWinPercent>=80))){quality.label="Grand coup";quality.kind="great";}
       const previousOpponentMove=report.positionDetails[report.positionDetails.length-1];
       if(quality.kind!=="book"&&move.color===userSide&&previousOpponentMove&&previousOpponentMove.color!==userSide&&previousOpponentMove.winLossPercent>=10&&winLossPercent>=2){quality.label="Occasion manquée";quality.kind="miss";}
       if(quality.kind!=="book"&&playedUci===beforeEval.bestmove&&isBrilliantSacrifice(beforeFen,playedUci,winLossPercent,beforeEval,afterEval)){quality.label="Coup brillant";quality.kind="brilliant";}
@@ -294,7 +299,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
       window.CoachApp.saveGames();
       return;
     }
-    game.analysis={date:new Date().toISOString(),moves:report.moves,positions:report.positions,positionDetails:report.positionDetails,covered:report.covered,accuracy:accuracyFromMoves(report.moves),partial:false,depth:report.depth};
+    game.analysis={date:new Date().toISOString(),moves:report.moves,positions:report.positions,positionDetails:report.positionDetails,covered:report.covered,accuracy:accuracyFromMoves(report.moves),partial:false,complete:true,depth:report.depth};
     window.CoachApp.saveGames();
     window.CoachApp.refresh?.();
     if(!background){
@@ -326,7 +331,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
   }finally{
     busy=false;refreshGamePicker();
     if(background)window.CoachApp?.refresh?.();
-    scheduleRecentAccuracy();
+    if(background&&game.analysis?.partial&&!game.analysis?.paused)scheduleRecentAccuracy();
     if(!background){
       $("analyse-game-button").disabled=false;$("analyse-game-button").textContent="Analyser cette partie";
 
@@ -373,7 +378,8 @@ async function analyzeRecentGamesInBackground(){
  try{
   for(const game of pending){
    if(busy)break;
-   try{await analyseSelectedGame(game.id,{background:true,movetime:320});}
+   if(game.analysis&&game.analysis.partial===false&&Array.isArray(game.analysis.moves))continue;
+   try{await analyseSelectedGame(game.id,{background:true,movetime:500});}
    catch(error){console.info("Précision différée pour",game.id,error);}
   }
  }finally{
@@ -423,7 +429,7 @@ function openGameInCoach(gameId){
   return true;
 }
 window.addEventListener("coach:analyze-game",event=>openGameInCoach(event.detail?.gameId));
-$("analyse-game-button").addEventListener("click",()=>analyseSelectedGame());
+$("analyse-game-button").addEventListener("click",()=>analyseSelectedGame(undefined,{force:true}));
 window.addEventListener("coach:games-updated",refreshGamePicker);
 window.CoachAnalysis={
  openGame:openGameInCoach,
