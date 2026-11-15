@@ -867,3 +867,7 @@ html,body,button,a,input,select{touch-action:manipulation}
 
 .curriculum-heading-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .curriculum-heading-actions [hidden]{display:none}
+
+.puzzle-heading-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.puzzle-progress-label{font-size:10px;color:var(--muted,#a5b3c2);white-space:nowrap}
+.puzzle-solved-mark{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:999px;background:rgba(141,224,108,.12);color:#bfe99e;font-size:9px;font-weight:800;vertical-align:middle}
