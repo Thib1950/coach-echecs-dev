@@ -221,8 +221,8 @@ function render(){
 function gameHtml(g,index=0){
  const o=outcome(g),accuracy=gameAccuracy(g);
  const hasCompleteAnalysis=!!(g.analysis&&!g.analysis.partial&&Array.isArray(g.analysis.moves));
- const accuracyText=hasCompleteAnalysis?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":"—"):(g.analysis?.partial?"En cours…":(g.pgn?(index<5?"En attente…":""):"—"));
- const calculateButton=g.pgn&&index>=5&&!hasCompleteAnalysis?'<button type="button" class="accuracy-calculate-button" data-calculate-accuracy="'+escapeHtml(g.id)+'" '+(g.analysis?.partial&&!g.analysis?.paused?'disabled':'')+'>'+(g.analysis?.partial&&!g.analysis?.paused?'En cours…':'Calculer')+'</button>':'';
+ const accuracyText=hasCompleteAnalysis?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":"—"):(g.analysis?.partial?(g.analysis?.paused?"En pause…":"En cours…"):(g.pgn?"À calculer":"—"));
+ const calculateButton=g.pgn&&!hasCompleteAnalysis?'<button type="button" class="accuracy-calculate-button" data-calculate-accuracy="'+escapeHtml(g.id)+'">'+(g.analysis?.partial?"Reprendre":"Calculer")+'</button>':'';
 
  const side=userColor(g),opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
  const elo=value=>value&&Number(value)>0?Number(value).toLocaleString("fr-FR"):"—";
