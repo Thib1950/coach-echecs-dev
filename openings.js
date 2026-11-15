@@ -272,5 +272,5 @@ document.addEventListener("click",event=>{
 $("opening-color-filter")?.addEventListener("change",render);
 document.querySelectorAll("[data-opening-scroll]").forEach(button=>button.addEventListener("click",()=>$("opening-table")?.scrollIntoView({behavior:"smooth",block:"start"})));
 window.addEventListener("coach:games-updated",()=>{if($("panel-openings")?.classList.contains("active"))render();});
-window.addEventListener("coach:account-changed",()=>{loadLearning();currentKey=null;showAllOpenings=false;render();});
+window.addEventListener("coach:account-changed",()=>{document.querySelectorAll(".opening-study-overlay").forEach(node=>node.remove());$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;$("opening-detail").innerHTML="";loadLearning();currentKey=null;showAllOpenings=false;render();});
 loadLearning();loadDatabase().then(render);render();
