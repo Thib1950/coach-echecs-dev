@@ -1552,3 +1552,6 @@ body:has(#panel-openings.opening-exercise-active) .tab{min-height:40px;padding-t
  #panel-puzzles .puzzle-mode-icon{width:44px;height:44px}
  #panel-puzzles .puzzle-mode-card:after{font-size:82px}
 }
+
+/* Personalized coach focus */
+.coach-plan-surface{margin:0 0 16px;border:1px solid #3c5872;background:linear-gradient(135deg,#172b40,#102033)}.coach-plan-content{display:grid;gap:13px}.coach-focus-card{display:flex;gap:14px;align-items:flex-start;padding:15px;background:#20364a;border:1px solid #496681;border-radius:12px}.coach-focus-icon{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:11px;background:#294d63;color:#bde7ff;font-size:25px}.coach-focus-card strong{display:block;color:#f2f7fc;font:800 15px Manrope}.coach-focus-card p{margin:5px 0;color:#d9e6f2;font-size:13px;line-height:1.5}.coach-focus-card small{color:#a9c0d5;font-size:11px}.coach-plan-actions{display:flex;gap:9px;flex-wrap:wrap}.coach-plan-actions button{min-height:40px}
