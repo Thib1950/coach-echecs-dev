@@ -51,7 +51,7 @@ function chooseCandidate(candidates,previousKey=""){
  const now=Date.now(),weights=candidates.map(candidate=>{
   const p=learningStats(candidate.key),due=!p.dueAt||p.dueAt<=now?2.2:Math.max(.08,1/(1+(p.dueAt-now)/86400000));
   const difficulty=1+(Number(p.errors)||0)*1.5,mastery=1/(1+(Number(p.reps)||0)*.85);
-  return Math.max(.02,due*difficulty*mastery*(candidate.key===previousKey?.08:1));
+  return Math.max(.02,due*difficulty*mastery*(candidate.key===previousKey ? .08 : 1));
  });
  const total=weights.reduce((a,b)=>a+b,0);let roll=Math.random()*total;
  for(let i=0;i<weights.length;i++){roll-=weights[i];if(roll<=0)return i;}
@@ -242,7 +242,7 @@ async function startExercise(group){
    const expected=candidate().line[guidePly],played=move.from+move.to+(move.promotion||"");
    if(played!==expected){selected=null;feedback="Pas ce coup. Suis précisément la flèche et réessaie.";draw();return;}
    const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);guidePly++;selected=null;
-   while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});guidePly++;}
+   while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}
    feedback=guidePly>=candidate().line.length?"Tu as joué toute la démonstration. Passe maintenant à la reproduction sans flèches.":"Bien joué ! Observe la nouvelle flèche et joue le coup suivant.";
    draw();return;
   }
@@ -256,7 +256,7 @@ async function startExercise(group){
   if(played!==expected){if(!candidateFailed){recordLearning(candidate(),false);candidateFailed=true;}selected=null;feedback="Pas tout à fait. Cette position sera reproposée plus souvent pour la mémoriser.";draw();return;}
   const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);practicePly++;selected=null;
   if(practicePly>=candidate().line.length){finished=true;recordLearning(candidate(),true,candidateFailed);feedback="Bravo ! Tu as reproduit toute la ligne. Ta prochaine révision est programmée selon tes résultats.";draw();return;}
-  if(board.turn()!==side){busy=true;window.setTimeout(()=>{if(!board||phase!=="practice"){busy=false;return;}playPracticeReplies();busy=false;if(practicePly>=candidate().line.length){finished=true;feedback="Bravo ! Tu as reproduit toute la ligne.";}else feedback="Bien joué. À toi de jouer le prochain coup.";draw();},420);}
+  if(board.turn()!==side){busy=true;window.setTimeout(()=>{if(!board||phase!=="practice"){busy=false;return;}playPracticeReplies();busy=false;if(practicePly>=candidate().line.length){finished=true;recordLearning(candidate(),true,candidateFailed);feedback="Bravo ! Tu as reproduit toute la ligne. Ta prochaine révision est programmée selon tes résultats.";}else feedback="Bien joué. À toi de jouer le prochain coup.";draw();},420);}
   else{feedback="Bien joué. Continue la séquence.";draw();}
  };
  beginPosition();
