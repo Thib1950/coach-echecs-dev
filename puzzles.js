@@ -41,7 +41,7 @@ function render(){
  $("puzzle-board-area").innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div>'+hintArrow+'</div>'+panel;
 }
 function message(text){$("puzzle-feedback").textContent=text;}
-const localPuzzleBuckets=[1200,1300,1400,1500];
+const localPuzzleBuckets=[1200,1300,1400,1500,1600,1700];
 const localPuzzleCache=new Map();
 async function getLocalPuzzleBucket(rating){
  const band=localPuzzleBuckets.includes(rating)?rating:1200;
@@ -67,7 +67,7 @@ function puzzleFromLocalRow(row){
  return {id:String(id),fen,solution:sequence,rating:Number(rating)||1400,themes:String(themes||"").split(/\\s+/).filter(Boolean)};
 }
 async function loadLocalDailyPuzzle(){
- const bands=[1200,1300,1400,1500];
+ const bands=[1200,1300,1400,1500,1600,1700];
  const band=bands[Math.floor(Math.random()*bands.length)];
  const rows=await getLocalPuzzleBucket(band);
  // Shuffle a short sample and skip any corrupt row rather than failing the whole session.
