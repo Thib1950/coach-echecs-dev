@@ -22,12 +22,13 @@ function render(){
  const legal=selected?board.moves({square:selected,verbose:true}):[],targets=new Map(legal.map(m=>[m.to,m.captured?"capture":"move"]));
  let cells="";
  ranks.forEach(rank=>[...files].forEach(file=>{const sq=file+rank,p=board.get(sq),light=((rank-1+(file.charCodeAt(0)-97))%2)===1;let cls="puzzle-square "+(light?"light":"dark")+(selected===sq?" selected":"")+(targets.get(sq)==="capture"?" puzzle-capture":"");const dot=targets.get(sq)==="move"?'<i class="puzzle-dot"></i>':"";cells+='<button type="button" class="'+cls+'" data-puzzle-square="'+sq+'" aria-label="'+sq+'">'+(p?'<img src="https://lichess1.org/assets/piece/cburnett/'+p.color+p.type.toUpperCase()+'.svg" alt="'+glyph[p.color+p.type]+'">':"")+dot+'</button>';}));
- const panel='<aside class="puzzle-side"><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&solution[ply]?"Indice : cherche à jouer "+solution[ply].slice(0,2)+" vers "+solution[ply].slice(2,4)+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p><small>'+(currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small></aside>';
+ const sessionAction=sessionActive&&solved?'<button type="button" class="primary-button" data-session-next>'+(sessionQueue.length?"Puzzle suivant →":"Terminer la session")+'</button>':"";
+ const panel='<aside class="puzzle-side"><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&solution[ply]?"Indice : cherche à jouer "+solution[ply].slice(0,2)+" vers "+solution[ply].slice(2,4)+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p><small>'+(sessionActive?"Session personnalisée · "+sessionSolved+" / "+sessionTotal+" réussis":currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small>'+sessionAction+'</aside>';
  $("puzzle-board-area").innerHTML='<div class="puzzle-board">'+cells+'</div>'+panel;
 }
 function message(text){$("puzzle-feedback").textContent=text;}
 async function loadDaily(){
- if(loading)return;loading=true;currentPuzzle=null;board=null;$("puzzle-board-area").innerHTML='<div class="empty-state">Chargement du puzzle du jour…</div>';message("Connexion à la base publique de puzzles Lichess…");
+ if(loading)return;loading=true;currentPuzzle=null;sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;board=null;$("puzzle-board-area").innerHTML='<div class="empty-state">Chargement du puzzle du jour…</div>';message("Connexion à la base publique de puzzles Lichess…");
  try{
   const response=await fetch("https://lichess.org/api/puzzle/daily",{headers:{Accept:"application/json"}});
   if(!response.ok)throw new Error("Lichess a répondu HTTP "+response.status);
@@ -87,7 +88,7 @@ function startPersonalPuzzle(item,fromSession=false){
 
 function startPuzzleSession(){
  const available=personalized.filter(item=>!puzzleProgress.personalSolved.includes(item.id));
- if(!available.length){message("Aucune position nouvelle pour le moment. Analyse quelques parties avec Stockfish pour créer ta première session personnalisée.");return;}
+ if(!available.length){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;message("Aucune position nouvelle pour le moment. Analyse quelques parties avec Stockfish pour créer ta première session personnalisée.");return;}
  sessionQueue=available.slice(0,5);sessionTotal=sessionQueue.length;sessionSolved=0;sessionActive=true;
  loadNextSessionPuzzle();
 }
