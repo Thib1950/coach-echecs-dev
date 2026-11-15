@@ -2,7 +2,7 @@ import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const glyph={wk:"♔",wq:"♕",wr:"♖",wb:"♗",wn:"♘",wp:"♙",bk:"♚",bq:"♛",br:"♜",bb:"♝",bn:"♞",bp:"♟"};
-let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,personalized=[];
+let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,personalized=[],showAllPersonal=false;
 function uci(move){return move.from+move.to+(move.promotion||"");}
 function loadPosition(pgn,initialPly){
  const game=new Chess();game.loadPgn(pgn);const history=game.history({verbose:true});const position=new Chess();
@@ -57,11 +57,12 @@ function renderPersonalized(){
   root.innerHTML='<div class="empty-state compact">Aucun exercice pour le moment. Lance l’analyse Stockfish de tes parties : les erreurs et occasions manquées deviendront des puzzles à résoudre.</div>';
   return;
  }
- root.innerHTML=personalized.slice(0,8).map((item,i)=>{
+ root.innerHTML=personalized.slice(0,showAllPersonal?personalized.length:8).map((item,i)=>{
   const g=item.game,d=item.detail,opponent=(g.white||"").toLowerCase()==="gone_1950"?g.black:g.white;
   const date=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("fr-FR"):"Date inconnue";
   return '<div class="personal-puzzle-row"><div class="personal-puzzle-info"><strong>'+esc(d.label||"Coup à revoir")+'</strong><span>Contre '+esc(opponent||"Adversaire")+' · '+date+'</span><small>Tu as joué '+esc(d.played||"—")+' · meilleure suite : '+esc(d.best||"—")+'</small></div><button type="button" class="secondary-button" data-personal-puzzle="'+i+'">S’entraîner</button></div>';
  }).join("");
+ if(personalized.length>8){const more=document.createElement("button");more.type="button";more.className="text-button personal-puzzle-more";more.dataset.personalPuzzleMore="";more.textContent=showAllPersonal?"Réduire la liste":"Voir toutes les positions ("+personalized.length+")";root.appendChild(more);}
 }
 function startPersonalPuzzle(item){
  if(!item?.detail?.fen||!item.detail.bestUci)return;
@@ -91,7 +92,8 @@ function play(square){
 document.addEventListener("click",event=>{
  const square=event.target.closest("[data-puzzle-square]");if(square){play(square.dataset.puzzleSquare);return;}
  if(event.target.closest("#puzzle-hint")){if(solution[ply]){hinted=true;message("Indice affiché sur le panneau du puzzle.");render();}return;}
- const personal=event.target.closest("[data-personal-puzzle]");if(personal){startPersonalPuzzle(personalized[Number(personal.dataset.personalPuzzle)]);return;}
+ const more=event.target.closest("[data-personal-puzzle-more]");if(more){showAllPersonal=!showAllPersonal;renderPersonalized();return;}
+  const personal=event.target.closest("[data-personal-puzzle]");if(personal){startPersonalPuzzle(personalized[Number(personal.dataset.personalPuzzle)]);return;}
   if(event.target.closest("#puzzle-reload"))loadDaily();
 });
 window.addEventListener("coach:games-updated",renderPersonalized);
