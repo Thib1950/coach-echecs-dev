@@ -20,7 +20,8 @@ async function loadDatabase(){
   const letters=["a","b","c","d","e"];
   const files=await Promise.all(letters.map(async letter=>{const res=await fetch("https://raw.githubusercontent.com/lichess-org/chess-openings/master/"+letter+".tsv");if(!res.ok)throw new Error("Base des ouvertures indisponible");return await res.text();}));
   const all=[];
-  for(const file of files)for(const row of file.split(/\r?\n/)){const [eco,name,pgn]=row.split("\t");if(!eco||!name||!pgn||eco.toLowerCase()==="eco")continue;const moves=parseLine(pgn);if(moves.length)all.push({eco,name,display:frenchName(name),family:familyName(name),moves,pgn});}
+  for(const file of files)for(const row of file.split(/\r?
+/)){const [eco,name,pgn]=row.split("\t");if(!eco||!name||!pgn||eco.toLowerCase()==="eco")continue;const moves=parseLine(pgn);if(moves.length)all.push({eco,name,display:frenchName(name),family:familyName(name),moves,pgn});}
   database=all;try{localStorage.setItem("coach-echecs-dev-openings-db-v1",JSON.stringify(database));}catch{}
  }catch(e){dbError=e.message||"Dictionnaire indisponible";}
 }
@@ -121,7 +122,8 @@ function exercisePositions(group,side){
 }
 async function startExercise(group){
  currentKey=group.key;
- $("panel-openings")?.classList.add("opening-exercise-active");\n const backTab=$("[data-opening-back]");if(backTab)backTab.hidden=false;
+ $("panel-openings")?.classList.add("opening-exercise-active");
+ const backTab=$("[data-opening-back]");if(backTab)backTab.hidden=false;
  const filter=$("opening-color-filter").value,white=group.games.filter(g=>sideOf(g)==="white").length,black=group.games.length-white;
  let side=filter==="white"?"w":filter==="black"?"b":(white>=black?"w":"b");
  let candidates=exercisePositions(group,side);if(!candidates.length){side=side==="w"?"b":"w";candidates=exercisePositions(group,side);}
@@ -175,6 +177,7 @@ async function startExercise(group){
  await loadPosition();
 }
 document.addEventListener("click",event=>{
+ if(event.target.closest("[data-opening-back]")){event.preventDefault();document.querySelector("[data-exercise-close],#close-opening-exercise")?.click();return;}
  const exerciseButton=event.target.closest("[data-opening-family-exercise]");
  if(exerciseButton){event.preventDefault();const g=groups.find(x=>x.key===exerciseButton.dataset.openingFamilyExercise);if(g)startExercise(g);return;}
  const button=event.target.closest("[data-opening-family]");if(button){const g=groups.find(x=>x.key===button.dataset.openingFamily);if(g)renderDetail(g);}
