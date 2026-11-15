@@ -320,7 +320,7 @@ async function syncChessCom(){
   const archivesToCheck=trustedFullHistory?urls.slice(-3):urls;
   const completed=new Set(trustedFullHistory?[]:[]);
   const byId=new Map(games.map(g=>[String(g.id),g]));
-  let newCount=0,successfulArchives=0,failedArchives=0,verified=0;
+  let newCount=0,successfulArchives=0,failedArchives=0,verified=0,processedArchives=0;
   const pendingArchives=archivesToCheck.slice().reverse();
   const concurrency=2;
   for(let offset=0;offset<pendingArchives.length;offset+=concurrency){
@@ -340,7 +340,7 @@ async function syncChessCom(){
     if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé pendant la synchronisation.");
     const {url,batch,error}=result;
     if(error){failedArchives++;console.error("Archive Chess.com non récupérée",accountAtStart,url,error);continue;}
-    successfulArchives++;verified+=batch.length;
+    successfulArchives++;processedArchives++;verified+=batch.length;
     for(const game of batch){
      const key=String(game.id),previous=byId.get(key);
      if(!previous)newCount++;
@@ -358,7 +358,7 @@ async function syncChessCom(){
     await saveArchiveCheckpoint(accountAtStart,persistedBatch,nextMeta);
     games=mergedGames;
     render();
-    setMessage("Historique "+accountAtStart+" · "+completed.size+" / "+urls.length+" archives validées · "+games.length.toLocaleString("fr-FR")+" parties sauvegardées.");
+    setMessage("Historique "+accountAtStart+" · "+processedArchives+" / "+urls.length+" archives validées · "+games.length.toLocaleString("fr-FR")+" parties sauvegardées.");
    }
   }
   if(!successfulArchives)throw new Error("Aucune archive n'a pu être téléchargée ("+failedArchives+" échec(s)). Vérifie la connexion et réessaie.");
