@@ -142,11 +142,12 @@ async function startExercise(group){
  const describeMove=(position,move)=>{
   const piece=position.get(move.from),name=pieceNames[piece?.type]||"pièce";
   const central=["c4","d4","e4","f4","c5","d5","e5","f5"].includes(move.to);
-  if(piece?.type==="p"&&central)return "Ce pion prend de l’espace au centre et ouvre des lignes pour tes pièces.";
-  if(piece?.type==="n"||piece?.type==="b")return "Tu développes ton "+name+" vers une case active pour le rapprocher du jeu.";
-  if(move.captured)return "Tu joues "+move.san+" : ce coup permet de capturer une pièce adverse.";
-  if(piece?.type==="p")return "Ce pion contribue à construire ta structure et à libérer tes pièces.";
-  return "Ce coup place ton "+name+" sur une case utile pour poursuivre le développement.";
+  const actor=move.color===side?"Tu":"L’adversaire";
+  if(piece?.type==="p"&&central)return actor+" prend de l’espace au centre et ouvre des lignes pour ses pièces.";
+  if(piece?.type==="n"||piece?.type==="b")return actor+" développe son "+name+" vers une case active pour le rapprocher du jeu.";
+  if(move.captured)return actor+" joue "+move.san+" : ce coup permet de capturer une pièce adverse.";
+  if(piece?.type==="p")return actor+" avance ce pion pour construire sa structure et libérer ses pièces.";
+  return actor+" place son "+name+" sur une case utile pour poursuivre le développement.";
  };
  const squareCenter=sq=>{
   const file=sq.charCodeAt(0)-97,rank=Number(sq[1])-1;
