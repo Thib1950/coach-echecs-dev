@@ -25,7 +25,7 @@ function ensureOpeningName(game){
 }
 function coachMessage(detail){
  if(!detail)return {title:"Position en cours",body:"Je vérifie les possibilités de cette position. Le meilleur coup et son idée apparaîtront ici.",tip:""};
- const userSide=((active?.white||"").toLowerCase()==="gone_1950"?"w":"b");
+ const userSide=((active?.white||"").toLowerCase()===String(window.CoachApp?.getUsername?.()||"").toLowerCase()?"w":"b");
  const openingName=frenchOpeningName(active?.opening||active?.displayOpening||"").trim();
  if(openingName&&Number(detail.ply)<=5){
   const name=openingName.toLowerCase();let idea="Cette ouverture cherche à développer rapidement les pièces, contrôler le centre et préparer la mise en sécurité du roi.";
@@ -99,7 +99,7 @@ function historicalCounterOpening(){
  try{
   const games=window.CoachApp?.getGames?.()||[],current=new Chess();current.loadPgn(active?.pgn||"");const first=current.history({verbose:true})[0];if(!first||first.color!=="w")return null;const key=first.from+first.to+(first.promotion||"");const groups=new Map();
   for(const game of games){
-   if((game.black||"").toLowerCase()!=="gone_1950"||!game.pgn)continue;
+   if((game.black||"").toLowerCase()!==String(window.CoachApp?.getUsername?.()||"").toLowerCase()||!game.pgn)continue;
    const board=new Chess();board.loadPgn(game.pgn);const firstMove=board.history({verbose:true})[0];
    if(!firstMove||firstMove.color!=="w"||firstMove.from+firstMove.to+(firstMove.promotion||"")!==key)continue;
    const name=frenchOpeningName(game.opening||game.displayOpening||"");if(!name)continue;
@@ -132,7 +132,7 @@ function render(){
  const lastPv=variationIndex>0?pv[variationIndex-1]:null;
  const pvSquares=lastPv?[lastPv.slice(0,2),lastPv.slice(2,4)]:[];
 
- const orientation=(active&&(active.black||"").toLowerCase()==="gone_1950")?"black":"white";
+ const orientation=(active&&(active.black||"").toLowerCase()===String(window.CoachApp?.getUsername?.()||"").toLowerCase())?"black":"white";
  const selectedSquares=freeSelected?[freeSelected]:[];
  const legalMoves=freeBoard&&freeSelected?freeBoard.moves({square:freeSelected,verbose:true}):[];
  const legalTargets=new Map(legalMoves.map(m=>[m.to,m.captured?"capture":"move"]));
@@ -177,7 +177,7 @@ function render(){
  const pvPanel=detail&&pvLine?'<div class="pv-panel"><div class="pv-heading"><strong>Suite possible</strong><span>Touche un coup pour suivre la ligne</span></div><div class="pv-moves"><button type="button" class="pv-step '+(variationIndex===0?"active":"")+'" data-pv-step="0">Départ</button>'+pvLine+'</div></div>':"";
  const lastMoveDetail=active?.analysis?.positionDetails?.[index-1]||null;
  const responseDetail=active?.analysis?.positionDetails?.[index]||null;
- const userSide=((active?.white||"").toLowerCase()==="gone_1950"?"w":"b");
+ const userSide=((active?.white||"").toLowerCase()===String(window.CoachApp?.getUsername?.()||"").toLowerCase()?"w":"b");
  const coachDetail=!freeBoard&&index>0?(activeAnalysisMove||(lastMoveDetail?.color!==userSide&&responseDetail?{...responseDetail,contextOpponent:true,opponentMove:lastMoveDetail}:lastMoveDetail)):null;
  const coach=coachMessage(coachDetail);
  const freeCoachText=freeAnalysis?(freeAnalysisError?freeAnalysisError+" Dernière recommandation : "+(freeAnalysis.bestSan||"un coup actif")+".":"Stockfish conseille "+(freeAnalysis.bestSan||"un coup actif")+" pour la suite de la position."):(freeAnalysisError||"Analyse de la position en cours…");
@@ -271,3 +271,4 @@ function updateAnalysis(list,game){
 }
 window.CoachReview={open,setAnalysis,updateAnalysis,showAnalysisMove};
 window.addEventListener("coach:review-game",event=>open(event.detail?.gameId));
+window.addEventListener("coach:account-changed",()=>{active=null;moves=[];index=0;analysisMoves=[];activeAnalysisMove=null;variationIndex=0;freeBoard=null;freeSelected=null;freeRedo=[];freeAnalysis=null;freeAnalysisError="";freeLastMove="";freeAnalysisSeq++;render();});
