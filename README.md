@@ -22,7 +22,7 @@ Dans le dépôt GitHub :
 4. Attendre la publication. L'adresse attendue est `https://thib1950.github.io/coach-echecs-dev/`.
 
 ## Confidentialité
-Le dépôt contient le code de l'application, pas les parties personnelles. Les parties importées sont conservées dans le stockage local du navigateur. Ne publie pas de fichiers PGN personnels dans le dépôt.
+Le dépôt contient le code de l'application, pas les parties personnelles. Les parties importées sont conservées dans le stockage local du navigateur. La version de développement utilise une clé distincte (`coach-echecs-dev-v1`). Au premier lancement, elle copie les parties de la version stable si elles sont présentes dans ce navigateur, sans modifier la clé stable. Les deux versions évoluent ensuite indépendamment. Ne publie pas de fichiers PGN personnels dans le dépôt.
 
 ## Prochaines étapes
 1. Vérifier la synchronisation Chess.com sur Safari et les éventuelles restrictions CORS.
