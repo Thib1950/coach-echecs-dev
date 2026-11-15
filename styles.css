@@ -2511,3 +2511,12 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 .opening-exercise-arrow line{stroke-width:2.5!important}
 .opening-study-arrows line{stroke-width:1.1!important}
 @media(max-width:620px){#panel-puzzles .puzzle-daily-options,#panel-puzzles .puzzle-end-actions{grid-template-columns:1fr}}
+
+/* Le coach de l'exercice d'ouverture reprend explicitement le thème clair. */
+#panel-openings.opening-exercise-active .opening-practice-coach{background:#fff!important;border:1px solid #dce6dc!important;color:#26392d!important;box-shadow:0 8px 24px #1d34240d!important}
+#panel-openings.opening-exercise-active .opening-practice-coach .eyebrow{color:#748477!important}
+#panel-openings.opening-exercise-active .opening-practice-coach h4,
+#panel-openings.opening-exercise-active .opening-practice-coach>strong{color:#20352a!important}
+#panel-openings.opening-exercise-active .opening-practice-coach>p:not(.eyebrow){color:#526457!important}
+#panel-openings.opening-exercise-active .opening-practice-coach small{color:#718074!important}
+#panel-openings.opening-exercise-active .opening-practice-coach .opening-quality-badge{color:#4e6c55!important}
