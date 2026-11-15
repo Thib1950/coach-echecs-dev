@@ -32,8 +32,26 @@ async function loadStrategicIdeas(){
  }catch(error){console.info("Les explications stratégiques détaillées ne sont pas disponibles hors ligne.",error);}
 }
 function openingPlanFor(game,color){
- const opening=classify(game||{}),idea=strategicIdeasByEco.get(opening.eco);
- return idea?(color==="w"?idea.white_ideas:idea.black_ideas):"";
+ const opening=classify(game||{}),name=String(opening.family||opening.name||"").toLowerCase();
+ const plans=[
+  [/london|londres/,"Blancs : fou en f4, centre solide et petit roque.","Noirs : contester d4 avec ...c5 ou ...e5 et développer rapidement."],
+  [/italian|italienne/,"Blancs : viser f7, puis préparer c3 et d4 pour ouvrir le centre.","Noirs : défendre e5, développer les pièces et chercher ...d5 au bon moment."],
+  [/spanish|espagnol|ruy lopez/,"Blancs : mettre la pression sur c6, défenseur du pion e5.","Noirs : consolider e5 et libérer le jeu avec ...d5 ou ...f5."],
+  [/sicilian|sicilienne/,"Blancs : contrôler d5 et préparer l’attaque au centre ou à l’aile roi.","Noirs : contrôler d4, ouvrir la colonne c et contre-attaquer à l’aile dame."],
+  [/french|française/,"Blancs : construire le centre e5–d4 et gagner de l’espace.","Noirs : attaquer la base d4 avec ...c5 et libérer le fou c8."],
+  [/caro.?kann/,"Blancs : gagner de l’espace et préparer l’ouverture du centre.","Noirs : soutenir ...d5 avec une structure solide et développer le fou c8."],
+  [/queen.?s gambit|gambit dame/,"Blancs : faire pression sur d5 et prendre de l’espace au centre.","Noirs : tenir d5 ou rendre le pion pour développer les pièces."],
+  [/king.?s indian|est.?indienne/,"Blancs : occuper le centre et limiter les ruptures ...e5 et ...c5.","Noirs : laisser le centre avancer puis le frapper avec ...e5 ou ...c5."],
+  [/english|anglaise/,"Blancs : contrôler d5 depuis le flanc et préparer b4 ou d4.","Noirs : contester c4 et préparer une rupture centrale ...d5."],
+  [/scandinavian|scandinave/,"Blancs : développer avec tempo sur la dame et contrôler le centre.","Noirs : récupérer le temps de développement et viser d4."],
+  [/slav|slave/,"Blancs : développer en gardant la pression sur d5.","Noirs : soutenir d5 et libérer le fou c8."],
+  [/nimzo/,"Blancs : profiter de la paire de fous et contrôler le centre.","Noirs : clouer le cavalier c3 et provoquer une faiblesse de pions."],
+  [/grunfeld|grünfeld/,"Blancs : bâtir un grand centre de pions.","Noirs : attaquer le centre blanc à distance avec les fous et ...c5."],
+  [/dutch|hollandaise/,"Blancs : exploiter les cases affaiblies autour du roi noir.","Noirs : contrôler e4 et lancer une attaque à l’aile roi."],
+  [/reti|réti/,"Blancs : contrôler le centre à distance avant de choisir une poussée.","Noirs : occuper le centre et gagner de l’espace."],
+ ];
+ const found=plans.find(([re])=>re.test(name));
+ return found?(color==="w"?found[1]:found[2]):(color==="w"?"Plan : développer les pièces, contrôler le centre et préparer une rupture de pions.":"Plan : contester le centre, terminer le développement et viser une rupture de pions.");
 }
 
 function familyName(name){return frenchName(String(name||"Ouverture non classée").split(/\s*[:–—]\s*/)[0].trim());}
@@ -123,7 +141,7 @@ function buildGroups(){
  groups=[...map.values()].sort((a,b)=>b.games.length-a.games.length);
 }
 function render(){
- buildGroups();const filter=$("opening-color-filter")?.value||"all",totalGames=(window.CoachApp?.getGames?.()||[]).filter(game=>filter==="all"||sideOf(game)===filter).length;
+ buildGroups();const filter=document.querySelector("[data-opening-color].active")?.dataset.openingColor||"all",totalGames=(window.CoachApp?.getGames?.()||[]).filter(game=>filter==="all"||sideOf(game)===filter).length;
  const visibleGroups=showAllOpenings?groups:groups.slice(0,12);const rows=visibleGroups.map(g=>{const games=g.games.filter(x=>filter==="all"||sideOf(x)===filter);return {...g,shown:games.length,shownGames:games,w:games.filter(x=>outcome(x)==="win").length,d:games.filter(x=>outcome(x)==="draw").length,l:games.filter(x=>outcome(x)==="loss").length,white:games.filter(x=>sideOf(x)==="white").length,black:games.filter(x=>sideOf(x)==="black").length,winRate:performance(games)};}).filter(g=>g.shown).sort((a,b)=>b.shown-a.shown||a.family.localeCompare(b.family,"fr"));
  $("opening-table").innerHTML=rows.length?rows.map(g=>{const decided=g.w+g.d+g.l,points=(g.w+g.d/2)/(decided||1),status=decided<3?"À confirmer":points<.45?"À travailler":points>=.6?"Bon repère":"À consolider";const statusClass=decided>=3&&points<.45?"needs-work":decided>=3&&points>=.6?"solid":"neutral";return '<div class="opening-family-row"><div class="opening-family-main"><strong>'+esc(g.family)+'</strong><small>Blancs : '+g.white+' partie(s) · Noirs : '+g.black+' partie(s)</small></div><div class="opening-family-status"><span class="opening-status '+statusClass+'">'+status+'</span></div><div class="opening-family-stats"><b>'+g.shown+' partie(s)</b><small>'+Math.round(g.shown/(totalGames||1)*100)+' % des parties</small><small class="opening-win-rate">'+(g.winRate===null?"—":g.winRate+" % de victoires")+'</small></div><div class="opening-family-actions"><button type="button" class="opening-family-button" data-opening-family="'+esc(g.key)+'">Étudier</button><button type="button" class="opening-family-button secondary" data-opening-family-exercise="'+esc(g.key)+'">Exercice</button></div></div>';}).join(""):'<div class="empty-state">'+(dbError?"Les noms d'ouvertures n'ont pas pu être chargés. Vérifie ta connexion puis rouvre cet onglet.":"Aucune ouverture reconnue dans tes parties importées.")+'</div>';
  if(groups.length>12){const toggle=document.createElement("button");toggle.type="button";toggle.className="opening-show-all-button";toggle.textContent=showAllOpenings?"Réduire la liste":"Afficher les "+groups.length+" ouvertures";toggle.addEventListener("click",()=>{showAllOpenings=!showAllOpenings;render();});$("opening-table").appendChild(toggle);}
@@ -223,52 +241,23 @@ async function startExercise(group){
  const candidate=()=>candidates[currentIndex];
  const moveFor=(position,moveUci)=>position.moves({verbose:true}).find(m=>m.from+m.to+(m.promotion||"")===moveUci);
  const describeMove=(position,move,moveIndex)=>{
-  const family=String(group.family||"").toLowerCase();
-  const piece=position.get(move.from),name=pieceNames[piece?.type]||"pièce";
-  const actor=move.color===side?"Tu":"L’adversaire",enemy=move.color==="w"?"b":"w";
-  const center=["d4","e4","d5","e5"],nearCenter=["c4","f4","c5","f5"];
-  const after=new Chess(position.fen());
-  let played=null;try{played=after.move({from:move.from,to:move.to,promotion:move.promotion||"q"});}catch{}
-  if(move.san.includes("#"))return actor+" termine par un mat : le roi adverse n’a plus de réponse légale.";
-  if(move.san.includes("+"))return actor+" donne échec. C’est un coup forcing : l’adversaire doit d’abord mettre son roi à l’abri, ce qui limite ses choix.";
-  if(move.flags?.includes("k")||move.flags?.includes("q"))return actor+" roque pour mettre le roi à l’abri et connecter les tours. La tour se rapproche aussi du centre.";
-  if(move.captured){
-   const capturedName=pieceNames[move.captured]||"pièce";
-   return actor+" échange "+name+" contre "+capturedName+". L’idée est de supprimer un défenseur ou de modifier la structure de pions, pas seulement de gagner du matériel.";
-  }
-  if(piece?.type==="p"&&center.includes(move.to)){
-   const openFile=move.to[0]==="d"?"la colonne d":move.to[0]==="e"?"la colonne e":"les lignes centrales";
-   return actor+" revendique une case centrale. Ce pion contrôle les cases d’espace, gêne les pièces adverses et libère des diagonales pour les fous ; "+openFile+" peut aussi s’ouvrir après un échange.";
-  }
-  if(piece?.type==="p"&&nearCenter.includes(move.to))
-   return actor+" soutient ou conteste le centre depuis le flanc. Ce pion prépare une poussée centrale et contrôle des cases d’entrée pour les cavaliers.";
-  if(piece?.type==="p"&&(move.to[1]==="6"||move.to[1]==="3"))
-   return actor+" gagne de l’espace et peut chasser une pièce installée sur une case avancée. Regarde surtout quelles cases cette pièce devra abandonner et quelles cases deviennent faibles derrière elle.";
-  if(piece?.type==="n"){
-   const purpose=["c3","f3","c6","f6"].includes(move.to)?"contrôler les cases centrales et soutenir les poussées de pions":"installer le cavalier sur une case plus active";
-   return actor+" développe son cavalier pour "+purpose+". Depuis cette case, il peut participer à une attaque, renforcer un pion central et limiter les cases de sortie des pièces adverses.";
-  }
-  if(piece?.type==="b"){
-   const kingSquare=after.board().flat().findIndex(p=>p?.type==="k"&&p.color===enemy);
-   let pinText="";
-   if(kingSquare>=0){
-    const kingFile=kingSquare%8,kingRank=7-Math.floor(kingSquare/8),toFile=move.to.charCodeAt(0)-97,toRank=Number(move.to[1])-1;
-    const df=Math.sign(kingFile-toFile),dr=Math.sign(kingRank-toRank),diag=Math.abs(kingFile-toFile)===Math.abs(kingRank-toRank);
-    if(diag&&df&&dr){let f=toFile+df,r=toRank+dr,blockers=0;while(f!==kingFile&&r!==kingRank){const p=after.get("abcdefgh"[f]+(r+1));if(p){if(p.color===enemy)blockers++;else blockers=99;break;}f+=df;r+=dr;}if(blockers===1)pinText=" Il cloue une pièce devant le roi : bouger cette pièce exposerait le roi à l’attaque.";
-    }
-   }
-   return actor+" place son fou sur une diagonale active pour viser le centre ou une case sensible. Il peut aussi exercer une pression à distance sur un défenseur et restreindre les cases de développement adverses."+pinText;
-  }
-  if(piece?.type==="r")return actor+" place sa tour sur une colonne ouverte ou semi-ouverte pour exercer une pression sur les pions et pénétrer dans le camp adverse.";
-  if(piece?.type==="q")return actor+" repositionne sa dame pour coordonner plusieurs menaces. L’idée est de soutenir une poussée ou de viser une faiblesse, tout en évitant de l’exposer à un tempo de développement.";
-  if(piece?.type==="k")return actor+" améliore la sécurité du roi ou le prépare à participer au jeu. Vérifie si cette avancée autorise des échecs ou des infiltrations adverses.";
-  if(move.to==="b5"||move.to==="g5"||move.to==="b4"||move.to==="g4")
-   return actor+" crée une pression sur une pièce ou un défenseur. Le but peut être de provoquer un échange, de forcer un déplacement ou de détourner une pièce de la défense du centre.";
-  return actor+" améliore le placement de sa "+name+". Observe la case visée, les pièces qu’elle soutient et les cases de l’adversaire qui deviennent moins accessibles.";
+  const piece=position.get(move.from),actor=move.color===side?"Tu":"L’adversaire";
+  if(move.san.includes("#"))return actor+" fait mat : le roi n’a plus de case sûre.";
+  if(move.san.includes("+"))return actor+" donne échec et force une réponse du roi.";
+  if(move.flags?.includes("k")||move.flags?.includes("q"))return actor+" roque : roi à l’abri, tours connectées.";
+  if(move.captured)return actor+" échange pour supprimer un défenseur ou modifier les pions.";
+  if(piece?.type==="p"&&["d4","e4","d5","e5"].includes(move.to))return actor+" prend de l’espace et contrôle le centre.";
+  if(piece?.type==="p"&&["c4","f4","c5","f5"].includes(move.to))return actor+" contrôle le centre depuis le flanc et prépare une rupture.";
+  if(piece?.type==="n")return actor+" installe le cavalier sur une case active : il contrôle le centre et gêne les pièces adverses.";
+  if(piece?.type==="b")return actor+" ouvre une diagonale : pression à distance sur le centre ou un défenseur.";
+  if(piece?.type==="r")return actor+" place la tour sur une colonne utile pour attaquer les pions.";
+  if(piece?.type==="q")return actor+" coordonne les menaces sans exposer sa dame aux attaques.";
+  if(piece?.type==="k")return actor+" met le roi en sécurité ou le rapproche de la finale.";
+  return actor+" améliore la pièce et prépare une nouvelle menace.";
  };
  const describeForCoach=(position,move,moveIndex)=>{
-  const explanation=describeMove(position,move,moveIndex),plan=moveIndex<=1?openingPlanFor(candidate().game,move.color):"";
-  return explanation+(plan?" Plan stratégique de cette ouverture : "+plan:"");
+  const explanation=describeMove(position,move,moveIndex),plan=moveIndex===0?openingPlanFor(candidate().game,side):"";
+  return explanation+(plan?" "+plan:"");
  };
  const squareCenter=sq=>{
   const file=sq.charCodeAt(0)-97,rank=Number(sq[1])-1;
@@ -277,8 +266,14 @@ async function startExercise(group){
  };
  const arrowFor=move=>{
   if(!move)return "";
-  const a=squareCenter(move.slice(0,2)),b=squareCenter(move.slice(2,4));
-  return '<svg class="opening-exercise-arrow" viewBox="0 0 800 800" aria-hidden="true"><defs><marker id="openingExerciseArrowHead" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto"><path d="M0 0L4 2L0 4Z" fill="#f6c85f"/></marker></defs><line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#f6c85f" stroke-width="5" stroke-linecap="round" opacity=".92" marker-end="url(#openingExerciseArrowHead)"/></svg>';
+  const a=squareCenter(move.slice(0,2)),b=squareCenter(move.slice(2,4)),piece=board?.get(move.slice(2,4));
+  const center=["d4","e4","d5","e5"].map(squareCenter);
+  let target=center.sort((x,y)=>Math.hypot(x.x-b.x,x.y-b.y)-Math.hypot(y.x-b.x,y.y-b.y))[0];
+  if(piece?.type==="n"){
+   const candidates=[];for(const [df,dr] of [[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]]){const file=move.charCodeAt(2)-97+df,rank=Number(move[3])+dr;if(file>=0&&file<8&&rank>=1&&rank<=8)candidates.push(String.fromCharCode(97+file)+rank);}
+   const useful=candidates.filter(s=>["d4","e4","d5","e5","c4","f4","c5","f5"].includes(s));if(useful.length)target=squareCenter(useful[0]);
+  }
+  return '<svg class="opening-exercise-arrow" viewBox="0 0 800 800" aria-hidden="true"><defs><marker id="openingArrowGold" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0L5 2.5L0 5Z" fill="#f6c85f"/></marker><marker id="openingArrowBlue" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0 0L5 2.5L0 5Z" fill="#55c7ed"/></marker></defs><line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#f6c85f" stroke-width="7" stroke-linecap="round" marker-end="url(#openingArrowGold)"/><line x1="'+b.x+'" y1="'+b.y+'" x2="'+target.x+'" y2="'+target.y+'" stroke="#55c7ed" stroke-width="5" stroke-linecap="round" stroke-dasharray="11 8" opacity=".95" marker-end="url(#openingArrowBlue)"/></svg>';
  };
  const draw=()=>{
   if(!board)return;
@@ -295,8 +290,8 @@ async function startExercise(group){
   if(phase==="guide"){
    const move=activeMove?moveFor(board,activeMove):null;
    status="ÉTAPE 1 · DÉMONSTRATION GUIDÉE";
-   coachTitle=guidePly>=line.length?"Démonstration terminée":"Comprends l’idée du coup";
-   coachText=feedback||(move?"Pourquoi ce coup ? "+describeForCoach(board,move,guidePly)+ " Le déplacement à jouer est "+move.san+" ("+move.from.toUpperCase()+" → "+move.to.toUpperCase()+").":"La séquence est terminée. Tu vas maintenant la rejouer sans aide.");
+   coachTitle=guidePly>=line.length?"Démonstration terminée":"L’idée du coup";
+   coachText=feedback||(move?describeForCoach(board,move,guidePly)+" À jouer : "+move.san+".":"La séquence est terminée. Rejoue-la sans aide.");
    actionLabel=guidePly>=line.length?"Rejouer sans les flèches":"";
   }else{
    status="ÉTAPE 2 · À TOI DE JOUER";
@@ -304,7 +299,7 @@ async function startExercise(group){
    coachText=finished?"Bravo, tu as retrouvé toute la séquence de cette ouverture. Tu peux passer à une autre position.":(feedback||"Joue les coups que tu viens d’observer. Les réponses adverses seront jouées automatiquement.");
    actionLabel=finished?"Nouvelle position":"";
   }
-  root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Depuis le début · "+Math.min(guidePly+1,line.length)+" / "+line.length+" demi-coups · La flèche montre ton prochain coup.":"Rejoue depuis le début · "+practicePly+" / "+line.length+" demi-coups")+'</small><small class="opening-ideas-credit">Référentiel stratégique : Maahi420 · CC BY 4.0</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'<button type="button" class="opening-exercise-return" data-exercise-close>← Retour aux ouvertures</button></aside></div></article>';
+  root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><span class="move-quality book opening-quality-badge">▤ COUP DE THÉORIE</span><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Flèche dorée : coup joué · Flèche bleue : case stratégique.":"Rejoue depuis le début · "+practicePly+" / "+line.length+" demi-coups")+'</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'<button type="button" class="opening-exercise-return" data-exercise-close>← Retour aux ouvertures</button></aside></div></article>';
   root.querySelectorAll(".chess-piece-image").forEach(img=>img.addEventListener("error",()=>{const fallback=document.createElement("span");fallback.className="piece";fallback.textContent=img.alt;img.replaceWith(fallback);},{once:true}));
  };
  const playAutomaticReplies=()=>{const notes=[];while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;notes.push(describeForCoach(board,reply,guidePly));const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}if(notes.length)feedback="Réponse adverse : "+notes.join(" ");};
@@ -373,6 +368,7 @@ $("opening-color-filter")?.addEventListener("change",render);
 $("opening-explorer-search")?.addEventListener("input",event=>renderExplorer(event.target.value));
 
 window.addEventListener("coach:games-updated",()=>{if($("panel-openings")?.classList.contains("active"))render();});
+document.querySelectorAll("[data-opening-color]").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll("[data-opening-color]").forEach(item=>item.classList.toggle("active",item===button));render();}));
 window.addEventListener("coach:account-changed",()=>{document.querySelectorAll(".opening-study-overlay").forEach(node=>node.remove());$("panel-openings")?.classList.remove("opening-exercise-active");$("opening-detail").innerHTML="";loadLearning();currentKey=null;showAllOpenings=false;showLearnSubview("learn-hub");render();});
 const strategicIdeasPromise=loadStrategicIdeas();
 loadLearning();loadDatabase().then(()=>{render();renderExplorer();});render();
