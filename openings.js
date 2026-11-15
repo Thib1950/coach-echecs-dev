@@ -148,7 +148,7 @@ function showLearnSubview(view){
 function isRecognizedOpening(op){
  const raw=String(op?.name||op?.display||"").trim().toLowerCase();
  const generic=new Set(["formation","opening","ouverture","unknown","unclassified","not classified","not identified","unidentified opening","ouverture non identifiée","ouverture non classée","autre","other","game","chess"]);
- return !!(op?.eco&&/^[A-E]\d{2}$/.test(op.eco)) || (!!raw&&!generic.has(raw)&&!/^code\s+[a-e]\d{2}$/i.test(raw));
+ return !!raw&&!generic.has(raw)&&(!/^code\s+[a-e]\d{2}$/i.test(raw)||!!(op?.eco&&/^[A-E]\d{2}$/.test(op.eco)));
 }
 function buildGroups(){
  const map=new Map(),games=window.CoachApp?.getGames?.()||[];
@@ -378,7 +378,7 @@ document.addEventListener("click",event=>{
  const moduleButton=event.target.closest("[data-learn-module]");
  if(moduleButton?.dataset.learnModule==="openings"){showLearnSubview("learn-opening-choice");return;}
  if(moduleButton?.dataset.learnModule==="training"){showLearnSubview("learn-training-choice");return;}
- if(moduleButton?.dataset.learnModule==="errors"){showLearnSubview("learn-errors-view");return;}
+ if(moduleButton?.dataset.learnModule==="errors"){window.dispatchEvent(new CustomEvent("coach:launch-error-session"));return;}
  const back=event.target.closest("[data-learn-back]");
  if(back){const parent=back.closest(".learn-subview")?.id;showLearnSubview(["learn-opening-choice","learn-training-choice","learn-errors-view"].includes(parent)?"learn-hub":"learn-opening-choice");return;}
  const viewButton=event.target.closest("[data-learn-opening-view]");
