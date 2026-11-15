@@ -6,19 +6,33 @@ let syncInFlight = false;
 const $ = (id) => document.getElementById(id);
 const avatarCache=new Map(),avatarPending=new Set();
 let coachAudioContext=null;
-window.CoachSound={play(move){try{
+const soundStorageKey="coach-echecs-piece-sound";
+const soundProfiles={chess:{noise:.052,low:155,high:920,body:185,decay:.105},wood:{noise:.078,low:115,high:680,body:138,decay:.145},soft:{noise:.035,low:210,high:1120,body:245,decay:.075}};
+function playPieceSound(move={},style){
  const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;
  if(!coachAudioContext)coachAudioContext=new AudioCtx();
  const ctx=coachAudioContext;if(ctx.state==="suspended")ctx.resume();
- const capture=!!move?.captured,duration=capture ? .11 : .075;
- const osc=ctx.createOscillator(),gain=ctx.createGain(),filter=ctx.createBiquadFilter();
- osc.type="triangle";osc.frequency.setValueAtTime(capture?430:760,ctx.currentTime);
- osc.frequency.exponentialRampToValueAtTime(capture?260:510,ctx.currentTime+duration);
- filter.type="lowpass";filter.frequency.value=1800;
- gain.gain.setValueAtTime(.0001,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(capture?.075:.045,ctx.currentTime+.006);
- gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+duration);
- osc.connect(filter);filter.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+duration);
- }catch(error){console.debug("Son du coup indisponible",error);}}};
+ const profile=soundProfiles[style||localStorage.getItem(soundStorageKey)||"chess"]||soundProfiles.chess;
+ const capture=!!move?.captured,now=ctx.currentTime,duration=profile.decay*(capture?1.35:1);
+ const length=Math.max(1,Math.floor(ctx.sampleRate*duration)),buffer=ctx.createBuffer(1,length,ctx.sampleRate),data=buffer.getChannelData(0);
+ for(let i=0;i<length;i++){const t=i/length;data[i]=(Math.random()*2-1)*Math.pow(1-t,capture?2.2:2.8);}
+ const noise=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),noiseGain=ctx.createGain();
+ noise.buffer=buffer;filter.type="bandpass";filter.frequency.setValueAtTime(capture?profile.low*1.8:profile.high,now);filter.Q.value=capture?1.15:1.7;
+ noiseGain.gain.setValueAtTime(.0001,now);noiseGain.gain.exponentialRampToValueAtTime(profile.noise*(capture?1.3:1),now+.003);noiseGain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+ noise.connect(filter);filter.connect(noiseGain);noiseGain.connect(ctx.destination);noise.start(now);noise.stop(now+duration);
+ const body=ctx.createOscillator(),bodyGain=ctx.createGain(),bodyFilter=ctx.createBiquadFilter();
+ body.type="sine";body.frequency.setValueAtTime(capture?profile.body*.72:profile.body,now);body.frequency.exponentialRampToValueAtTime(profile.body*.52,now+duration*.8);
+ bodyFilter.type="lowpass";bodyFilter.frequency.value=profile.low*5;
+ bodyGain.gain.setValueAtTime(.0001,now);bodyGain.gain.exponentialRampToValueAtTime(capture?.09:.055,now+.004);bodyGain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+ body.connect(bodyFilter);bodyFilter.connect(bodyGain);bodyGain.connect(ctx.destination);body.start(now);body.stop(now+duration);
+ if(capture){const tick=ctx.createOscillator(),tickGain=ctx.createGain();tick.type="triangle";tick.frequency.setValueAtTime(profile.high*.9,now);tick.frequency.exponentialRampToValueAtTime(profile.high*.45,now+.045);tickGain.gain.setValueAtTime(.0001,now);tickGain.gain.exponentialRampToValueAtTime(.035,now+.002);tickGain.gain.exponentialRampToValueAtTime(.0001,now+.05);tick.connect(tickGain);tickGain.connect(ctx.destination);tick.start(now);tick.stop(now+.052);}
+}
+window.CoachSound={
+ getStyle(){return localStorage.getItem(soundStorageKey)||"chess";},
+ setStyle(style){if(!soundProfiles[style])return;localStorage.setItem(soundStorageKey,style);document.querySelectorAll("[data-sound-style]").forEach(button=>button.classList.toggle("active",button.dataset.soundStyle===style));},
+ play(move){try{playPieceSound(move);}catch(error){console.debug("Son du coup indisponible",error);}},
+ preview(style){try{this.setStyle(style);playPieceSound({captured:false},style);}catch(error){console.debug("Aperçu sonore indisponible",error);}}
+};
 
 function readStoredGames(){
  try{
@@ -277,6 +291,7 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
  if(btn.dataset.tab==="openings"&&!openingsModuleLoaded){openingsModuleLoaded=true;import("./openings.js").catch(error=>{openingsModuleLoaded=false;console.error(error);$("opening-table").innerHTML='<div class="empty-state">Impossible de charger le module des ouvertures. Réessaie en ouvrant cet onglet.</div>';});}
 }));
 document.querySelectorAll("[data-goto]").forEach(btn=>btn.addEventListener("click",()=>document.querySelector('[data-tab="'+btn.dataset.goto+'"]')?.click()));
+ document.querySelectorAll("[data-sound-style]").forEach(button=>button.addEventListener("click",()=>window.CoachSound?.preview(button.dataset.soundStyle)));window.CoachSound?.setStyle(window.CoachSound.getStyle());
 $("sync-button").addEventListener("click",syncChessCom);$("sync-button-games").addEventListener("click",syncChessCom);
 $("change-chess-account")?.addEventListener("click",switchChessAccount);
 $("chess-account-input")?.addEventListener("keydown",event=>{if(event.key==="Enter")switchChessAccount();});$("pgn-file").addEventListener("change",e=>importPgnFile(e.target.files[0]));$("game-search").addEventListener("input",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));$("result-filter").addEventListener("change",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));
