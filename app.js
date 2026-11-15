@@ -295,16 +295,23 @@ async function syncChessCom(){
   const completed=new Set(syncMeta.completedArchives||[]);
   let newCount=0,verified=0,successfulArchives=0,failedArchives=0,processed=0;
   const byId=new Map(games.map(g=>[String(g.id),g]));
-  for(let i=archivesToCheck.length-1;i>=0;i--){
+  const pendingArchives=archivesToCheck.filter(url=>!completed.has(url)).reverse();
+  const concurrency=3;
+  for(let offset=0;offset<pendingArchives.length;offset+=concurrency){
    if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé pendant la synchronisation.");
-   const url=archivesToCheck[i];
-   if(completed.has(url))continue;
-   processed++;
-   setMessage("Synchronisation de "+accountAtStart+" · archive "+processed+" · "+games.length.toLocaleString("fr-FR")+" parties enregistrées…");
-   try{
-    const res=await fetch(url,{headers:{"Accept":"application/json"},cache:"no-store"});
-    if(!res.ok)throw new Error("HTTP "+res.status);
-    const data=await res.json(),batch=Array.isArray(data.games)?data.games.map(normalizeGame):[];
+   const group=pendingArchives.slice(offset,offset+concurrency);
+   setMessage("Synchronisation de "+accountAtStart+" · récupération de "+group.length+" archives en parallèle · "+games.length.toLocaleString("fr-FR")+" parties déjà sécurisées…");
+   const results=await Promise.all(group.map(async url=>{
+    try{
+     const res=await fetch(url,{headers:{"Accept":"application/json"},cache:"no-store"});
+     if(!res.ok)throw new Error("HTTP "+res.status);
+     const data=await res.json();
+     return {url,batch:Array.isArray(data.games)?data.games.map(normalizeGame):[],error:null};
+    }catch(error){return {url,batch:[],error};}
+   }));
+   for(const result of results){
+    const {url,batch,error}=result;
+    if(error){failedArchives++;console.warn("Archive Chess.com à reprendre",url,error);continue;}
     successfulArchives++;verified+=batch.length;
     for(const game of batch){
      const key=String(game.id),previous=byId.get(key);
@@ -313,19 +320,18 @@ async function syncChessCom(){
      if(previous?.analysis)merged.analysis=previous.analysis;
      byId.set(key,merged);
     }
-    games=[...byId.values()].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
     const mergedGames=[...byId.values()].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
     const nextCompleted=new Set(completed);nextCompleted.add(url);
+    const persistedBatch=batch.map(game=>byId.get(String(game.id)));
     const nextMeta={
      fullHistory:fullHistoryDone,completedArchives:[...nextCompleted],lastArchive:url,
      gameCount:mergedGames.length,lastSync:Date.now(),syncMode:fullHistoryDone?"incremental":"full"
     };
-    await saveArchiveCheckpoint(accountAtStart,batch,nextMeta);
+    await saveArchiveCheckpoint(accountAtStart,persistedBatch,nextMeta);
     completed.add(url);games=mergedGames;
     try{localStorage.setItem(metaKey,JSON.stringify({gameCount:games.length,lastSync:Date.now(),fullHistory:false}));}catch{}
-    if(processed%2===0||processed===1){render();setMessage("Synchronisation en cours · "+games.length.toLocaleString("fr-FR")+" parties sécurisées · "+completed.size+"/"+archivesToCheck.length+" archives traitées.");}
-   }catch(error){
-    failedArchives++;console.warn("Archive Chess.com à reprendre",url,error);
+    render();
+    setMessage("Synchronisation en cours · "+games.length.toLocaleString("fr-FR")+" parties sécurisées · "+completed.size+"/"+archivesToCheck.length+" archives traitées.");
    }
   }
   if(!successfulArchives&&!fullHistoryDone&&completed.size===0)throw new Error("Aucune archive n'a pu être récupérée. Les parties déjà enregistrées sont conservées.");
