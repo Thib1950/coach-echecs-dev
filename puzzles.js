@@ -9,7 +9,7 @@ function loadPuzzleProgress(){try{const p=JSON.parse(localStorage.getItem(PROGRE
 function savePuzzleProgress(){try{localStorage.setItem(PROGRESS_KEY,JSON.stringify(puzzleProgress));}catch{}renderPuzzleProgress();}
 function renderPuzzleProgress(){const node=$("puzzle-progress");if(!node)return;const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length;node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" session"+(puzzleProgress.attempts>1?"s":"")+" · "+puzzleProgress.wrongMoves+" erreur"+(puzzleProgress.wrongMoves>1?"s":"");}
 function personalKey(game,detail){return String(game.id)+"|"+detail.fen+"|"+detail.bestUci;}
-function markPuzzleSolved(){const key=currentPuzzle?personalKey(currentPuzzle.game,currentPuzzle.detail):currentDailyId;if(!key)return;const list=currentPuzzle?puzzleProgress.personalSolved:puzzleProgress.dailySolved;if(!list.includes(key)){list.push(key);savePuzzleProgress();}else renderPuzzleProgress();}
+function markPuzzleSolved(){const key=currentPuzzle?personalKey(currentPuzzle.game,currentPuzzle.detail):currentDailyId;if(!key)return;const list=currentPuzzle?puzzleProgress.personalSolved:puzzleProgress.dailySolved;if(!list.includes(key)){list.push(key);savePuzzleProgress();}else renderPuzzleProgress();renderPersonalized();}
 function uci(move){return move.from+move.to+(move.promotion||"");}
 function loadPosition(pgn,initialPly){
  const game=new Chess();game.loadPgn(pgn);const history=game.history({verbose:true});const position=new Chess();
