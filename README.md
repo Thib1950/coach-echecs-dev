@@ -11,7 +11,9 @@ Application web personnelle en français, conçue pour être utilisée sur ordin
 - Récupération des archives publiques Chess.com (trois derniers mois).
 - Import manuel de fichiers PGN.
 - Statistiques de résultats et liste des parties.
-- Conservation locale des parties dans le navigateur.
+- Conservation locale des parties dans le navigateur, avec stockage de développement séparé.
+- Puzzles quotidiens et exercices personnalisés créés à partir des erreurs détectées dans tes parties analysées.
+- Parcours pédagogique de 15 leçons interactives en tactique, calcul, stratégie, finales et ouvertures, avec suivi et reprise de la dernière leçon.
 - Manifeste et service worker pour préparer l'installation comme application web.
 
 ## Publication gratuite avec GitHub Pages
