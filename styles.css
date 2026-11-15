@@ -864,3 +864,6 @@ html,body,button,a,input,select{touch-action:manipulation}
 .curriculum-feedback.review{color:#e6c28d}
 .curriculum-detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 @media(max-width:600px){.curriculum-lesson{grid-template-columns:30px minmax(0,1fr)}.curriculum-lesson>button{grid-column:2;width:100%}.curriculum-detail-head{flex-direction:column}.curriculum-detail-head>button{align-self:flex-end}}
+
+.curriculum-heading-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.curriculum-heading-actions [hidden]{display:none}
