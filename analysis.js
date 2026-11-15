@@ -27,10 +27,14 @@ function getEngine(){
       reject(error instanceof Error?error:new Error(String(error)));
     };
     (async()=>{
-      // Précharge explicitement le JS et le WASM via le service worker.
-      // Les deux ressources sont ensuite disponibles sous la même origine.
+      if(typeof Worker!=="function")throw new Error("Ce navigateur intégré ne permet pas de lancer le moteur de calcul (Web Worker indisponible). Ouvre l’application dans Safari ou Chrome.");
+      if(typeof WebAssembly!=="object")throw new Error("Ce navigateur ne prend pas en charge WebAssembly, nécessaire à Stockfish.");
+      // URLs absolues depuis le module : évite les résolutions relatives variables
+      // dans les navigateurs intégrés et permet au service worker de les intercepter.
       for(const file of ["stockfish-19-lite-single.js","stockfish-19-lite-single.wasm"]){
-        const response=await fetch("./vendor/stockfish/"+file+"?build=25",{cache:"no-store"});
+        const assetUrl=new URL("./vendor/stockfish/"+file,import.meta.url);
+        assetUrl.searchParams.set("build","26");
+        const response=await fetch(assetUrl.href,{cache:"no-store"});
         if(!response.ok){
           const detail=(await response.text()).slice(0,240);
           throw new Error("Téléchargement de "+file+" impossible (HTTP "+response.status+"). "+detail);
@@ -38,7 +42,9 @@ function getEngine(){
       }
       if(settled)return;
       stage="démarrage du Worker WebAssembly";
-      worker=new Worker("./vendor/stockfish/stockfish-19-lite-single.js?build=25");
+      const workerUrl=new URL("./vendor/stockfish/stockfish-19-lite-single.js",import.meta.url);
+      workerUrl.searchParams.set("build","26");
+      worker=new Worker(workerUrl,{name:"coach-echecs-stockfish"});
       worker.onmessage=event=>{
         const line=String(event.data||"").trim();
         if(line==="uciok"){
@@ -324,10 +330,9 @@ async function analyseSelectedGame(gameIdOverride,options={}){
   }catch(error){
     if(!report.covered){
       engineReady=null;if(worker){try{worker.terminate();}catch{}worker=null;}
-      if(!background){
-        $("analysis-results").innerHTML='<div class="empty-state">'+esc(error.message||"Une erreur est survenue pendant l’analyse.")+'</div>';
-        $("engine-status").textContent="Moteur indisponible";
-      }
+      $("engine-status").textContent="Moteur indisponible · "+(error.message||"Erreur de démarrage");
+      $("engine-status").classList.remove("ready");
+      if(!background)$("analysis-results").innerHTML='<div class="empty-state">'+esc(error.message||"Une erreur est survenue pendant l’analyse.")+'</div>';
     }else{
       game.analysis={date:new Date().toISOString(),moves:report.moves,positions:report.positions,positionDetails:report.positionDetails,covered:report.covered,accuracy:accuracyFromMoves(report.moves),partial:true};
       window.CoachApp.saveGames();
@@ -349,7 +354,8 @@ async function analyseSelectedGame(gameIdOverride,options={}){
 function updateAccuracyQueueStatus(){
  const status=$("accuracy-queue-status"),button=$("accuracy-queue-button");
  const waiting=accuracyQueueIds.length;
- if(status)status.textContent=accuracyQueueRunning
+ const visibleStatus=$("accuracy-queue-visible");
+ const statusText=accuracyQueueRunning
   ?"Précisions : "+accuracyQueueDone+" / "+accuracyQueueTotal+" parties terminées · "+waiting+" en attente"
   :accuracyQueueTotal
    ?"Terminé : "+accuracyQueueDone+" partie(s) analysée(s), "+accuracyQueueSkipped+" ignorée(s)."
