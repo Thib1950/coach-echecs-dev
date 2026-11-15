@@ -7,7 +7,7 @@ let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,
 let puzzleProgress={dailySolved:[],personalSolved:[],attempts:0,wrongMoves:0};
 function loadPuzzleProgress(){try{const p=JSON.parse(localStorage.getItem(PROGRESS_KEY)||"{}");puzzleProgress={dailySolved:Array.isArray(p.dailySolved)?p.dailySolved:[],personalSolved:Array.isArray(p.personalSolved)?p.personalSolved:[],attempts:Number(p.attempts)||0,wrongMoves:Number(p.wrongMoves)||0};}catch{}}
 function savePuzzleProgress(){try{localStorage.setItem(PROGRESS_KEY,JSON.stringify(puzzleProgress));}catch{}renderPuzzleProgress();}
-function renderPuzzleProgress(){const node=$("puzzle-progress");if(!node)return;const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length;node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" tentative"+(puzzleProgress.attempts>1?"s":"");}
+function renderPuzzleProgress(){const node=$("puzzle-progress");if(!node)return;const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length;node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" session"+(puzzleProgress.attempts>1?"s":"")+" · "+puzzleProgress.wrongMoves+" erreur"+(puzzleProgress.wrongMoves>1?"s":"");}
 function personalKey(game,detail){return String(game.id)+"|"+detail.fen+"|"+detail.bestUci;}
 function markPuzzleSolved(){const key=currentPuzzle?personalKey(currentPuzzle.game,currentPuzzle.detail):currentDailyId;if(!key)return;const list=currentPuzzle?puzzleProgress.personalSolved:puzzleProgress.dailySolved;if(!list.includes(key)){list.push(key);savePuzzleProgress();}else renderPuzzleProgress();}
 function uci(move){return move.from+move.to+(move.promotion||"");}
@@ -32,7 +32,7 @@ async function loadDaily(){
   const response=await fetch("https://lichess.org/api/puzzle/daily",{headers:{Accept:"application/json"}});
   if(!response.ok)throw new Error("Lichess a répondu HTTP "+response.status);
   const data=await response.json();solution=data.puzzle?.solution||[];currentDailyId=String(data.puzzle?.id||"");if(!solution.length||!data.game?.pgn)throw new Error("Le puzzle reçu est incomplet.");
-  board=loadPosition(data.game.pgn,Number(data.puzzle.initialPly)||0);ply=0;selected=null;hinted=false;solved=false;orientation=board.turn()==="w"?"white":"black";
+  board=loadPosition(data.game.pgn,Number(data.puzzle.initialPly)||0);ply=0;selected=null;hinted=false;solved=false;orientation=board.turn()==="w"?"white":"black";puzzleProgress.attempts++;savePuzzleProgress();
   $("puzzle-title").textContent="Puzzle du jour · "+data.puzzle.id;
   $("puzzle-rating").textContent=(data.puzzle.rating||"—")+" Elo";
   $("puzzle-themes").textContent="Thèmes : "+(data.puzzle.themes||[]).join(" · ");
