@@ -10,7 +10,7 @@ function loadPuzzleProgress(){try{const p=JSON.parse(localStorage.getItem(PROGRE
 function savePuzzleProgress(){try{localStorage.setItem(PROGRESS_KEY,JSON.stringify(puzzleProgress));}catch{}renderPuzzleProgress();}
 function renderPuzzleProgress(){const node=$("puzzle-progress");const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length;if(node)node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" tentative"+(puzzleProgress.attempts>1?"s":"")+" · "+puzzleProgress.wrongMoves+" erreur"+(puzzleProgress.wrongMoves>1?"s":"");const solved=$("puzzle-hub-solved"),attempts=$("puzzle-hub-attempts"),errors=$("puzzle-hub-errors");if(solved)solved.textContent=String(total);if(attempts)attempts.textContent=String(puzzleProgress.attempts);if(errors)errors.textContent=String(puzzleProgress.wrongMoves);}
 function openPuzzleExercise(){const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(hub)hub.hidden=true;if(exercise)exercise.hidden=false;$("panel-puzzles")?.classList.add("puzzle-exercise-active");}
-function closePuzzleExercise(){const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(exercise)exercise.hidden=true;if(hub)hub.hidden=false;$("panel-puzzles")?.classList.remove("puzzle-exercise-active");}
+function closePuzzleExercise(){const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(exercise)exercise.hidden=true;if(hub)hub.hidden=false;$("panel-puzzles")?.classList.remove("puzzle-exercise-active");sessionActive=false;sessionQueue=[];loading=false;selected=null;}
 function personalKey(game,detail){return String(game.id)+"|"+detail.fen+"|"+detail.bestUci;}
 function markPuzzleSolved(){const key=currentPuzzle?personalKey(currentPuzzle.game,currentPuzzle.detail):currentDailyId;if(!key)return;const list=currentPuzzle?puzzleProgress.personalSolved:puzzleProgress.dailySolved;if(!list.includes(key)){list.push(key);savePuzzleProgress();}else renderPuzzleProgress();renderPersonalized();}
 function uci(move){return move.from+move.to+(move.promotion||"");}
@@ -38,7 +38,7 @@ function render(){
   hintArrow='<svg class="puzzle-hint-arrow" viewBox="0 0 800 800" aria-hidden="true"><defs><marker id="puzzleHintHead" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="none" stroke="#f5b942" stroke-width="1.4"/></marker></defs><line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#f5b942" stroke-width="13" stroke-linecap="round" opacity=".94" marker-end="url(#puzzleHintHead)"/></svg>';
  }
  const sideToMove=board.turn()==="w"?"Trait aux Blancs":"Trait aux Noirs";
-  const panel='<aside class="puzzle-side"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span>'+sideToMove+'</div><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&legalSolutionMove(board,solution[ply])?"Indice : joue "+legalSolutionMove(board,solution[ply]).from+" vers "+legalSolutionMove(board,solution[ply]).to+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p><div class="puzzle-feedback-stage"><p id="puzzle-feedback" aria-live="polite" class="'+puzzleFeedbackClass+'">'+esc(puzzleFeedbackText)+'</p></div><small>'+(sessionActive?"Session personnalisée · "+sessionSolved+" / "+sessionTotal+" réussis":currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small><div class="puzzle-side-actions"><button type="button" class="secondary-button" id="puzzle-hint">Indice</button><button type="button" class="primary-button" id="puzzle-reload">Puzzle suivant</button><button type="button" class="secondary-button" data-start-puzzle-session>Session personnalisée</button></div>'+sessionAction+'</aside>';
+  const panel='<aside class="puzzle-side"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span>'+sideToMove+'</div><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&legalSolutionMove(board,solution[ply])?"Indice : joue "+legalSolutionMove(board,solution[ply]).from+" vers "+legalSolutionMove(board,solution[ply]).to+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p><div class="puzzle-feedback-stage"><p id="puzzle-feedback" aria-live="polite" class="'+puzzleFeedbackClass+'">'+esc(puzzleFeedbackText)+'</p></div><small>'+(sessionActive?"Session personnalisée · "+sessionSolved+" / "+sessionTotal+" réussis":currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small><div class="puzzle-side-actions"><button type="button" class="secondary-button" data-puzzle-back>← Menu puzzles</button><button type="button" class="secondary-button" id="puzzle-hint">Indice</button><button type="button" class="primary-button" id="puzzle-reload">Puzzle suivant</button><button type="button" class="secondary-button" data-start-puzzle-session>Session personnalisée</button></div>'+sessionAction+'</aside>';
  $("puzzle-board-area").innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div>'+hintArrow+'</div>'+panel;
 }
 function message(text){puzzleFeedbackText=String(text??"");puzzleFeedbackClass=/^Faux\s*!/i.test(puzzleFeedbackText)?"feedback-wrong":/^(Bravo|Bien joué)/i.test(puzzleFeedbackText)?"feedback-correct":"feedback-neutral";const node=$("puzzle-feedback");if(!node)return;node.textContent=puzzleFeedbackText;node.classList.remove("feedback-wrong","feedback-correct","feedback-neutral");node.classList.add(puzzleFeedbackClass);}
@@ -142,6 +142,7 @@ function renderPersonalized(){
 }
 function startPersonalPuzzle(item,fromSession=false){
  if(!item?.detail?.fen||!item.detail.bestUci)return;
+ document.querySelector('[data-tab="puzzles"]')?.click();
  openPuzzleExercise();
  if(!fromSession){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;}
  currentPuzzle=item;board=new Chess(item.detail.fen);solution=[item.detail.bestUci];puzzleProgress.attempts++;savePuzzleProgress();ply=0;selected=null;hinted=false;solved=false;loading=false;
@@ -151,7 +152,6 @@ function startPersonalPuzzle(item,fromSession=false){
  $("puzzle-themes").textContent="Partie contre "+((item.game.white||"").toLowerCase()==="gone_1950"?item.game.black:item.game.white)+" · "+(item.detail.label||"Position à revoir");
  message("Retrouve le meilleur coup dans cette position de ta partie.");
  render();
- document.querySelector('[data-tab="puzzles"]')?.click();
 }
 
 function startPuzzleSession(){
@@ -197,5 +197,6 @@ document.addEventListener("click",event=>{
   const personal=event.target.closest("[data-personal-puzzle]");if(personal){startPersonalPuzzle(personalized[Number(personal.dataset.personalPuzzle)]);return;}
   if(event.target.closest("#puzzle-reload"))loadDaily(true);
 });
+window.addEventListener("coach:tab-changing",event=>{if(event.detail?.tab!=="puzzles"||event.detail?.fromPanel==="panel-puzzles")closePuzzleExercise();});
 window.addEventListener("coach:games-updated",renderPersonalized);
 loadPuzzleProgress();renderPuzzleProgress();renderPersonalized();
