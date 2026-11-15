@@ -48,14 +48,21 @@ function opponent(g){return (g.white||"").toLowerCase()===USERNAME.toLowerCase()
 function openingName(g){const name=(g.opening||"").trim();if(name)return name;const eco=(g.eco||"").trim();return eco?"Code ECO "+eco:""}
 function positionWinPercent(cp){const x=Math.max(-1000,Math.min(1000,Number(cp)||0));return 50+50*(2/(1+Math.exp(-0.00368208*x))-1)}
 function gameAccuracy(g){
- const moves=(g.analysis?.moves||[]).filter(m=>m.evalWhite!==null&&m.evalWhite!==undefined&&m.afterEvalWhite!==null&&m.afterEvalWhite!==undefined&&Number.isFinite(Number(m.evalWhite))&&Number.isFinite(Number(m.afterEvalWhite))&&m.color);
- if(!moves.length)return null;
- const rows=moves.map(m=>{const sign=m.color==="w"?1:-1,before=positionWinPercent(Number(m.evalWhite)*sign),after=positionWinPercent(Number(m.afterEvalWhite)*sign),loss=Math.max(0,before-after),accuracy=loss<=0?100:Math.max(0,Math.min(100,103.1668*Math.exp(-0.04354*loss)-3.1669));return {accuracy,winBefore:before};});
- const size=Math.max(2,Math.min(8,Math.round(rows.length/10)));
- const weights=rows.map((row,i)=>{const from=Math.max(0,Math.min(i-size+1,rows.length-size)),window=rows.slice(from,from+Math.min(size,rows.length)),mean=window.reduce((sum,x)=>sum+x.winBefore,0)/window.length,deviation=Math.sqrt(window.reduce((sum,x)=>sum+(x.winBefore-mean)**2,0)/window.length);return Math.max(.5,Math.min(12,deviation));});
- const weighted=rows.reduce((sum,row,i)=>sum+row.accuracy*weights[i],0)/weights.reduce((sum,w)=>sum+w,0);
- const harmonic=rows.length/rows.reduce((sum,row)=>sum+1/Math.max(.1,row.accuracy),0);
- return Math.round((weighted+harmonic)/2);
+ const moves=(g.analysis?.moves||[]).filter(m=>m.kind!=="book"&&m.color);
+ const accuracies=moves.map(m=>{
+  let loss=Number(m.winLossPercent);
+  if(!Number.isFinite(loss)){
+   if(m.evalWhite===null||m.evalWhite===undefined||m.afterEvalWhite===null||m.afterEvalWhite===undefined)return null;
+   const sign=m.color==="w"?1:-1;
+   const before=positionWinPercent(Number(m.evalWhite)*sign);
+   const after=positionWinPercent(Number(m.afterEvalWhite)*sign);
+   loss=Math.max(0,before-after);
+  }
+  return Math.max(0,Math.min(100,103.1668*Math.exp(-0.04354*Math.max(0,loss))-3.1669));
+ }).filter(value=>Number.isFinite(value));
+ // Minimum six coups évalués : pas de pourcentage trompeur sur une analyse trop courte.
+ if(accuracies.length<6)return null;
+ return Math.round(accuracies.reduce((sum,value)=>sum+value,0)/accuracies.length);
 }
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function avatarMarkup(player){const name=String(player||"Adversaire");return '<span class="player-avatar" data-player-avatar="'+escapeHtml(name)+'" aria-hidden="true">♟</span>';}
@@ -93,14 +100,14 @@ function render(){
 }
 function gameHtml(g){
  const o=outcome(g),accuracy=gameAccuracy(g);
- const accuracyText=!g.analysis?.partial&&accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":(g.pgn?"Calcul…":"—");
+ const accuracyText=!g.analysis?.partial?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":"—"):(g.pgn?"En cours…":"—");
  const side=userColor(g),opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
  return '<div class="game-row game-row-expanded"><div class="game-row-info"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div></div><div class="game-meta">'+formatDate(g.date)+'</div></div><div class="game-list-accuracy"><span>MA PRÉCISION</span><strong>'+accuracyText+'</strong></div><span class="game-result '+o+'">'+resultLabel(o)+'</span><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir et analyser cette partie" title="Revoir et analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>';
 }
 function recentGameHtml(g){
  const side=userColor(g),opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
  const accuracy=gameAccuracy(g);
- const accuracyText=!g.analysis?.partial&&accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":(g.pgn?"Calcul…":"—");
+ const accuracyText=!g.analysis?.partial?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":"—"):(g.pgn?"En cours…":"—");
  const result=outcome(g);return '<div class="recent-game-row"><div class="recent-game-main"><div class="recent-game-player"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="recent-game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div></div><span class="recent-game-result '+result+'">'+resultLabel(result)+'</span><div class="recent-game-elo">'+(opponentElo?escapeHtml(opponentElo):"—")+'<small>ELO</small></div></div><div class="recent-game-meta">'+formatDate(g.date)+'</div></div><div class="recent-game-precision"><span>MA PRÉCISION</span><strong>'+accuracyText+'</strong></div><button type="button" class="recent-review-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir cette partie">↗</button></div>';
 }
 function renderGames(sorted){const q=($("game-search").value||"").toLowerCase(),f=$("result-filter").value;const filtered=sorted.filter(g=>(opponent(g)||"").toLowerCase().includes(q)&&(f==="all"||outcome(g)===f));$("games-list").innerHTML=filtered.length?filtered.map(gameHtml).join(""):'<div class="empty-state">Aucune partie ne correspond à ce filtre.</div>'}
