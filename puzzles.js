@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const glyph={wk:"♔",wq:"♕",wr:"♖",wb:"♗",wn:"♘",wp:"♙",bk:"♚",bq:"♛",br:"♜",bb:"♝",bn:"♞",bp:"♟"};
 const PROGRESS_KEY="coach-echecs-dev-puzzle-progress-v1";
-let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,currentDailyId="",personalized=[],showAllPersonal=false;
+let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,currentDailyId="",personalized=[],showAllPersonal=false,sessionActive=false,sessionQueue=[],sessionTotal=0,sessionSolved=0;
 let puzzleProgress={dailySolved:[],personalSolved:[],attempts:0,wrongMoves:0};
 function loadPuzzleProgress(){try{const p=JSON.parse(localStorage.getItem(PROGRESS_KEY)||"{}");puzzleProgress={dailySolved:Array.isArray(p.dailySolved)?p.dailySolved:[],personalSolved:Array.isArray(p.personalSolved)?p.personalSolved:[],attempts:Number(p.attempts)||0,wrongMoves:Number(p.wrongMoves)||0};}catch{}}
 function savePuzzleProgress(){try{localStorage.setItem(PROGRESS_KEY,JSON.stringify(puzzleProgress));}catch{}renderPuzzleProgress();}
@@ -72,8 +72,9 @@ function renderPersonalized(){
  }).join("");
  if(personalized.length>8){const more=document.createElement("button");more.type="button";more.className="text-button personal-puzzle-more";more.dataset.personalPuzzleMore="";more.textContent=showAllPersonal?"Réduire la liste":"Voir toutes les positions ("+personalized.length+")";root.appendChild(more);}
 }
-function startPersonalPuzzle(item){
+function startPersonalPuzzle(item,fromSession=false){
  if(!item?.detail?.fen||!item.detail.bestUci)return;
+ if(!fromSession){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;}
  currentPuzzle=item;board=new Chess(item.detail.fen);solution=[item.detail.bestUci];puzzleProgress.attempts++;savePuzzleProgress();ply=0;selected=null;hinted=false;solved=false;loading=false;
  orientation=board.turn()==="w"?"white":"black";
  $("puzzle-title").textContent="À toi de corriger ce coup";
@@ -84,6 +85,18 @@ function startPersonalPuzzle(item){
  $("puzzle-board-area").scrollIntoView({behavior:"smooth",block:"center"});
 }
 
+function startPuzzleSession(){
+ const available=personalized.filter(item=>!puzzleProgress.personalSolved.includes(item.id));
+ if(!available.length){message("Aucune position nouvelle pour le moment. Analyse quelques parties avec Stockfish pour créer ta première session personnalisée.");return;}
+ sessionQueue=available.slice(0,5);sessionTotal=sessionQueue.length;sessionSolved=0;sessionActive=true;
+ loadNextSessionPuzzle();
+}
+function loadNextSessionPuzzle(){
+ if(sessionQueue.length){const item=sessionQueue.shift();startPersonalPuzzle(item,true);message("Session personnalisée · position "+(sessionSolved+1)+" / "+sessionTotal+". Trouve le meilleur coup.");return;}
+ sessionActive=false;currentPuzzle=null;board=null;selected=null;solved=false;
+ $("puzzle-board-area").innerHTML='<div class="empty-state">Session terminée. Tu as résolu '+sessionSolved+" position"+(sessionSolved>1?"s":"")+" sur "+sessionTotal+'. Tu peux lancer une nouvelle session après avoir analysé d’autres parties.</div>';
+ message("Bravo, ta session est terminée !");renderPersonalized();
+}
 function play(square){
  if(!board||solved||loading)return;const piece=board.get(square);
  if(!selected){if(piece&&piece.color===board.turn()){selected=square;render();}return;}
@@ -92,12 +105,14 @@ function play(square){
  const played=uci(move),expected=solution[ply];
  if(played!==expected){selected=null;puzzleProgress.wrongMoves++;savePuzzleProgress();message("Ce coup est légal, mais il ne résout pas le problème. Cherche une autre idée.");render();return;}
  board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});ply++;selected=null;
- if(ply>=solution.length){solved=true;markPuzzleSolved();message(currentPuzzle?"Bien joué ! Tu as trouvé le coup que Stockfish recommandait dans ta partie.":"Bravo ! Tu as trouvé toute la combinaison.");render();return;}
+ if(ply>=solution.length){solved=true;markPuzzleSolved();if(sessionActive)sessionSolved++;message(currentPuzzle?"Bien joué ! Tu as trouvé le coup que Stockfish recommandait dans ta partie.":"Bravo ! Tu as trouvé toute la combinaison.");render();return;}
  const reply=solution[ply];try{board.move({from:reply.slice(0,2),to:reply.slice(2,4),promotion:reply[4]});ply++;}catch{solved=true;}
- if(ply>=solution.length){solved=true;markPuzzleSolved();message("Bravo ! Tu as trouvé toute la combinaison.");}else message("Bien joué. La réponse adverse est jouée : trouve le prochain coup.");
+ if(ply>=solution.length){solved=true;markPuzzleSolved();if(sessionActive)sessionSolved++;message("Bravo ! Tu as trouvé toute la combinaison.");}else message("Bien joué. La réponse adverse est jouée : trouve le prochain coup.");
  render();
 }
 document.addEventListener("click",event=>{
+ if(event.target.closest("[data-start-puzzle-session]")){startPuzzleSession();return;}
+ if(event.target.closest("[data-session-next]")){loadNextSessionPuzzle();return;}
  const square=event.target.closest("[data-puzzle-square]");if(square){play(square.dataset.puzzleSquare);return;}
  if(event.target.closest("#puzzle-hint")){if(solution[ply]){hinted=true;message("Indice affiché sur le panneau du puzzle.");render();}return;}
  const more=event.target.closest("[data-personal-puzzle-more]");if(more){showAllPersonal=!showAllPersonal;renderPersonalized();return;}
