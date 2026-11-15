@@ -1049,3 +1049,11 @@ html,body{width:100%;height:100%;height:100dvh;overflow:hidden}body{min-height:0
 #panel-puzzles .puzzle-actions button{flex:1;padding:9px 8px;font-size:10px}
 }
 @media(max-height:700px) and (min-width:761px){.home-screen{gap:15px}.home-menu-item{min-height:64px}#panel-puzzles .puzzle-board-wrap{height:calc(100dvh - 210px)}}
+
+/* Fit every workspace in the app viewport; scroll only long lists inside their page. */
+#panel-games #games-list,#panel-openings #opening-table,#panel-training #training-games{flex:1;min-height:0}
+#panel-games .section-heading{margin-bottom:12px}
+#panel-games .games-list{align-content:start}
+#panel-progress .content-grid{flex:1}
+.app-shell{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.panel{overscroll-behavior:contain}
