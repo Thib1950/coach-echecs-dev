@@ -22,27 +22,36 @@ window.CoachSound={play(move){try{
 function readStoredGames(){
  try{
   const developmentData=localStorage.getItem(storageKey());
-  if(developmentData)return JSON.parse(developmentData);
-  // Migration unique de l'historique DEV existant vers le profil actuel.
+  if(developmentData){
+   const parsed=JSON.parse(developmentData);
+   if(Array.isArray(parsed)&&parsed.length)return parsed;
+   // Un ancien écran pouvait créer un profil vide avant la migration.
+   // Pour le compte historique, préférer une sauvegarde existante non vide.
+   if(USERNAME!=="gone_1950")return Array.isArray(parsed)?parsed:[];
+  }
   if(USERNAME==="gone_1950"){
    const legacy=localStorage.getItem(LEGACY_STORAGE_KEY);
-   if(legacy){const imported=JSON.parse(legacy);if(Array.isArray(imported)){localStorage.setItem(storageKey(),JSON.stringify(imported));return imported;}}
-   // Première ouverture DEV : copie la base stable sans la modifier.
+   if(legacy){const imported=JSON.parse(legacy);if(Array.isArray(imported)&&imported.length){localStorage.setItem(storageKey(),JSON.stringify(imported));return imported;}}
    const stableData=localStorage.getItem("coach-echecs-v1");
-   if(stableData){const imported=JSON.parse(stableData);if(Array.isArray(imported)){localStorage.setItem(storageKey(),JSON.stringify(imported));return imported;}}
+   if(stableData){const imported=JSON.parse(stableData);if(Array.isArray(imported)&&imported.length){localStorage.setItem(storageKey(),JSON.stringify(imported));return imported;}}
   }
   return [];
- }catch{return []}
+ }catch(error){console.warn("Lecture de l'historique local impossible",error);return []}
 }
 function saveGames(){try{localStorage.setItem(storageKey(),JSON.stringify(games))}catch(e){setMessage("Le stockage du navigateur est plein. Exporte tes parties en PGN pour les conserver.")}}
-function switchChessAccount(){
+async function switchChessAccount(){
  const field=$("chess-account-input"),next=String(field?.value||"").trim().replace(/^@/,"").toLowerCase();
  if(!/^[a-z0-9_-]{2,30}$/.test(next)){setMessage("Saisis un identifiant Chess.com valide (2 à 30 caractères).");return;}
- if(next===USERNAME){setMessage("Ce compte est déjà sélectionné.");return;}
- saveGames();USERNAME=next;localStorage.setItem("coach-echecs-dev-account",USERNAME);games=readStoredGames();
- const greeting=$("dashboard-greeting-name");if(greeting)greeting.textContent=USERNAME;const accountName=$("account-menu-name");if(accountName)accountName.textContent=USERNAME;const topAccountName=$("account-name");if(topAccountName)topAccountName.textContent=USERNAME;
+ if(next===USERNAME){setMessage("Ce compte est déjà connecté : synchronisation de ses parties…");await syncChessCom();return;}
+ saveGames();USERNAME=next;localStorage.setItem("coach-echecs-dev-account",USERNAME);
+ games=readStoredGames();
+ const greeting=$("dashboard-greeting-name");if(greeting)greeting.textContent=USERNAME;
+ const accountName=$("account-menu-name");if(accountName)accountName.textContent=USERNAME;
+ const topAccountName=$("account-name");if(topAccountName)topAccountName.textContent=USERNAME;
+ const input=$("chess-account-input");if(input)input.value=USERNAME;
  render();fetchPlayerRatings();window.dispatchEvent(new CustomEvent("coach:account-changed",{detail:{username:USERNAME}}));
- setMessage("Compte actif : "+USERNAME+". Synchronise ou importe ses parties pour construire son répertoire.");
+ setMessage("Compte "+USERNAME+" sélectionné. Récupération automatique de son historique Chess.com…");
+ await syncChessCom();
 }
 function setMessage(message){$("sync-message").textContent=message}
 function parsePgn(pgn){
@@ -188,20 +197,52 @@ async function fetchPlayerRatings(){
  catch{blitz.textContent="—";rapid.textContent="—";}
 }
 async function syncChessCom(){
-  const buttons=[$("sync-button"),$("sync-button-games")];buttons.forEach(b=>{b.disabled=true;b.textContent="Synchronisation…"});
-  setMessage("Connexion à l'archive publique Chess.com…");
-  try{
-    const response=await fetch("https://api.chess.com/pub/player/"+USERNAME+"/games/archives",{headers:{"Accept":"application/json"}});
-    if(!response.ok)throw new Error("Chess.com a répondu "+response.status);
-    const archiveData=await response.json(), urls=(archiveData.archives||[]).slice(-3).reverse();
-    if(!urls.length)throw new Error("Aucune archive trouvée pour ce compte.");
-    let imported=[];
-    for(const url of urls){setMessage("Récupération de "+url.split("/").slice(-2).join("/")+"…");const res=await fetch(url,{headers:{"Accept":"application/json"}});if(!res.ok)continue;const data=await res.json();imported=imported.concat((data.games||[]).map(normalizeGame))}
-    if(!imported.length)throw new Error("Aucune partie trouvée dans les trois dernières archives.");
-    const byId=new Map(games.map(g=>[String(g.id),g]));imported.forEach(g=>{const previous=byId.get(String(g.id));const sameGame=previous&&previous.pgn&&g.pgn&&previous.pgn===g.pgn;byId.set(String(g.id),{...(sameGame?previous:{}),...g,...(previous?.analysis&&!g.analysis?{analysis:previous.analysis}:{})});});games=[...byId.values()].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-    saveGames();render();await fetchPlayerRatings();setMessage(imported.length+" parties récupérées ou actualisées. Les données sont conservées sur cet appareil.");$("sync-state").textContent="Version développement · v40";
-  }catch(e){setMessage("La synchronisation automatique n'a pas abouti : "+e.message+". Tu peux importer un fichier PGN depuis Chess.com.")}
-  finally{buttons.forEach(b=>{b.disabled=false;b.textContent=b.id==="sync-button"?"Synchroniser les parties":"Synchroniser"})}
+ const buttons=[$("sync-button"),$("sync-button-games")].filter(Boolean);
+ const labelMap=new Map(buttons.map(b=>[b,b.textContent]));
+ buttons.forEach(b=>{b.disabled=true;b.textContent="Synchronisation…"});
+ setMessage("Connexion à l'archive Chess.com de "+USERNAME+"…");
+ const accountAtStart=USERNAME;
+ try{
+  const response=await fetch("https://api.chess.com/pub/player/"+encodeURIComponent(accountAtStart)+"/games/archives",{headers:{"Accept":"application/json"},cache:"no-store"});
+  if(!response.ok)throw new Error("Chess.com a répondu "+response.status);
+  const archiveData=await response.json();
+  const urls=Array.isArray(archiveData.archives)?archiveData.archives:[];
+  if(!urls.length)throw new Error("Aucune archive trouvée pour ce compte.");
+  // Synchronisation complète : toutes les archives sont examinées, pas seulement les trois derniers mois.
+  let imported=[],successfulArchives=0,failedArchives=0;
+  for(let i=urls.length-1;i>=0;i--){
+   if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé pendant la synchronisation.");
+   const url=urls[i];
+   setMessage("Récupération des archives "+(urls.length-i)+"/"+urls.length+"…");
+   try{
+    const res=await fetch(url,{headers:{"Accept":"application/json"},cache:"no-store"});
+    if(!res.ok){failedArchives++;continue;}
+    const data=await res.json();successfulArchives++;
+    if(Array.isArray(data.games))imported.push(...data.games.map(normalizeGame));
+   }catch(error){failedArchives++;console.warn("Archive Chess.com ignorée",url,error);}
+  }
+  if(!successfulArchives)throw new Error("Aucune archive n'a pu être récupérée. Les parties déjà enregistrées n'ont pas été modifiées.");
+  if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé avant l'enregistrement.");
+  const byId=new Map(games.map(g=>[String(g.id),g]));
+  imported.forEach(g=>{
+   const key=String(g.id),previous=byId.get(key);
+   byId.set(key,{...(previous||{}),...g,...(previous?.analysis?{analysis:previous.analysis}:{})});
+  });
+  const merged=[...byId.values()].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  // Ne jamais remplacer un historique local non vide par un résultat vide.
+  if(merged.length){games=merged;saveGames();render();}
+  await fetchPlayerRatings();
+  const newCount=imported.filter(g=>!games.some(old=>String(old.id)===String(g.id))).length;
+  const status=failedArchives?(" Synchronisation partielle : "+failedArchives+" archive(s) indisponible(s)."):"";
+  setMessage(imported.length+" partie(s) récupérée(s) depuis "+successfulArchives+" archive(s). "+games.length+" parties au total, analyses locales conservées."+status);
+  $("sync-state").textContent="Compte connecté · "+accountAtStart;
+ }catch(e){
+  // L'historique en mémoire et dans localStorage reste intact en cas d'échec réseau.
+  setMessage("Synchronisation impossible : "+e.message+" Les parties déjà importées sont conservées.");
+  console.error("Chess.com sync failed",e);
+ }finally{
+  buttons.forEach(b=>{b.disabled=false;b.textContent=labelMap.get(b)||"Synchroniser mes parties";});
+ }
 }
 function importPgnFile(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{const added=parsePgn(String(reader.result||""));if(!added.length){setMessage("Je n'ai pas reconnu de parties dans ce fichier PGN.");return}const byId=new Map(games.map(g=>[String(g.id),g]));added.forEach(g=>{const previous=byId.get(String(g.id));const sameGame=previous&&previous.pgn&&g.pgn&&previous.pgn===g.pgn;byId.set(String(g.id),{...(sameGame?previous:{}),...g,...(sameGame&&previous.analysis&&!g.analysis?{analysis:previous.analysis}:{})});});games=[...byId.values()];saveGames();render();setMessage(added.length+" partie(s) importée(s) depuis le fichier PGN.")};reader.onerror=()=>setMessage("Impossible de lire ce fichier.");reader.readAsText(file)}
 let openingsModuleLoaded=false;
@@ -212,6 +253,7 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
  document.querySelectorAll(".opening-study-overlay").forEach(overlay=>overlay.remove());
  $("panel-openings")?.classList.remove("opening-exercise-active");
  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===btn));
+ const mainTabs=document.querySelector(".tabs");if(mainTabs)mainTabs.classList.toggle("tabs-internal",btn.dataset.tab!=="dashboard");
  document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id==="panel-"+btn.dataset.tab));
  if(btn.dataset.tab==="openings"&&!openingsModuleLoaded){openingsModuleLoaded=true;import("./openings.js").catch(error=>{openingsModuleLoaded=false;console.error(error);$("opening-table").innerHTML='<div class="empty-state">Impossible de charger le module des ouvertures. Réessaie en ouvrant cet onglet.</div>';});}
 }));
@@ -221,7 +263,7 @@ $("change-chess-account")?.addEventListener("click",switchChessAccount);
 $("chess-account-input")?.addEventListener("keydown",event=>{if(event.key==="Enter")switchChessAccount();});$("pgn-file").addEventListener("change",e=>importPgnFile(e.target.files[0]));$("game-search").addEventListener("input",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));$("result-filter").addEventListener("change",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));
 document.addEventListener("click",e=>{const b=e.target.closest("[data-open-game]");if(!b)return;e.preventDefault();if(window.CoachAnalysis?.openGame){window.CoachAnalysis.openGame(b.dataset.openGame);return;}window.dispatchEvent(new CustomEvent("coach:analyze-game",{detail:{gameId:b.dataset.openGame}}));});
 document.addEventListener("click",e=>{if(e.target.closest("[data-games-back]")){$("panel-games")?.classList.remove("reviewing-game");$("game-replay-area").innerHTML="";$("analysis-results").innerHTML="";}});
-const accountInput=$("chess-account-input");if(accountInput)accountInput.value=USERNAME;const accountMenuName=$("account-menu-name");if(accountMenuName)accountMenuName.textContent=USERNAME;
+const accountInput=$("chess-account-input");if(accountInput)accountInput.value=USERNAME;const accountMenuName=$("account-menu-name");if(accountMenuName)accountMenuName.textContent=USERNAME;const topAccountName=$("account-name");if(topAccountName)topAccountName.textContent=USERNAME;
 games=readStoredGames();render();fetchPlayerRatings();
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load",async()=>{
