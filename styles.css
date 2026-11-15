@@ -1744,76 +1744,11 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 }
 
 
-/* v72 — écrans dédiés premium et échiquiers d'ouvertures visibles immédiatement */
-/* Chaque onglet occupe l'espace de travail et défile indépendamment. */
-html,body{height:100%;min-height:100%;overflow:hidden}
-body{min-height:100svh}
-.app-shell{height:100vh;height:100svh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
-.topbar{flex:0 0 auto}
-.tabs{flex:0 0 auto}
-main{display:flex;flex:1 1 auto;flex-direction:column;min-height:0;overflow:hidden}
-.panel.active{display:block;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
-.panel.games-page.active{display:flex;min-height:0;overflow:hidden}
-.panel.games-page.active>.games-list,
-.panel.games-page.active #games-list{min-height:0;overflow-y:auto}
-.panel.puzzles-hub-page.active{display:block;overflow-y:auto}
-.panel#panel-openings.active,.panel#panel-progress.active,.panel#panel-training.active{display:block;overflow-y:auto}
-
-/* Navigation nette : l'onglet actif est une destination, pas un bloc ajouté à l'accueil. */
-.tabs{border-bottom:1px solid #34465d}
-.tab{position:relative;transition:background .18s ease,color .18s ease,border-color .18s ease}
-.tab.active{color:#fff;background:linear-gradient(180deg,#263b55,#1a2b40);border-color:#d6b66d;box-shadow:inset 0 -2px 0 #e5c47b}
-.tab.active .tab-icon{color:#f0cf83}
-.surface,.metric-card,.dashboard-workspace-card,.opening-feature-banner{box-shadow:0 12px 28px #02081235}
-.surface{border-color:#344a63}
-.eyebrow{color:#e5c47b}
-.primary-button{background:linear-gradient(135deg,#e8c77e,#c99b4c);color:#172235;border:1px solid #f1d99c;font-weight:850}
-.primary-button:hover{filter:brightness(1.07)}
-.dashboard-hero{border:1px solid #455b73;box-shadow:0 18px 38px #02081255}
-.dashboard-hero-emblem{background:radial-gradient(circle,#344b63,#18283c 72%);border:1px solid #b89657}
-
-/* Exercice d'ouverture : priorité absolue à l'échiquier, jamais coupé sous le pli. */
-#panel-openings.opening-exercise-active{display:flex!important;flex:1 1 auto;flex-direction:column;min-height:0;height:100%;padding:0!important;gap:0!important;overflow:hidden!important}
-#panel-openings.opening-exercise-active>#opening-detail{display:flex!important;flex:1 1 auto;min-height:0;width:100%;overflow:hidden;margin:0}
-#panel-openings.opening-exercise-active .opening-exercise-screen{display:flex!important;flex:1 1 auto;min-height:0;height:100%;flex-direction:column;gap:8px;margin:0;padding:10px clamp(8px,1.8vw,18px)!important;overflow:hidden!important;background:transparent!important;border:0!important;box-shadow:none!important}
-#panel-openings.opening-exercise-active .opening-exercise-screen>.surface-heading{flex:0 0 auto;min-height:52px;align-items:center;margin:0!important}
-#panel-openings.opening-exercise-active .opening-practice-layout{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(220px,270px)!important;grid-template-rows:minmax(0,1fr)!important;align-items:center!important;justify-items:stretch!important;gap:clamp(10px,1.6vw,20px)!important;flex:1 1 auto!important;min-width:0!important;min-height:0!important;width:100%!important;padding:4px 8px!important;overflow:hidden!important}
-#panel-openings.opening-exercise-active .opening-practice-board{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;grid-template-rows:repeat(8,minmax(0,1fr))!important;width:min(100%,min(calc(100svh - 245px),calc(100vw - 370px),680px))!important;height:auto!important;max-width:680px!important;max-height:none!important;aspect-ratio:1/1!important;min-width:0!important;min-height:0!important;justify-self:center!important;align-self:center!important;overflow:hidden!important;box-sizing:border-box!important}
-#panel-openings.opening-exercise-active .opening-practice-board .opening-square{display:grid!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;aspect-ratio:1/1!important}
-#panel-openings.opening-exercise-active .opening-practice-board .opening-square img{width:90%!important;height:90%!important;object-fit:contain!important}
-#panel-openings.opening-exercise-active .opening-practice-coach{width:100%!important;max-width:270px!important;max-height:calc(100svh - 220px)!important;overflow-y:auto!important;align-self:center!important;padding:clamp(12px,1.8vw,20px)!important}
-
-/* iPad portrait / mobile : échiquier en premier, taille calculée sur la hauteur réellement disponible. */
-@media(max-width:900px){
- #panel-openings.opening-exercise-active .opening-exercise-screen{padding:8px 10px!important}
- #panel-openings.opening-exercise-active .opening-exercise-screen>.surface-heading{min-height:46px}
- #panel-openings.opening-exercise-active .opening-practice-layout{display:flex!important;flex-direction:column!important;justify-content:flex-start!important;align-items:center!important;gap:10px!important;overflow-y:auto!important;overflow-x:hidden!important;padding:4px 2px 14px!important}
- #panel-openings.opening-exercise-active .opening-practice-board{flex:0 0 auto!important;width:min(calc(100vw - 36px),calc(100svh - 300px),640px)!important;height:auto!important;max-width:640px!important}
- #panel-openings.opening-exercise-active .opening-practice-coach{flex:0 0 auto!important;width:min(100%,640px)!important;max-width:640px!important;max-height:none!important;padding:12px 16px!important}
-}
-@media(max-width:620px){
- #panel-openings.opening-exercise-active .opening-exercise-screen>.surface-heading{gap:8px}
- #panel-openings.opening-exercise-active .opening-exercise-screen>.surface-heading h3{font-size:17px}
- #panel-openings.opening-exercise-active .opening-practice-board{width:min(calc(100vw - 24px),calc(100svh - 285px),560px)!important}
-}
-
-/* Étude guidée : fenêtre dédiée, échiquier entier dès l'ouverture, panneau coach à côté ou dessous. */
-.opening-study-overlay{position:fixed!important;inset:0!important;z-index:1000!important;display:flex!important;align-items:stretch!important;justify-content:center!important;width:100vw!important;height:100vh!important;height:100svh!important;overflow:auto!important;padding:clamp(10px,2vw,24px)!important;background:#0b1421!important}
-.opening-study-page{width:min(1180px,100%)!important;height:100%!important;min-height:0!important;margin:0 auto!important;display:flex!important;flex-direction:column!important}
-.opening-study-top{flex:0 0 auto!important;margin-bottom:12px!important;padding-bottom:10px!important}
-.opening-study-content{flex:1 1 auto!important;min-height:0!important;display:grid!important;grid-template-columns:minmax(0,min(calc(100svh - 190px),680px)) minmax(220px,1fr)!important;align-items:center!important;justify-content:center!important;gap:clamp(12px,2vw,24px)!important;overflow:auto!important}
-.opening-study-board-wrap{width:min(100%,min(calc(100svh - 190px),680px))!important;height:auto!important;aspect-ratio:1/1!important;flex:none!important;margin:auto!important}
-.opening-study-board{display:grid!important;grid-template-columns:repeat(8,minmax(0,1fr))!important;grid-template-rows:repeat(8,minmax(0,1fr))!important;width:100%!important;height:100%!important;aspect-ratio:1/1!important}
-.opening-study-board .opening-square{width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;aspect-ratio:1/1!important}
-@media(max-width:900px){
- .opening-study-page{height:auto!important;min-height:100%!important}
- .opening-study-content{display:flex!important;flex-direction:column!important;justify-content:flex-start!important;align-items:center!important;gap:12px!important;overflow:visible!important}
- .opening-study-board-wrap{width:min(calc(100vw - 36px),calc(100svh - 250px),620px)!important;max-width:620px!important}
- .opening-study-side{width:min(100%,620px)!important}
-}
-@media(max-width:620px){
- .opening-study-overlay{padding:10px!important}
- .opening-study-top{gap:8px!important}
- .opening-study-top button{width:100%!important}
- .opening-study-board-wrap{width:min(calc(100vw - 20px),calc(100svh - 245px),560px)!important}
-}
+/* v73 — isolation stricte des écrans : un seul panneau visible à la fois. */
+.panel:not(.active){display:none!important}
+.panel.active{display:block}
+.panel.games-page.active{display:flex}
+#panel-openings.opening-exercise-active:not(.active){display:none!important}
+#panel-openings.opening-exercise-active.active{display:flex}
+.opening-study-overlay{z-index:1000}
+.tabs .tab.active{background:linear-gradient(180deg,#263b55,#1a2b40);color:#fff;border-color:#d6b66d;box-shadow:inset 0 -2px 0 #e5c47b}
