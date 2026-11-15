@@ -2430,3 +2430,50 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 .move-quality.brilliant,.move-tag.brilliant{color:#12344a!important;text-shadow:none!important}
 .summary-metric.excellent .summary-top strong{color:#c6e4ff!important}
 .move-quality.excellent,.move-tag.excellent{color:#bfe0ff!important}
+
+
+/* DEV v101 — priorité à la navigation, actions puzzles et contraste brillant */
+#panel-puzzles.puzzle-exercise-active .puzzle-side-actions{
+ display:grid!important;
+ grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ gap:10px!important;
+ width:100%!important;
+}
+#panel-puzzles.puzzle-exercise-active .puzzle-side-actions #puzzle-hint,
+#panel-puzzles.puzzle-exercise-active .puzzle-side-actions #puzzle-reload,
+#panel-puzzles.puzzle-exercise-active .puzzle-side-actions [data-session-next]{
+ min-height:48px!important;
+ padding:12px 10px!important;
+ font-size:15px!important;
+ font-weight:850!important;
+}
+#panel-puzzles.puzzle-exercise-active .puzzle-side-back{
+ display:block!important;
+ width:100%!important;
+ margin-top:3px!important;
+}
+#panel-puzzles.puzzle-exercise-active .puzzle-side-back [data-puzzle-back]{
+ display:flex!important;
+ align-items:center!important;
+ justify-content:center!important;
+ width:100%!important;
+ min-height:54px!important;
+ padding:13px 16px!important;
+ border:1px solid #6d87a3!important;
+ border-radius:12px!important;
+ background:#263e58!important;
+ color:#f2f7fc!important;
+ font-size:15px!important;
+ font-weight:900!important;
+}
+#panel-games.reviewing-game #analyse-game-button{display:none!important}
+.summary-metric.brilliant .summary-top strong{
+ color:#061f30!important;
+ font-weight:950!important;
+ text-shadow:none!important;
+}
+.move-quality.brilliant,.move-tag.brilliant{
+ color:#082a40!important;
+ font-weight:900!important;
+ text-shadow:none!important;
+}
