@@ -357,7 +357,8 @@ async function syncChessCom(){
     };
     await saveArchiveCheckpoint(accountAtStart,persistedBatch,nextMeta);
     games=mergedGames;
-    render();
+    // Ne pas reconstruire tous les écrans à chaque archive : l'import reste en
+    // arrière-plan et ne monopolise pas le thread principal pendant la navigation.
     setMessage("Historique "+accountAtStart+" · "+processedArchives+" / "+urls.length+" archives validées · "+games.length.toLocaleString("fr-FR")+" parties sauvegardées.");
    }
   }
@@ -375,7 +376,10 @@ async function syncChessCom(){
   }else{
    await saveArchiveCheckpoint(accountAtStart,[],{...syncMeta,historyVersion:2,fullHistory:true,gameCount:games.length,lastSync:Date.now(),verifiedArchiveCount:urls.length,verifiedGameCount:games.length,completedArchives:[]});
   }
-  render();await fetchPlayerRatings();
+  // Une seule mise à jour visuelle après l'import complet, jamais une par archive.
+  if(USERNAME===accountAtStart)render();
+  window.dispatchEvent(new CustomEvent("coach:games-updated",{detail:{username:accountAtStart,count:games.length}}));
+  await fetchPlayerRatings();
   setMessage((trustedFullHistory?"Vérification des archives récentes terminée":"Import complet terminé")+" · "+games.length.toLocaleString("fr-FR")+" parties enregistrées pour "+accountAtStart+" · "+urls.length+" archives vérifiées · "+newCount.toLocaleString("fr-FR")+" nouvelle(s).");
   const state=$("sync-state");if(state)state.textContent="Compte connecté · "+accountAtStart;
  }catch(e){
