@@ -4,7 +4,7 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const glyph={wk:"♔",wq:"♕",wr:"♖",wb:"♗",wn:"♘",wp:"♙",bk:"♚",bq:"♛",br:"♜",bb:"♝",bn:"♞",bp:"♟"};
 const LEGACY_PROGRESS_KEY="coach-echecs-dev-puzzle-progress-v1";
 const progressKey=()=>LEGACY_PROGRESS_KEY+":"+String(window.CoachApp?.getUsername?.()||"gone_1950").toLowerCase();
-let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,currentDailyId="",personalized=[],showAllPersonal=false,sessionActive=false,sessionQueue=[],sessionTotal=0,sessionSolved=0,sessionLabel="Session personnalisée",sessionMode="",sessionLives=3,sessionTimeLeft=180,sessionTimer=null,sessionPuzzleIds=[],sessionFinished=false,autoNextTimer=null,dailyDecisionOpen=false,solutionRevealed=false;
+let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,currentDailyId="",personalized=[],showAllPersonal=false,sessionActive=false,sessionQueue=[],sessionTotal=0,sessionSolved=0,sessionLabel="Session personnalisée",sessionMode="",sessionLives=3,sessionTimeLeft=180,sessionTimer=null,sessionPuzzleIds=[],sessionFinished=false,autoNextTimer=null,dailyDecisionOpen=false,solutionRevealed=false,learnExerciseMode=false,learnBackView="learn-training-choice",learnCurrentView="learn-training-choice",learnCategory="tactics",learnVisibleItems=[];
 function stopPuzzleTimer(){if(sessionTimer){clearInterval(sessionTimer);sessionTimer=null;}}
 function localDayKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function stopAutoNext(){if(autoNextTimer){clearTimeout(autoNextTimer);autoNextTimer=null;}}
@@ -15,15 +15,15 @@ function finishPuzzle(){
  render();
  if(sessionMode&&sessionMode!=="daily"){stopAutoNext();autoNextTimer=setTimeout(()=>{autoNextTimer=null;if(!solved||sessionFinished)return;if(sessionMode==="adaptive")loadNextSessionPuzzle();else if(["bank","lives","timed"].includes(sessionMode))loadDaily(true);},2500);}
 }
-function startPuzzleTimer(){stopPuzzleTimer();sessionTimeLeft=180;sessionTimer=setInterval(()=>{if(!sessionActive||sessionMode!=="timed")return;sessionTimeLeft=Math.max(0,sessionTimeLeft-1);if(sessionTimeLeft<=0){sessionActive=false;sessionFinished=true;stopPuzzleTimer();message("Temps écoulé ! Tu as résolu "+sessionSolved+" puzzle(s) en 3 minutes.");}render();},1000);}
-function sessionStatus(){if(sessionMode==="daily")return "Vies : "+"♥".repeat(Math.max(0,sessionLives))+"♡".repeat(Math.max(0,5-sessionLives));if(sessionMode==="lives")return "Vies : "+"♥".repeat(Math.max(0,sessionLives))+"♡".repeat(Math.max(0,3-sessionLives))+" · "+sessionSolved+" réussi(s)";if(sessionMode==="timed")return "Temps : "+Math.floor(sessionTimeLeft/60)+":"+String(sessionTimeLeft%60).padStart(2,"0")+" · "+sessionSolved+" réussi(s)";if(sessionActive)return sessionLabel+" · "+sessionSolved+" réussi(s)";if(sessionFinished)return "Session terminée · "+sessionSolved+" réussi(s)";return "";}
+function startPuzzleTimer(){stopPuzzleTimer();sessionTimeLeft=180;sessionTimer=setInterval(()=>{if(!sessionActive||sessionMode!=="timed")return;sessionTimeLeft=Math.max(0,sessionTimeLeft-1);const node=$("puzzle-session-timer");if(node)node.textContent=Math.floor(sessionTimeLeft/60)+":"+String(sessionTimeLeft%60).padStart(2,"0");if(sessionTimeLeft<=0){sessionActive=false;sessionFinished=true;loading=false;stopPuzzleTimer();message("Temps écoulé ! Tu as résolu "+sessionSolved+" puzzle(s) en 3 minutes.");render();}},1000);}
+function sessionStatus(){if(sessionMode==="daily"||sessionMode==="lives"){const total=sessionMode==="daily"?5:3;return '<span class="puzzle-hearts" aria-label="'+sessionLives+' essais restants">'+"♥".repeat(Math.max(0,sessionLives))+"♡".repeat(Math.max(0,total-sessionLives))+'</span>';}if(sessionMode==="timed")return '<span class="puzzle-timer-label" id="puzzle-session-timer">'+Math.floor(sessionTimeLeft/60)+":"+String(sessionTimeLeft%60).padStart(2,"0")+'</span>';if(sessionMode==="bank"||sessionMode==="adaptive")return "Série "+sessionSolved;if(sessionActive)return sessionLabel+" · "+sessionSolved;if(sessionFinished)return "Session terminée · "+sessionSolved;return "";}
 let puzzleProgress={dailySolved:[],personalSolved:[],bankSolved:[],dailyDate:"",dailyLives:5,attempts:0,wrongMoves:0};
 let puzzleFeedbackText="Repère la meilleure suite pour les Blancs ou les Noirs.",puzzleFeedbackClass="feedback-neutral";
 function loadPuzzleProgress(){try{const raw=localStorage.getItem(progressKey())||(String(window.CoachApp?.getUsername?.()||"gone_1950").toLowerCase()==="gone_1950"?localStorage.getItem(LEGACY_PROGRESS_KEY):null);const p=JSON.parse(raw||"{}");puzzleProgress={dailySolved:Array.isArray(p.dailySolved)?p.dailySolved:[],personalSolved:Array.isArray(p.personalSolved)?p.personalSolved:[],bankSolved:Array.isArray(p.bankSolved)?p.bankSolved:[],dailyDate:String(p.dailyDate||""),dailyLives:Number.isFinite(Number(p.dailyLives))?Math.max(0,Math.min(5,Number(p.dailyLives))):5,attempts:Number(p.attempts)||0,wrongMoves:Number(p.wrongMoves)||0};}catch{}}
 function savePuzzleProgress(){try{localStorage.setItem(progressKey(),JSON.stringify(puzzleProgress));}catch{}renderPuzzleProgress();}
 function renderPuzzleProgress(){const node=$("puzzle-progress");const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length+(puzzleProgress.bankSolved||[]).length;if(node)node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" tentative"+(puzzleProgress.attempts>1?"s":"")+" · "+puzzleProgress.wrongMoves+" erreur"+(puzzleProgress.wrongMoves>1?"s":"");const solved=$("puzzle-hub-solved"),attempts=$("puzzle-hub-attempts"),errors=$("puzzle-hub-errors");if(solved)solved.textContent=String(total);if(attempts)attempts.textContent=String(puzzleProgress.attempts);if(errors)errors.textContent=String(puzzleProgress.wrongMoves);}
 function openPuzzleExercise(){const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(hub)hub.hidden=true;if(exercise)exercise.hidden=false;$("panel-puzzles")?.classList.add("puzzle-exercise-active");}
-function closePuzzleExercise(){const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(exercise)exercise.hidden=true;if(hub)hub.hidden=false;$("panel-puzzles")?.classList.remove("puzzle-exercise-active");sessionActive=false;sessionQueue=[];sessionMode="";sessionFinished=false;dailyDecisionOpen=false;solutionRevealed=false;stopPuzzleTimer();stopAutoNext();loading=false;selected=null;}
+function closePuzzleExercise(){if(learnExerciseMode){const exercise=$("learn-training-exercise"),back=$(learnBackView);if(exercise)exercise.hidden=true;if(back)back.hidden=false;learnExerciseMode=false;}else{const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(exercise)exercise.hidden=true;if(hub)hub.hidden=false;$("panel-puzzles")?.classList.remove("puzzle-exercise-active");}sessionActive=false;sessionQueue=[];sessionMode="";sessionFinished=false;dailyDecisionOpen=false;solutionRevealed=false;stopPuzzleTimer();stopAutoNext();loading=false;selected=null;board=null;}
 function personalKey(game,detail){return String(game.id)+"|"+detail.fen+"|"+detail.bestUci;}
 function markPuzzleSolved(){
  const key=currentPuzzle?personalKey(currentPuzzle.game,currentPuzzle.detail):currentDailyId;if(!key)return;
@@ -85,12 +85,15 @@ function render(){
  const sideToMove=board.turn()==="w"?"Aux Blancs":"Aux Noirs",status=solved?(sessionMode==="daily"?"Puzzle du jour réussi":"Puzzle réussi !"):sessionFinished?"Session terminée":puzzleFeedbackText.startsWith("Faux")?"Pas bon, réessaie.":"À toi de jouer",session=sessionStatus();
  const dailyOptions=sessionMode==="daily"&&sessionLives===0&&!solved&&!hinted&&!solutionRevealed?'<div class="puzzle-daily-options"><button type="button" class="secondary-button" data-daily-hint>Afficher un indice</button><button type="button" class="primary-button" data-daily-solution>Afficher la solution</button></div>':"";
  const solutionLine=solutionRevealed?'<div class="puzzle-solution-reveal"><strong>Solution</strong><span>'+esc(solutionAsSan())+'</span></div>':"";
- const panel='<aside class="puzzle-side puzzle-side-minimal"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span><strong>'+sideToMove+'</strong></div><div class="puzzle-result-state '+(solved?"is-correct":puzzleFeedbackText.startsWith("Faux")?"is-wrong":"")+'"><strong>'+status+'</strong><p id="puzzle-feedback" aria-live="polite" class="'+puzzleFeedbackClass+'">'+esc(puzzleFeedbackText)+'</p></div>'+(session?'<div class="puzzle-session-status">'+esc(session)+'</div>':"")+'<div class="puzzle-side-actions">'+(dailyOptions||(!solved&&!sessionFinished?'<button type="button" class="secondary-button" id="puzzle-hint">💡 Indice</button>':""))+'</div>'+solutionLine+'<div class="puzzle-side-back"><button type="button" class="secondary-button" data-puzzle-back>← Retour aux puzzles</button></div></aside>';
+ const sessionHtml=session?'<div class="puzzle-session-status">'+session+'</div>':"";
+ const panel='<aside class="puzzle-side puzzle-side-minimal"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span><strong>'+sideToMove+'</strong></div><div class="puzzle-result-state '+(solved?"is-correct":puzzleFeedbackText.startsWith("Faux")?"is-wrong":"")+'"><strong>'+status+'</strong><p id="puzzle-feedback" aria-live="polite" class="'+puzzleFeedbackClass+'">'+esc(puzzleFeedbackText)+'</p></div>'+sessionHtml+'<div class="puzzle-side-actions">'+(dailyOptions||(!solved&&!sessionFinished?'<button type="button" class="secondary-button" id="puzzle-hint">💡 Indice</button>':""))+'</div>'+solutionLine+'</aside>';
  let modal="";
  if(dailyDecisionOpen)modal='<div class="puzzle-end-overlay"><div class="puzzle-end-card"><span class="eyebrow">PUZZLE DU JOUR</span><h3>Il ne te reste plus de vie</h3><p>Tu as utilisé tes cinq essais. Souhaites-tu un indice sur la pièce à jouer ou voir toute la solution ?</p><div class="puzzle-end-actions"><button type="button" class="secondary-button" data-daily-hint>Afficher un indice</button><button type="button" class="primary-button" data-daily-solution>Voir la solution</button></div></div></div>';
  if(sessionFinished&&sessionMode==="lives")modal='<div class="puzzle-end-overlay"><div class="puzzle-end-card"><span class="eyebrow">MODE SURVIE</span><h3>Fin de la série</h3><p>Tu as perdu tes trois vies. Ton score était de '+sessionSolved+' puzzle(s) réussi(s).</p><div class="puzzle-end-actions"><button type="button" class="primary-button" data-session-restart>Recommencer à zéro</button><button type="button" class="secondary-button" data-puzzle-back>Retour aux puzzles</button></div></div></div>';
  if(sessionFinished&&sessionMode==="timed")modal='<div class="puzzle-end-overlay"><div class="puzzle-end-card"><span class="eyebrow">DÉFI CHRONOMÉTRÉ</span><h3>Temps écoulé</h3><p>Tu as résolu '+sessionSolved+' puzzle(s).</p><button type="button" class="primary-button" data-session-restart>Recommencer</button></div></div>';
- $("puzzle-board-area").innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div></div>'+panel+modal;
+ const boardArea=$(learnExerciseMode?"learn-training-board-area":"puzzle-board-area");if(!boardArea)return;
+ const backButton='<div class="puzzle-side-back"><button type="button" class="secondary-button" data-puzzle-back>'+(learnExerciseMode?"← Retour à mon entraînement":"← Retour aux puzzles")+'</button></div>';
+ boardArea.innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div></div>'+panel+backButton+modal;
 }
 function message(text){puzzleFeedbackText=String(text??"");puzzleFeedbackClass=/^Faux\s*!/i.test(puzzleFeedbackText)?"feedback-wrong":/^(Bravo|Bien joué)/i.test(puzzleFeedbackText)?"feedback-correct":"feedback-neutral";const node=$("puzzle-feedback");if(!node)return;node.textContent=puzzleFeedbackText;node.classList.remove("feedback-wrong","feedback-correct","feedback-neutral");node.classList.add(puzzleFeedbackClass);}
 
@@ -180,7 +183,7 @@ function personalCandidates(){
  return out.sort((a,b)=>(priority[b.detail.kind]||0)-(priority[a.detail.kind]||0)||(Number(b.detail.winLossPercent)||0)-(Number(a.detail.winLossPercent)||0));
 }
 function renderPersonalized(){
- const root=$("personal-puzzle-list"),count=$("personal-puzzle-count");if(!root||!count)return;
+ const root=$("personal-puzzle-list"),count=$("personal-puzzle-count");renderLearnPersonalLists();if(!root||!count)return;
  personalized=personalCandidates();
  count.textContent=personalized.length+" position"+(personalized.length>1?"s":"");
  if(!personalized.length){
@@ -195,16 +198,34 @@ function renderPersonalized(){
  }).join("");
  if(personalized.length>8){const more=document.createElement("button");more.type="button";more.className="text-button personal-puzzle-more";more.dataset.personalPuzzleMore="";more.textContent=showAllPersonal?"Réduire la liste":"Voir toutes les positions ("+personalized.length+")";root.appendChild(more);}
 }
-function startPersonalPuzzle(item,fromSession=false){
+function renderLearnPersonalLists(){
+ personalized=personalCandidates();
+ const categories={
+  endgame:personalized.filter(item=>lessonTheme(item).key==="endgame"||Number(item.detail.ply)>60),
+  tactics:personalized.filter(item=>["forcing","tactics","opportunity"].includes(lessonTheme(item).key)||item.detail.bestCapture||item.detail.bestCheck||item.detail.bestMate||item.detail.kind==="miss"),
+  traps:personalized.filter(item=>Number(item.detail.ply)<18&&["blunder","mistake","inaccuracy"].includes(item.detail.kind))
+ };
+ Object.entries(categories).forEach(([key,items])=>{const node=$("learn-count-"+key);if(node)node.textContent=items.length+" position"+(items.length>1?"s":"");});
+ const errors=personalized.filter(item=>["blunder","mistake","inaccuracy"].includes(item.detail.kind));
+ const renderRows=(items,rootId,buttonAttr)=>{const root=$(rootId);if(!root)return;root.innerHTML=items.length?items.slice(0,30).map((item,i)=>{const g=item.game,d=item.detail,username=String(window.CoachApp?.getUsername?.()||"").toLowerCase(),opponent=(g.white||"").toLowerCase()===username?g.black:g.white,date=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("fr-FR"):"Date inconnue",priority=d.kind==="blunder"?"Gaffe":d.kind==="mistake"?"Erreur":d.kind==="inaccuracy"?"Imprécision":"Occasion manquée";return '<div class="personal-puzzle-row learn-personal-row"><div class="personal-puzzle-info"><strong>'+esc(priority)+' · '+esc(d.label||"Position à revoir")+'</strong><span>Contre '+esc(opponent||"Adversaire")+' · '+date+'</span><small>Ton coup : '+esc(d.played||"—")+' · Meilleure suite : '+esc(d.best||"—")+'</small></div><button type="button" class="secondary-button" '+buttonAttr+'="'+i+'">Travailler</button></div>';}).join(""):'<div class="empty-state compact">Aucune position de ce type dans tes parties analysées pour le moment. Continue à analyser tes parties : le coach alimentera cette rubrique automatiquement.</div>';};
+ const category=categories[learnCategory]||categories.tactics;
+ renderRows(category,"learn-training-list","data-learn-personal-puzzle");
+ renderRows(errors,"learn-errors-list","data-learn-error-puzzle");
+ learnVisibleItems=category;
+ const count=$("learn-training-count"),errorCount=$("learn-errors-count");if(count)count.textContent=category.length+" position(s)";if(errorCount)errorCount.textContent=errors.length+" position(s)";
+ const title=$("learn-training-list-title");if(title)title.textContent=({endgame:"Tes finales à retravailler",tactics:"Tes positions tactiques",traps:"Les pièges rencontrés dans tes ouvertures"})[learnCategory]||"Tes exercices prioritaires";
+}
+function startPersonalPuzzle(item,fromSession=false,fromLearn=false){
  if(!item?.detail?.fen||!item.detail.bestUci)return;
- document.querySelector('[data-tab="puzzles"]')?.click();
- openPuzzleExercise();
+ if(fromLearn){
+  learnExerciseMode=true;learnBackView=learnCurrentView;
+  ["learn-hub","learn-training-choice","learn-errors-view","learn-training-exercise","learn-opening-choice","learn-opening-detected","learn-opening-explorer"].forEach(id=>{const node=$(id);if(node)node.hidden=id!=="learn-training-exercise";});
+ }else{document.querySelector('[data-tab="puzzles"]')?.click();openPuzzleExercise();}
  if(!fromSession){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;sessionMode="";stopPuzzleTimer();stopAutoNext();}
  currentPuzzle=item;board=new Chess(item.detail.fen);const pv=Array.isArray(item.detail.pvUci)?item.detail.pvUci:[];solution=[];const pvBoard=new Chess(item.detail.fen);for(const u of pv.slice(0,8)){const move=legalSolutionMove(pvBoard,u);if(!move)break;solution.push(u);pvBoard.move({from:move.from,to:move.to,promotion:move.promotion||"q"});}if(!solution.length)solution=[item.detail.bestUci];puzzleProgress.attempts++;savePuzzleProgress();ply=0;selected=null;hinted=false;solved=false;loading=false;
  orientation=board.turn()==="w"?"white":"black";
- $("puzzle-title").textContent="À toi de corriger ce coup";
- $("puzzle-rating").textContent="Ton analyse";
- $("puzzle-themes").textContent="Partie contre "+((item.game.white||"").toLowerCase()===String(window.CoachApp?.getUsername?.()||"").toLowerCase()?item.game.black:item.game.white)+" · "+(item.detail.label||"Position à revoir");
+ if(!fromLearn){$("puzzle-title").textContent="À toi de corriger ce coup";$("puzzle-rating").textContent="Ton analyse";$("puzzle-themes").textContent="Partie contre "+((item.game.white||"").toLowerCase()===String(window.CoachApp?.getUsername?.()||"").toLowerCase()?item.game.black:item.game.white)+" · "+(item.detail.label||"Position à revoir");}
+ else {const title=$("learn-exercise-title");if(title)title.textContent=learnCurrentView==="learn-errors-view"?"Corrige cette erreur":"À toi de jouer : "+lessonTheme(item).label;}
  message("Rejoue la meilleure suite de Stockfish et comprends pourquoi ton coup a laissé passer une meilleure idée.");
  render();
 }
@@ -252,6 +273,9 @@ document.addEventListener("click",event=>{
  if(mode){if(mode.dataset.puzzleMode==="daily")startDailyPuzzle();else if(mode.dataset.puzzleMode==="lives"||mode.dataset.puzzleMode==="timed")startPuzzleMode(mode.dataset.puzzleMode);else{openPuzzleExercise();if(mode.dataset.puzzleMode==="session"||mode.dataset.puzzleMode==="mistakes")startPuzzleSession();else if(mode.dataset.puzzleMode==="adaptive")startAdaptive();}return;}
  if(event.target.closest("[data-puzzle-back]")){closePuzzleExercise();return;}
  if(event.target.closest("[data-start-puzzle-session]")){startPuzzleSession();return;}
+ const learnCategoryButton=event.target.closest("[data-learn-training-category]");if(learnCategoryButton){learnCategory=learnCategoryButton.dataset.learnTrainingCategory;renderLearnPersonalLists();document.querySelectorAll("[data-learn-training-category]").forEach(node=>node.classList.toggle("active",node===learnCategoryButton));return;}
+ const learnPersonal=event.target.closest("[data-learn-personal-puzzle]");if(learnPersonal){startPersonalPuzzle(learnVisibleItems[Number(learnPersonal.dataset.learnPersonalPuzzle)],false,true);return;}
+ const learnError=event.target.closest("[data-learn-error-puzzle]");if(learnError){const errors=personalized.filter(item=>["blunder","mistake","inaccuracy"].includes(item.detail.kind));startPersonalPuzzle(errors[Number(learnError.dataset.learnErrorPuzzle)],false,true);return;}
  if(event.target.closest("[data-session-restart]")){if(sessionMode==="lives"||sessionMode==="timed")startPuzzleMode(sessionMode);return;}
  if(event.target.closest("[data-daily-hint]")){dailyDecisionOpen=false;hinted=true;message("Indice : la pièce à jouer est en surbrillance. À toi de retrouver sa destination.");render();return;}
  if(event.target.closest("[data-daily-solution]")){dailyDecisionOpen=false;solutionRevealed=true;message("Voici la suite gagnante de cette position.");render();return;}
@@ -263,5 +287,6 @@ document.addEventListener("click",event=>{
 });
 window.addEventListener("coach:tab-changing",event=>{if(event.detail?.tab!=="puzzles"||event.detail?.fromPanel==="panel-puzzles")closePuzzleExercise();});
 window.addEventListener("coach:games-updated",renderPersonalized);
+window.addEventListener("coach:learn-personal-view",event=>{learnCurrentView=event.detail?.view||"learn-training-choice";renderLearnPersonalLists();});
 window.addEventListener("coach:account-changed",()=>{closePuzzleExercise();loadPuzzleProgress();renderPuzzleProgress();renderPersonalized();});
 loadPuzzleProgress();renderPuzzleProgress();renderPersonalized();
