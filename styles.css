@@ -2035,3 +2035,31 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
  #panel-openings.opening-exercise-active .opening-practice-board{width:min(90vw,calc(100dvh - 250px),520px)!important}
  #panel-openings.opening-exercise-active .opening-practice-coach{width:min(100%,520px)!important;max-width:520px!important}
 }
+
+
+/* v82 — mode exercice ouverture sans aucun bandeau, Elo plus lisible. */
+#panel-openings.opening-exercise-active>.page-intro-row,
+#panel-openings.opening-exercise-active>.opening-feature-banner,
+#panel-openings.opening-exercise-active>.openings-surface{
+ display:none!important;
+}
+#panel-openings.opening-exercise-active>#opening-detail{
+ margin:0!important;padding:0!important;
+}
+#panel-games .game-opponent-elo{
+ font-size:19px!important;
+ font-weight:900!important;
+ padding:5px 10px!important;
+ min-height:30px!important;
+ border-color:#718a4d!important;
+ color:#e4ffad!important;
+ background:#263b2a!important;
+ box-shadow:0 0 0 1px #a9d66a22!important;
+}
+@media(max-width:600px){
+ #panel-games .game-opponent-elo{
+  font-size:17px!important;
+  padding:4px 8px!important;
+  min-height:28px!important;
+ }
+}
