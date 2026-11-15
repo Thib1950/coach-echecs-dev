@@ -153,7 +153,7 @@ function gameAccuracyFromMoves(moves){
   // Une précision n'est affichée que si l'échantillon contient assez de coups
   // réellement évalués. Les coups de théorie et les positions incomplètes sont exclus.
   const rows=(moves||[])
-    .filter(m=>m.kind!=="book"&&Number.isFinite(Number(m.winLossPercent)))
+    .filter(m=>m.kind!=="book"&&m.winLossPercent!==null&&m.winLossPercent!==undefined&&Number.isFinite(Number(m.winLossPercent)))
     .map(m=>moveAccuracyFromWinLoss(m.winLossPercent))
     .filter(Number.isFinite);
   if(rows.length<6)return null;
