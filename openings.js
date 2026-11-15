@@ -1,7 +1,7 @@
 import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
 const $=id=>document.getElementById(id),currentUser=()=>String(window.CoachApp?.getUsername?.()||"").toLowerCase();
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let database=[],dbError="",groups=[],currentKey=null,exercise=null,showAllOpenings=false;
+let database=[],dbError="",databaseLoadPromise=null,groups=[],currentKey=null,exercise=null,showAllOpenings=false;
 const glyph={wk:"♔",wq:"♕",wr:"♖",wb:"♗",wn:"♘",wp:"♙",bk:"♚",bq:"♛",br:"♜",bb:"♝",bn:"♞",bp:"♟"};
 const FR=[[/London System/gi,"Système de Londres"],[/Jobava London/gi,"Londres Jobava"],[/Sicilian Defense/gi,"Défense sicilienne"],[/King's Pawn Game/gi,"Partie du pion roi"],[/Queen's Pawn Game/gi,"Partie du pion dame"],[/Four Knights Game/gi,"Partie des quatre cavaliers"],[/King's Pawn Game/gi,"Partie du pion roi"],[/Queen's Pawn Game/gi,"Partie du pion dame"],[/Four Knights Game/gi,"Partie des quatre cavaliers"],[/French Defense/gi,"Défense française"],[/Caro-Kann Defense/gi,"Défense Caro-Kann"],[/King's Indian Defense/gi,"Défense est-indienne"],[/Queen's Gambit/gi,"Gambit dame"],[/King's Gambit/gi,"Gambit roi"],[/Ruy Lopez/gi,"Partie espagnole"],[/Italian Game/gi,"Partie italienne"],[/Scotch Game/gi,"Partie écossaise"],[/English Opening/gi,"Ouverture anglaise"],[/Scandinavian Defense/gi,"Défense scandinave"],[/Alekhine's Defense/gi,"Défense Alekhine"],[/Pirc Defense/gi,"Défense Pirc"],[/Dutch Defense/gi,"Défense hollandaise"],[/Slav Defense/gi,"Défense slave"],[/Nimzo-Indian Defense/gi,"Défense nimzo-indienne"],[/Grünfeld Defense/gi,"Défense Grünfeld"],[/Benoni Defense/gi,"Défense Benoni"],[/Reti Opening/gi,"Ouverture Réti"],[/Opening/gi,"Ouverture"],[/Defense/gi,"Défense"],[/Gambit/gi,"Gambit"],[/Advanced Variation/gi,"Variante d’avance"],[/Variation/gi,"Variante"],[/Attack/gi,"Attaque"],[/Accepted/gi,"accepté"],[/Declined/gi,"refusé"],[/Exchange/gi,"d'échange"],[/Classical/gi,"classique"],[/System/gi,"système"]];
 function frenchName(name){let s=name||"Ouverture non classée";for(const [re,to] of FR)s=s.replace(re,to);return s;}
@@ -73,14 +73,24 @@ async function loadDatabase(){
   database=all;try{localStorage.setItem("coach-echecs-dev-openings-db-v1",JSON.stringify(database));}catch{}
  }catch(e){dbError=e.message||"Dictionnaire indisponible";}
 }
+const classificationCache=new Map();
 function classify(game){
+ const id=String(game.id||game.url||"")+"|"+String(game.eco||"")+"|"+String(game.opening||"");
+ const cached=classificationCache.get(id);if(cached)return cached;
+ const header=(game.opening||"").trim(),eco=validEco(game.eco);
+ // Les PGN Chess.com contiennent presque toujours ECO et/ou Opening.
+ // Utiliser ces métadonnées évite de rejouer chaque PGN et de comparer
+ // ses coups à toute la bibliothèque à chaque affichage.
+ if(header){const result={eco,name:header,display:frenchName(header),family:familyName(header),moves:[],pgn:""};classificationCache.set(id,result);return result;}
+ if(eco){
+  const candidates=database.filter(x=>x.eco===eco).sort((a,b)=>b.moves.length-a.moves.length);
+  if(candidates.length){const result=candidates[0];classificationCache.set(id,result);return result;}
+  const result={eco,name:"Code "+eco,display:"Code "+eco,family:"Code "+eco,moves:[],pgn:""};classificationCache.set(id,result);return result;
+ }
  const moves=gameMoves(game);let best=null;
  for(const item of database){if(!item.moves.length||item.moves.length>moves.length)continue;let ok=true;for(let i=0;i<item.moves.length;i++)if(item.moves[i]!==moves[i]){ok=false;break;}if(ok&&(!best||item.moves.length>best.moves.length))best=item;}
- if(best)return best;
- const header=(game.opening||"").trim(),eco=validEco(game.eco);
- if(header)return {eco,name:header,display:frenchName(header),family:familyName(header),moves:[],pgn:""};
- if(eco){const item=database.filter(x=>x.eco===eco).sort((a,b)=>b.moves.length-a.moves.length)[0];if(item)return item;}
- return {eco:"",name:"Ouverture non classée",display:"Ouverture non identifiée",family:"Ouverture non identifiée",moves:[],pgn:""};
+ const result=best||{eco:"",name:"Ouverture non classée",display:"Ouverture non identifiée",family:"Ouverture non identifiée",moves:[],pgn:""};
+ classificationCache.set(id,result);return result;
 }
 const LEARNING_PREFIX="coach-echecs-dev-opening-learning-v2";
 const learningKey=()=>LEARNING_PREFIX+":"+currentUser();
@@ -126,7 +136,14 @@ function showLearnSubview(view){
  ["learn-hub","learn-training-choice","learn-errors-view","learn-training-exercise","learn-opening-choice","learn-opening-detected","learn-opening-explorer"].forEach(id=>{const node=$(id);if(node)node.hidden=id!==view;});
  if(view==="learn-opening-detected")render();
  if(view==="learn-training-choice"||view==="learn-errors-view")window.dispatchEvent(new CustomEvent("coach:learn-personal-view",{detail:{view}}));
- if(view==="learn-opening-explorer")renderExplorer($("opening-explorer-search")?.value||"");
+ if(view==="learn-opening-explorer"){
+  const root=$("opening-explorer-list");
+  if(!database.length&&!dbError){
+   if(!databaseLoadPromise)databaseLoadPromise=loadDatabase();
+   root.innerHTML='<div class="empty-state">Chargement du répertoire d’ouvertures…</div>';
+   databaseLoadPromise.then(()=>{if($("learn-opening-explorer")?.hidden===false)renderExplorer($("opening-explorer-search")?.value||"");});
+  }else renderExplorer($("opening-explorer-search")?.value||"");
+ }
 }
 function buildGroups(){
  const map=new Map(),games=window.CoachApp?.getGames?.()||[];
