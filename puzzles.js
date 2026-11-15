@@ -3,7 +3,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const glyph={wk:"♔",wq:"♕",wr:"♖",wb:"♗",wn:"♘",wp:"♙",bk:"♚",bq:"♛",br:"♜",bb:"♝",bn:"♞",bp:"♟"};
 const PROGRESS_KEY="coach-echecs-dev-puzzle-progress-v1";
-let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,currentDailyId="",personalized=[],showAllPersonal=false,sessionActive=false,sessionQueue=[],sessionTotal=0,sessionSolved=0;
+let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,currentDailyId="",personalized=[],showAllPersonal=false,sessionActive=false,sessionQueue=[],sessionTotal=0,sessionSolved=0,sessionLabel="Session personnalisée";
 let puzzleProgress={dailySolved:[],personalSolved:[],attempts:0,wrongMoves:0};
 let puzzleFeedbackText="Repère la meilleure suite pour les Blancs ou les Noirs.",puzzleFeedbackClass="feedback-neutral";
 function loadPuzzleProgress(){try{const p=JSON.parse(localStorage.getItem(PROGRESS_KEY)||"{}");puzzleProgress={dailySolved:Array.isArray(p.dailySolved)?p.dailySolved:[],personalSolved:Array.isArray(p.personalSolved)?p.personalSolved:[],attempts:Number(p.attempts)||0,wrongMoves:Number(p.wrongMoves)||0};}catch{}}
@@ -23,6 +23,44 @@ function loadPosition(pgn,initialPly){
  history.slice(0,initialPly).forEach(m=>position.move({from:m.from,to:m.to,promotion:m.promotion}));
  return position;
 }
+function lessonTheme(item){
+ const d=item?.detail||{};
+ if(d.bestMate||d.bestCheck)return {key:"forcing",label:"Coups forcing",tip:"Après chaque coup adverse, vérifie d’abord les échecs, les prises et les menaces directes. Ces coups limitent les réponses disponibles."};
+ if(d.bestCapture)return {key:"tactics",label:"Occasions tactiques",tip:"Avant de choisir un coup naturel, fais le tour des prises possibles et des pièces adverses insuffisamment défendues."};
+ if(Number(d.ply)<14)return {key:"opening",label:"Principes d’ouverture",tip:"Développe tes pièces, lutte pour le centre et prépare la sécurité du roi avant de multiplier les coups de pion."};
+ if(Number(d.ply)>60)return {key:"endgame",label:"Technique de finale",tip:"En finale, compare l’activité du roi, les pions passés et l’activité de chaque pièce avant de pousser un pion."};
+ if(d.kind==="miss")return {key:"opportunity",label:"Occasions manquées",tip:"Quand l’adversaire vient de faire une erreur, cherche immédiatement les coups forcing : échecs, captures et menaces."};
+ return {key:"plan",label:"Choix du plan",tip:"Compare les coups candidats : quelle pièce est la moins active, quelle menace adverse dois-tu traiter et quelle amélioration apporte ton coup ?"};
+}
+function personalLessonMarkup(item,isSolved){
+ const d=item.detail||{},theme=lessonTheme(item),next=(item.game.analysis?.positionDetails||[]).find(x=>Number(x.ply)===Number(d.ply)+1);
+ let consequence="";
+ if(next?.playedCapture){
+  try{const replyBoard=new Chess(next.fen),reply=legalSolutionMove(replyBoard,next.playedUci);if(reply?.captured){const names={p:"un pion",n:"un cavalier",b:"un fou",r:"une tour",q:"la dame"};consequence="Dans la suite réelle, l’adversaire a répondu par "+next.played+" et a pris "+(names[reply.captured]||"du matériel")+". ";}}catch{}
+ }
+ let why="";
+ if(d.bestMate)why="L’analyse repère une possibilité de mat forcé que ton coup n’a pas saisie.";
+ else if(d.bestCheck)why="La meilleure suite commence par un échec : c’est un coup forcing qui oblige l’adversaire à répondre à la menace sur son roi.";
+ else if(d.bestCapture)why="La meilleure suite commence par une prise. Il fallait examiner les possibilités tactiques et les pièces qui pouvaient être gagnées.";
+ else if(d.kind==="miss")why="Tu n’as pas pleinement profité de la dernière erreur adverse. Dans ce genre de moment, il faut chercher les coups forcing avant de jouer un coup de développement ou de placement.";
+ else why="Stockfish préfère "+(d.best||"un autre coup")+" à ton coup "+(d.played||"joué")+". La ligne principale permet de comparer concrètement les deux décisions ; les données disponibles ne permettent pas d’attribuer avec certitude une intention stratégique à ton coup.";
+ const line=Array.isArray(d.pvSan)&&d.pvSan.length?d.pvSan.join(" "):(d.best||"—");
+ const loss=Number(d.winLossPercent);
+ return '<section class="puzzle-lesson-brief"><div class="puzzle-lesson-heading"><span>ANALYSE DE TON COACH</span><b>'+esc(theme.label)+'</b></div><div class="puzzle-lesson-moves"><div><small>TON COUP</small><strong>'+esc(d.played||"—")+'</strong></div><div><small>MEILLEURE IDÉE</small><strong>'+esc(d.best||"—")+'</strong></div>'+(Number.isFinite(loss)&&loss>=1?'<div><small>IMPACT ESTIMÉ</small><strong>−'+loss.toFixed(1).replace(".",",")+' pts %</strong></div>':"")+'</div><p><strong>Pourquoi le coach le relève :</strong> '+esc(why)+'</p>'+(consequence?'<p>'+esc(consequence)+'</p>':"")+'<p><strong>À retenir :</strong> '+esc(theme.tip)+'</p><div class="puzzle-lesson-line"><small>LIGNE STOCKFISH</small><span>'+esc(line)+'</span></div>'+(isSolved?'<div class="puzzle-lesson-complete">✓ Position travaillée : rejoue cette idée dans tes prochaines parties.</div>':'<div class="puzzle-lesson-instruction">Joue la meilleure suite sur l’échiquier. Le coach te fera parcourir la variante pour comprendre le plan.</div>')+'</section>';
+}
+function adaptiveCandidates(items){
+ const open=items.filter(item=>!puzzleProgress.personalSolved.includes(item.id));
+ const counts=new Map();open.forEach(item=>{const key=lessonTheme(item).key;counts.set(key,(counts.get(key)||0)+1);});
+ const severity={blunder:4,mistake:3,miss:2,inaccuracy:1};
+ return open.sort((a,b)=>(counts.get(lessonTheme(b).key)||0)-(counts.get(lessonTheme(a).key)||0)||(severity[b.detail.kind]||0)-(severity[a.detail.kind]||0)||(Number(b.detail.winLossPercent)||0)-(Number(a.detail.winLossPercent)||0));
+}
+async function startAdaptive(){
+ personalized=personalCandidates();
+ const queue=adaptiveCandidates(personalized);
+ if(!queue.length){sessionActive=false;sessionQueue=[];await loadDaily(true);message("Je t’ai proposé un puzzle de la banque générale. Pour rendre ce parcours vraiment adaptatif, lance d’abord l’analyse Stockfish de tes parties : je pourrai alors cibler tes erreurs récurrentes.");return;}
+ sessionLabel="Parcours adaptatif";sessionQueue=queue.slice(0,5);sessionTotal=sessionQueue.length;sessionSolved=0;sessionActive=true;loadNextSessionPuzzle();
+ message("Parcours adaptatif : les positions sont choisies selon les faiblesses qui reviennent le plus souvent dans tes parties analysées.");
+}
 function render(){
  if(!board)return;
  const files=orientation==="white"?"abcdefgh":"hgfedcba",ranks=orientation==="white"?[8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8];
@@ -37,8 +75,9 @@ function render(){
   const a=coord(from),b=coord(to);
   hintArrow='<svg class="puzzle-hint-arrow" viewBox="0 0 800 800" aria-hidden="true"><defs><marker id="puzzleHintHead" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="none" stroke="#f5b942" stroke-width="1.4"/></marker></defs><line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#f5b942" stroke-width="13" stroke-linecap="round" opacity=".94" marker-end="url(#puzzleHintHead)"/></svg>';
  }
+ const lessonMarkup=currentPuzzle?personalLessonMarkup(currentPuzzle,solved):"";
  const sideToMove=board.turn()==="w"?"Trait aux Blancs":"Trait aux Noirs";
-  const panel='<aside class="puzzle-side"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span>'+sideToMove+'</div><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&legalSolutionMove(board,solution[ply])?"Indice : joue "+legalSolutionMove(board,solution[ply]).from+" vers "+legalSolutionMove(board,solution[ply]).to+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p><div class="puzzle-feedback-stage"><p id="puzzle-feedback" aria-live="polite" class="'+puzzleFeedbackClass+'">'+esc(puzzleFeedbackText)+'</p></div><small>'+(sessionActive?"Session personnalisée · "+sessionSolved+" / "+sessionTotal+" réussis":currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small><div class="puzzle-side-actions"><button type="button" class="secondary-button" data-puzzle-back>← Menu puzzles</button><button type="button" class="secondary-button" id="puzzle-hint">Indice</button><button type="button" class="primary-button" id="puzzle-reload">Puzzle suivant</button><button type="button" class="secondary-button" data-start-puzzle-session>Session personnalisée</button></div>'+sessionAction+'</aside>';
+  const panel='<aside class="puzzle-side"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span>'+sideToMove+'</div><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&legalSolutionMove(board,solution[ply])?"Indice : joue "+legalSolutionMove(board,solution[ply]).from+" vers "+legalSolutionMove(board,solution[ply]).to+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p>'+lessonMarkup+'<div class="puzzle-feedback-stage"><p id="puzzle-feedback" aria-live="polite" class="'+puzzleFeedbackClass+'">'+esc(puzzleFeedbackText)+'</p></div><small>'+(sessionActive?sessionLabel+" · "+sessionSolved+" / "+sessionTotal+" réussis":currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small><div class="puzzle-side-actions"><button type="button" class="secondary-button" data-puzzle-back>← Menu puzzles</button><button type="button" class="secondary-button" id="puzzle-hint">Indice</button><button type="button" class="primary-button" id="puzzle-reload">Puzzle suivant</button><button type="button" class="secondary-button" data-start-puzzle-session>Session personnalisée</button></div>'+sessionAction+'</aside>';
  $("puzzle-board-area").innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div>'+hintArrow+'</div>'+panel;
 }
 function message(text){puzzleFeedbackText=String(text??"");puzzleFeedbackClass=/^Faux\s*!/i.test(puzzleFeedbackText)?"feedback-wrong":/^(Bravo|Bien joué)/i.test(puzzleFeedbackText)?"feedback-correct":"feedback-neutral";const node=$("puzzle-feedback");if(!node)return;node.textContent=puzzleFeedbackText;node.classList.remove("feedback-wrong","feedback-correct","feedback-neutral");node.classList.add(puzzleFeedbackClass);}
@@ -145,23 +184,24 @@ function startPersonalPuzzle(item,fromSession=false){
  document.querySelector('[data-tab="puzzles"]')?.click();
  openPuzzleExercise();
  if(!fromSession){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;}
- currentPuzzle=item;board=new Chess(item.detail.fen);solution=[item.detail.bestUci];puzzleProgress.attempts++;savePuzzleProgress();ply=0;selected=null;hinted=false;solved=false;loading=false;
+ currentPuzzle=item;board=new Chess(item.detail.fen);const pv=Array.isArray(item.detail.pvUci)?item.detail.pvUci:[];solution=[];const pvBoard=new Chess(item.detail.fen);for(const u of pv.slice(0,8)){const move=legalSolutionMove(pvBoard,u);if(!move)break;solution.push(u);pvBoard.move({from:move.from,to:move.to,promotion:move.promotion||"q"});}if(!solution.length)solution=[item.detail.bestUci];puzzleProgress.attempts++;savePuzzleProgress();ply=0;selected=null;hinted=false;solved=false;loading=false;
  orientation=board.turn()==="w"?"white":"black";
  $("puzzle-title").textContent="À toi de corriger ce coup";
  $("puzzle-rating").textContent="Ton analyse";
  $("puzzle-themes").textContent="Partie contre "+((item.game.white||"").toLowerCase()==="gone_1950"?item.game.black:item.game.white)+" · "+(item.detail.label||"Position à revoir");
- message("Retrouve le meilleur coup dans cette position de ta partie.");
+ message("Rejoue la meilleure suite de Stockfish et comprends pourquoi ton coup a laissé passer une meilleure idée.");
  render();
 }
 
 function startPuzzleSession(){
+ sessionLabel="Session personnalisée";
  const available=personalized.filter(item=>!puzzleProgress.personalSolved.includes(item.id));
  if(!available.length){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;message("Aucune position nouvelle pour le moment. Analyse quelques parties avec Stockfish pour créer ta première session personnalisée.");return;}
  sessionQueue=available.slice(0,5);sessionTotal=sessionQueue.length;sessionSolved=0;sessionActive=true;
  loadNextSessionPuzzle();
 }
 function loadNextSessionPuzzle(){
- if(sessionQueue.length){const item=sessionQueue.shift();startPersonalPuzzle(item,true);message("Session personnalisée · position "+(sessionSolved+1)+" / "+sessionTotal+". Trouve le meilleur coup.");return;}
+ if(sessionQueue.length){const item=sessionQueue.shift();startPersonalPuzzle(item,true);message(sessionLabel+" · position "+(sessionSolved+1)+" / "+sessionTotal+". Étudie l’explication, puis joue la meilleure suite.");return;}
  sessionActive=false;currentPuzzle=null;board=null;selected=null;solved=false;
  $("puzzle-board-area").innerHTML='<div class="empty-state">Session terminée. Tu as résolu '+sessionSolved+" position"+(sessionSolved>1?"s":"")+" sur "+sessionTotal+'. Tu peux lancer une nouvelle session après avoir analysé d’autres parties.</div>';
  message("Bravo, ta session est terminée !");renderPersonalized();
@@ -187,7 +227,7 @@ function play(square){
 }
 document.addEventListener("click",event=>{
  const mode=event.target.closest("[data-puzzle-mode]");
- if(mode){openPuzzleExercise();if(mode.dataset.puzzleMode==="session"||mode.dataset.puzzleMode==="mistakes")startPuzzleSession();else loadDaily(mode.dataset.puzzleMode==="adaptive");return;}
+ if(mode){openPuzzleExercise();if(mode.dataset.puzzleMode==="session"||mode.dataset.puzzleMode==="mistakes")startPuzzleSession();else if(mode.dataset.puzzleMode==="adaptive"){startAdaptive();}else loadDaily(false);return;}
  if(event.target.closest("[data-puzzle-back]")){closePuzzleExercise();return;}
  if(event.target.closest("[data-start-puzzle-session]")){startPuzzleSession();return;}
  if(event.target.closest("[data-session-next]")){loadNextSessionPuzzle();return;}
