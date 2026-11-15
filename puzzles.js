@@ -82,7 +82,7 @@ function render(){
  const legal=selected?board.moves({square:selected,verbose:true}):[],targets=new Map(legal.map(m=>[m.to,m.captured?"capture":"move"]));
  const hintMove=hinted?legalSolutionMove(board,solution[ply]):null;let cells="";
  ranks.forEach(rank=>[...files].forEach(file=>{const sq=file+rank,p=board.get(sq),light=((rank-1+(file.charCodeAt(0)-97))%2)===1;let cls="puzzle-square "+(light?"light":"dark")+(selected===sq?" selected":"")+(targets.get(sq)==="capture"?" puzzle-capture":"")+(hintMove?.from===sq?" hint-from":"");const dot=targets.get(sq)==="move"?'<i class="puzzle-dot"></i>':"";cells+='<button type="button" class="'+cls+'" data-puzzle-square="'+sq+'" aria-label="'+sq+'">'+(p?'<img src="https://lichess1.org/assets/piece/cburnett/'+p.color+p.type.toUpperCase()+'.svg" alt="'+glyph[p.color+p.type]+'">':"")+dot+'</button>';}));
- const sideToMove=board.turn()==="w"?"Aux Blancs":"Aux Noirs",status=solved?(sessionMode==="daily"?"Puzzle du jour réussi":"Puzzle réussi !"):sessionFinished?"Session terminée":puzzleFeedbackText.startsWith("Faux")?"Pas bon, réessaie.":"À toi de jouer",session=sessionStatus();
+ const sideToMove=board.turn()==="w"?"Aux Blancs":"Aux Noirs",status=solved?(sessionMode==="daily"?"Puzzle du jour réussi":"Puzzle réussi !"):sessionFinished?"Session terminée":puzzleFeedbackClass==="feedback-wrong"?"Faux":"À toi de jouer",session=sessionStatus();
  const dailyOptions=sessionMode==="daily"&&sessionLives===0&&!solved&&!hinted&&!solutionRevealed?'<div class="puzzle-daily-options"><button type="button" class="secondary-button" data-daily-hint>Afficher un indice</button><button type="button" class="primary-button" data-daily-solution>Afficher la solution</button></div>':"";
  const solutionLine=solutionRevealed?'<div class="puzzle-solution-reveal"><strong>Solution</strong><span>'+esc(solutionAsSan())+'</span></div>':"";
  const sessionHtml=session?'<div class="puzzle-session-status">'+session+'</div>':"";
@@ -239,7 +239,7 @@ function startPuzzleMode(mode){
  if(mode==="timed")startPuzzleTimer();else stopPuzzleTimer();openPuzzleExercise();loadDaily(true);
 }
 function startPuzzleSession(){
- sessionLabel="Série de problèmes";
+ sessionLabel="Suite de problèmes";
  const available=personalized.filter(item=>!puzzleProgress.personalSolved.includes(item.id));
  if(!available.length){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;sessionMode="";message("Aucune position nouvelle pour le moment. Analyse quelques parties avec Stockfish pour créer ta première session personnalisée.");return;}
  sessionMode="adaptive";sessionFinished=false;stopPuzzleTimer();
@@ -259,7 +259,7 @@ function play(square){
  const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;message("Coup impossible : choisis une case indiquée par un point.");render();return;}
  const played=uci(move),expectedMove=legalSolutionMove(board,solution[ply]),expected=expectedMove?uci(expectedMove):"";
  if(played!==expected){selected=null;puzzleProgress.wrongMoves++;savePuzzleProgress();
-  if(sessionMode==="lives"||sessionMode==="daily"){sessionLives=Math.max(0,sessionLives-1);if(sessionMode==="daily"){puzzleProgress.dailyDate=localDayKey();puzzleProgress.dailyLives=sessionLives;}if(sessionLives===0){sessionActive=false;sessionFinished=true;dailyDecisionOpen=sessionMode==="daily";stopPuzzleTimer();message(sessionMode==="daily"?"Tu as utilisé tes cinq vies. Choisis un indice ou affiche la solution.":"Tu as perdu tes trois vies. La série est terminée.");}else message("Faux ! Il te reste "+sessionLives+" vie(s). Réessaie cette position.");if(sessionMode==="daily")savePuzzleProgress();}
+  if(sessionMode==="lives"||sessionMode==="daily"){sessionLives=Math.max(0,sessionLives-1);if(sessionMode==="daily"){puzzleProgress.dailyDate=localDayKey();puzzleProgress.dailyLives=sessionLives;}if(sessionLives===0){sessionActive=false;sessionFinished=true;dailyDecisionOpen=sessionMode==="daily";stopPuzzleTimer();message(sessionMode==="daily"?"Tu as utilisé tes cinq vies. Choisis un indice ou affiche la solution.":"Tu as perdu tes trois vies. La série est terminée.");}else message("Faux. Ce n'est pas le bon coup. Réessaye.");if(sessionMode==="daily")savePuzzleProgress();}
   else message("Faux ! Ce n’est pas le bon coup. La position ne change pas : prends un instant pour calculer.");
   render();return;
  }
