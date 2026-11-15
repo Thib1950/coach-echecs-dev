@@ -78,7 +78,7 @@ function startLineStudy(variant,index){
  const line=(variant.book?.moves?.length?variant.book.moves:gameMoves(variant.games[0]||{})).slice(0,24);
  if(!line.length){preview.hidden=false;preview.innerHTML='<p class="muted">Aucune suite de coups exploitable pour cette variante.</p>';return;}
  const game=variant.games[0]||{},userSide=sideOf(game)==="black"?"b":"w";
- let board=new Chess(),ply=0,selected=null,feedback="Suis la flèche pour jouer le prochain coup de la ligne.";
+ let board=new Chess(),ply=0,selected=null,busy=false,feedback="Suis la flèche pour jouer le prochain coup de la ligne.";
  const autoReply=()=>{while(ply<line.length&&board.turn()!==userSide){const u=line[ply];try{board.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]});ply++;}catch{break;}}};
  autoReply();
  const overlay=document.createElement("div");overlay.className="opening-study-overlay";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");document.body.appendChild(overlay);
@@ -92,16 +92,16 @@ function startLineStudy(variant,index){
   overlay.innerHTML='<div class="opening-study-page"><header class="opening-study-top"><div><p class="eyebrow">ENTRAÎNEMENT DU RÉPERTOIRE</p><h2>'+esc(variant.name)+'</h2><p class="muted">'+esc(game.opening||game.displayOpening||"Ligne issue de ton répertoire")+'</p></div><button type="button" class="secondary-button" data-study-close>← Retour aux ouvertures</button></header><div class="opening-study-content"><div class="opening-study-board-wrap"><div class="opening-study-board">'+cells+'</div>'+arrowSvg+'</div><aside class="opening-study-side"><span class="engine-badge ready">'+(ply>=line.length?"Ligne terminée":"À toi de jouer")+'</span><h3>'+(ply>=line.length?"Bravo, ligne terminée !":"Joue le coup indiqué")+'</h3><p>'+esc(ply>=line.length?"Tu as parcouru toute la variante. Recommence pour la mémoriser.":feedback)+'</p><div class="opening-study-progress"><strong>'+ply+' / '+line.length+'</strong><span>demi-coups parcourus</span></div><button type="button" class="primary-button" data-study-restart>Recommencer la ligne</button></aside></div></div>';
   overlay.querySelectorAll(".chess-piece-image").forEach(img=>img.addEventListener("error",()=>{const fallback=document.createElement("span");fallback.className="piece";fallback.textContent=img.alt;img.replaceWith(fallback);},{once:true}));
  };
- overlay.addEventListener("click",event=>{
+ overlay.addEventListener("click",async event=>{
   if(event.target.closest("[data-study-close]")){close();return;}
-  if(event.target.closest("[data-study-restart]")){board=new Chess();ply=0;selected=null;feedback="Suis la flèche pour jouer le prochain coup de la ligne.";autoReply();draw();return;}
-  const square=event.target.closest("[data-study-square]");if(!square||ply>=line.length||board.turn()!==userSide)return;
+  if(event.target.closest("[data-study-restart]")){if(busy)return;board=new Chess();ply=0;selected=null;feedback="Suis la flèche pour jouer le prochain coup de la ligne.";autoReply();draw();return;}
+  const square=event.target.closest("[data-study-square]");if(!square||busy||ply>=line.length||board.turn()!==userSide)return;
   const sq=square.dataset.studySquare,piece=board.get(sq);
   if(!selected){if(piece&&piece.color===userSide){selected=sq;draw();}return;}
   if(piece&&piece.color===userSide){selected=sq;draw();return;}
   const legal=board.moves({square:selected,verbose:true}).find(m=>m.to===sq);if(!legal){selected=null;draw();return;}
-  const played=legal.from+legal.to+(legal.promotion||"");if(played!==line[ply]){feedback="Ce coup ne suit pas la ligne. Regarde la flèche et essaie à nouveau.";selected=null;draw();return;}
-  board.move({from:legal.from,to:legal.to,promotion:legal.promotion||"q"});ply++;selected=null;feedback="Bien joué. Observe la réponse adverse, puis suis la prochaine flèche.";autoReply();draw();
+  const played=legal.from+legal.to+(legal.promotion||"");if(played!==line[ply]){feedback="Faux ! Ce coup ne suit pas la ligne. Regarde la flèche et réessaie.";selected=null;draw();return;}
+  board.move({from:legal.from,to:legal.to,promotion:legal.promotion||"q"});ply++;selected=null;feedback="Bien joué ! L’adversaire réfléchit…";busy=true;draw();await new Promise(resolve=>setTimeout(resolve,560));autoReply();busy=false;feedback=ply>=line.length?"Bravo, tu as terminé toute la séquence !":"La réponse adverse est jouée. À toi de continuer.";draw();
  });
  draw();
 }
@@ -167,8 +167,8 @@ async function startExercise(group){
   const uci=move.from+move.to+(move.promotion||"");board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});selected=null;busy=true;feedback="Je vérifie ton coup avec Stockfish…";draw();
   try{
    const after=await window.CoachAnalysis.analyzePosition(board.fen()),sign=side==="w"?1:-1,loss=Math.max(0,sign*(best.scoreWhite-after.scoreWhite));
-   if(uci===best.bestmove||loss<=35){finished=true;feedback="Excellent ! "+(best.bestSan||"Ce coup")+(best.bestSan?" est le meilleur choix ou une très bonne alternative.":" améliore la position.")+" Tu peux passer à une autre position.";}
-   else{board.undo();feedback="Ce coup est légal, mais Stockfish trouve une réponse plus forte. Essaie encore en cherchant "+(best.bestSan||"un coup plus actif")+". La position est rétablie.";}
+   if(uci===best.bestmove||loss<=35){finished=true;feedback="Bravo ! "+(best.bestSan||"Ce coup")+(best.bestSan?" est le meilleur choix ou une très bonne alternative.":" améliore la position.")+" Tu as terminé cet exercice. Tu peux passer à la position suivante.";}
+   else{board.undo();feedback="Faux ! Stockfish trouve une réponse plus forte. Essaie encore en cherchant "+(best.bestSan||"un coup plus actif")+". La position est rétablie.";}
   }catch(error){board.undo();feedback="Je n’ai pas pu vérifier ce coup : "+(error.message||"erreur du moteur")+". Essaie à nouveau.";}
   busy=false;draw();
  };
