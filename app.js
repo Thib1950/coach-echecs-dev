@@ -2,6 +2,7 @@ const LEGACY_STORAGE_KEY = "coach-echecs-dev-v1";
 let USERNAME = (localStorage.getItem("coach-echecs-dev-account") || "gone_1950").trim().toLowerCase();
 const storageKey = () => LEGACY_STORAGE_KEY + ":" + USERNAME;
 let games = [];
+let syncInFlight = false;
 const $ = (id) => document.getElementById(id);
 const avatarCache=new Map(),avatarPending=new Set();
 let coachAudioContext=null;
@@ -135,9 +136,12 @@ function render(){
   $("recent-games").innerHTML=sorted.length?sorted.slice(0,4).map(recentGameHtml).join(""):'<div class="empty-state">Tes parties apparaîtront ici après l’import.</div>';
   renderGames(sorted);renderBars(wins,draws,losses);renderOpenings();renderTraining();renderProgressStats(wins,draws,losses);hydratePlayerAvatars();
 }
-function gameHtml(g){
+function gameHtml(g,index=0){
  const o=outcome(g),accuracy=gameAccuracy(g);
- const accuracyText=!g.analysis?.partial?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":(g.pgn?"En attente…":"—")):(g.pgn?"En cours…":"—");
+ const hasCompleteAnalysis=!!(g.analysis&&!g.analysis.partial&&Array.isArray(g.analysis.moves));
+ const accuracyText=hasCompleteAnalysis?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":"—"):(g.analysis?.partial?"En cours…":(g.pgn?(index<5?"En attente…":"Non calculée"):"—"));
+ const calculateButton=g.pgn&&index>=5&&!hasCompleteAnalysis?'<button type="button" class="accuracy-calculate-button" data-calculate-accuracy="'+escapeHtml(g.id)+'" '+(g.analysis?.partial?'disabled':'')+'>'+(g.analysis?.partial?'En cours…':'Calculer')+'</button>':'';
+
  const side=userColor(g),opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
  const elo=value=>value&&Number(value)>0?Number(value).toLocaleString("fr-FR"):"—";
  return '<div class="game-row game-row-expanded"><div class="game-row-info"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div><span class="game-opponent-elo">'+elo(opponentElo)+'</span></div><div class="game-meta">'+formatDate(g.date)+'</div></div><div class="game-list-accuracy"><span>MA PRÉCISION</span><strong>'+accuracyText+'</strong></div><span class="game-result '+o+'">'+resultLabel(o)+'</span><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir et analyser cette partie" title="Revoir et analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>';
@@ -147,7 +151,7 @@ function recentGameHtml(g){
  const icon=result==="win"?'<span class="recent-result-icon win" role="img" aria-label="Victoire" title="Victoire"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10 3.2 3.2L15.5 6"/></svg></span>':result==="draw"?'<span class="recent-result-icon draw" role="img" aria-label="Égalité" title="Égalité"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7.5h10M5 12.5h10"/></svg></span>':result==="loss"?'<span class="recent-result-icon loss" role="img" aria-label="Défaite" title="Défaite"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 6 8 8m0-8-8 8"/></svg></span>':'<span class="recent-result-icon unknown" role="img" aria-label="Résultat inconnu" title="Résultat inconnu">·</span>';
  return '<div class="recent-game-row"><div class="recent-game-main"><div class="recent-game-player"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="recent-game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div></div>'+icon+'</div></div><button type="button" class="recent-review-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir la partie contre '+escapeHtml(opponent(g)||"Adversaire")+'" title="Revoir cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>';
 }
-function renderGames(sorted){const q=($("game-search").value||"").toLowerCase(),f=$("result-filter").value;const filtered=sorted.filter(g=>(opponent(g)||"").toLowerCase().includes(q)&&(f==="all"||outcome(g)===f));$("games-list").innerHTML=filtered.length?filtered.map(gameHtml).join(""):'<div class="empty-state">Aucune partie ne correspond à ce filtre.</div>'}
+function renderGames(sorted){const q=($("game-search").value||"").toLowerCase(),f=$("result-filter").value;const filtered=sorted.filter(g=>(opponent(g)||"").toLowerCase().includes(q)&&(f==="all"||outcome(g)===f));$("games-list").innerHTML=filtered.length?filtered.map(g=>gameHtml(g,sorted.indexOf(g))).join(""):'<div class="empty-state">Aucune partie ne correspond à ce filtre.</div>'}
 function renderBars(w,d,l){const n=games.length;if(!n){$("result-bars").innerHTML='<p class="muted">Les statistiques apparaîtront après l’import.</p>';return}const known=w+d+l,rows=[["Victoires",w],["Nulles",d],["Défaites",l]];if(known<n)rows.push(["Non classées",n-known]);const total='<div class="results-total"><span>♟ TOTAL DES PARTIES</span><strong>'+n+'</strong></div>';const items=rows.map(([label,v])=>{const pct=v/n*100;return '<div class="bar-item"><span>'+label+'</span><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%"></div></div><strong>'+pct.toLocaleString("fr-FR",{maximumFractionDigits:1})+' %</strong></div>';}).join("");$("result-bars").innerHTML=total+items;}
 function renderOpenings(){/* Le répertoire est géré par openings.js, chargé uniquement à l'ouverture de l'onglet. */}
 
@@ -191,13 +195,16 @@ function renderTraining(){
   $("training-games").innerHTML=losses.length?losses.slice(0,5).map(g=>'<div class="game-row training-game-row"><div><div class="game-opponent">Défaite contre '+escapeHtml(opponent(g)||"Adversaire")+'</div><div class="game-meta">'+formatDate(g.date)+'</div></div><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Analyser cette partie" title="Analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>').join(""):'<div class="empty-state">Aucune défaite enregistrée dans les parties importées.</div>';
 }
 async function fetchPlayerRatings(){
+ const accountAtStart=USERNAME;
  const blitzNodes=[$("rating-blitz"),$("dashboard-rating-blitz")].filter(Boolean),rapidNodes=[$("rating-rapid"),$("dashboard-rating-rapid")].filter(Boolean);
  if(!blitzNodes.length&&!rapidNodes.length)return;
  [...blitzNodes,...rapidNodes].forEach(node=>node.textContent="…");
- try{const response=await fetch("https://api.chess.com/pub/player/"+USERNAME+"/stats",{headers:{"Accept":"application/json"}});if(!response.ok)throw new Error("Profil indisponible");const stats=await response.json();const b=stats.chess_blitz?.last?.rating,r=stats.chess_rapid?.last?.rating;const bv=Number.isFinite(Number(b))?Number(b).toLocaleString("fr-FR"):"—",rv=Number.isFinite(Number(r))?Number(r).toLocaleString("fr-FR"):"—";blitzNodes.forEach(node=>node.textContent=bv);rapidNodes.forEach(node=>node.textContent=rv);}
+ try{const response=await fetch("https://api.chess.com/pub/player/"+encodeURIComponent(accountAtStart)+"/stats",{headers:{"Accept":"application/json"},cache:"no-store"});if(!response.ok)throw new Error("Profil indisponible");const stats=await response.json();if(USERNAME!==accountAtStart)return;const b=stats.chess_blitz?.last?.rating,r=stats.chess_rapid?.last?.rating;const bv=Number.isFinite(Number(b))?Number(b).toLocaleString("fr-FR"):"—",rv=Number.isFinite(Number(r))?Number(r).toLocaleString("fr-FR"):"—";blitzNodes.forEach(node=>node.textContent=bv);rapidNodes.forEach(node=>node.textContent=rv);}
  catch{[...blitzNodes,...rapidNodes].forEach(node=>node.textContent="—");}
 }
 async function syncChessCom(){
+ if(syncInFlight)return;
+ syncInFlight=true;
  const buttons=[$("sync-button"),$("sync-button-games")].filter(Boolean);
  const labelMap=new Map(buttons.map(b=>[b,b.textContent]));
  buttons.forEach(b=>{b.disabled=true;b.textContent="Synchronisation…"});
@@ -209,12 +216,16 @@ async function syncChessCom(){
   const archiveData=await response.json();
   const urls=Array.isArray(archiveData.archives)?archiveData.archives:[];
   if(!urls.length)throw new Error("Aucune archive trouvée pour ce compte.");
-  // Synchronisation complète : toutes les archives sont examinées, pas seulement les trois derniers mois.
+  const metaKey=LEGACY_STORAGE_KEY+":sync-meta:"+accountAtStart;
+  let syncMeta={};try{syncMeta=JSON.parse(localStorage.getItem(metaKey)||"{}")||{};}catch{}
+  // Première synchronisation : historique complet. Ensuite, seuls les deux derniers mois
+  // sont revalidés à chaque lancement ; les archives anciennes restent en mémoire.
+  const archivesToCheck=syncMeta.fullHistory?urls.slice(-2):urls;
   let imported=[],successfulArchives=0,failedArchives=0;
-  for(let i=urls.length-1;i>=0;i--){
+  for(let i=archivesToCheck.length-1;i>=0;i--){
    if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé pendant la synchronisation.");
    const url=urls[i];
-   setMessage("Récupération des archives "+(urls.length-i)+"/"+urls.length+"…");
+   setMessage("Récupération des archives "+(archivesToCheck.length-i)+"/"+archivesToCheck.length+"…");
    try{
     const res=await fetch(url,{headers:{"Accept":"application/json"},cache:"no-store"});
     if(!res.ok){failedArchives++;continue;}
@@ -225,17 +236,21 @@ async function syncChessCom(){
   if(!successfulArchives)throw new Error("Aucune archive n'a pu être récupérée. Les parties déjà enregistrées n'ont pas été modifiées.");
   if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé avant l'enregistrement.");
   const byId=new Map(games.map(g=>[String(g.id),g]));
+  const knownIds=new Set(byId.keys());
+  const newCount=imported.filter(g=>!knownIds.has(String(g.id))).length;
   imported.forEach(g=>{
    const key=String(g.id),previous=byId.get(key);
-   byId.set(key,{...(previous||{}),...g,...(previous?.analysis?{analysis:previous.analysis}:{})});
+   const mergedGame={...(previous||{}),...g};
+   if(previous?.analysis)mergedGame.analysis=previous.analysis;
+   byId.set(key,mergedGame);
   });
   const merged=[...byId.values()].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   // Ne jamais remplacer un historique local non vide par un résultat vide.
   if(merged.length){games=merged;saveGames();render();}
+  if(!failedArchives){try{localStorage.setItem(metaKey,JSON.stringify({fullHistory:true,lastSync:Date.now()}));}catch{}}
   await fetchPlayerRatings();
-  const newCount=imported.filter(g=>!games.some(old=>String(old.id)===String(g.id))).length;
   const status=failedArchives?(" Synchronisation partielle : "+failedArchives+" archive(s) indisponible(s)."):"";
-  setMessage(imported.length+" partie(s) récupérée(s) depuis "+successfulArchives+" archive(s). "+games.length+" parties au total, analyses locales conservées."+status);
+  setMessage(newCount+" nouvelle(s) partie(s), "+imported.length+" vérifiée(s) dans "+successfulArchives+" archive(s). "+games.length+" parties au total ; analyses conservées."+status);
   $("sync-state").textContent="Compte connecté · "+accountAtStart;
  }catch(e){
   // L'historique en mémoire et dans localStorage reste intact en cas d'échec réseau.
@@ -243,6 +258,7 @@ async function syncChessCom(){
   console.error("Chess.com sync failed",e);
  }finally{
   buttons.forEach(b=>{b.disabled=false;b.textContent=labelMap.get(b)||"Synchroniser mes parties";});
+  syncInFlight=false;
  }
 }
 function importPgnFile(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{const added=parsePgn(String(reader.result||""));if(!added.length){setMessage("Je n'ai pas reconnu de parties dans ce fichier PGN.");return}const byId=new Map(games.map(g=>[String(g.id),g]));added.forEach(g=>{const previous=byId.get(String(g.id));const sameGame=previous&&previous.pgn&&g.pgn&&previous.pgn===g.pgn;byId.set(String(g.id),{...(sameGame?previous:{}),...g,...(sameGame&&previous.analysis&&!g.analysis?{analysis:previous.analysis}:{})});});games=[...byId.values()];saveGames();render();setMessage(added.length+" partie(s) importée(s) depuis le fichier PGN.")};reader.onerror=()=>setMessage("Impossible de lire ce fichier.");reader.readAsText(file)}
@@ -262,7 +278,7 @@ document.querySelectorAll("[data-goto]").forEach(btn=>btn.addEventListener("clic
 $("sync-button").addEventListener("click",syncChessCom);$("sync-button-games").addEventListener("click",syncChessCom);
 $("change-chess-account")?.addEventListener("click",switchChessAccount);
 $("chess-account-input")?.addEventListener("keydown",event=>{if(event.key==="Enter")switchChessAccount();});$("pgn-file").addEventListener("change",e=>importPgnFile(e.target.files[0]));$("game-search").addEventListener("input",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));$("result-filter").addEventListener("change",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));
-document.addEventListener("click",e=>{const b=e.target.closest("[data-open-game]");if(!b)return;e.preventDefault();if(window.CoachAnalysis?.openGame){window.CoachAnalysis.openGame(b.dataset.openGame);return;}window.dispatchEvent(new CustomEvent("coach:analyze-game",{detail:{gameId:b.dataset.openGame}}));});
+document.addEventListener("click",e=>{const calculate=e.target.closest("[data-calculate-accuracy]");if(calculate){e.preventDefault();if(calculate.disabled)return;calculate.disabled=true;calculate.textContent="En cours…";window.CoachAnalysis?.analyzeAccuracy?.(calculate.dataset.calculateAccuracy).catch(error=>{console.warn("Calcul de précision impossible",error);calculate.disabled=false;calculate.textContent="Réessayer";});return;}const b=e.target.closest("[data-open-game]");if(!b)return;e.preventDefault();if(window.CoachAnalysis?.openGame){window.CoachAnalysis.openGame(b.dataset.openGame);return;}window.dispatchEvent(new CustomEvent("coach:analyze-game",{detail:{gameId:b.dataset.openGame}}));});
 document.addEventListener("click",e=>{if(e.target.closest("[data-games-back]")){$("panel-games")?.classList.remove("reviewing-game");$("game-replay-area").innerHTML="";$("analysis-results").innerHTML="";}});
 const accountInput=$("chess-account-input");if(accountInput)accountInput.value=USERNAME;const accountMenuName=$("account-menu-name");if(accountMenuName)accountMenuName.textContent=USERNAME;const topAccountName=$("account-name");if(topAccountName)topAccountName.textContent=USERNAME;
 games=readStoredGames();render();fetchPlayerRatings();
@@ -287,3 +303,4 @@ window.CoachApp = { getGames: () => games, getUsername: () => USERNAME, accountS
 const renderBeforeAnalysis = render;
 render = function(){ renderBeforeAnalysis(); window.dispatchEvent(new Event("coach:games-updated")); };
 render();
+setTimeout(()=>syncChessCom(),450);
