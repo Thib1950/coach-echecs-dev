@@ -975,3 +975,26 @@ footer{border-top-color:#e1e8e1;color:#87928b}
 .puzzle-hint-arrow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 2px 2px #24312655)}
 .puzzle-square{z-index:0}
 @media(max-width:900px){.puzzle-board-wrap{max-width:min(78vw,620px)}}
+
+/* Harmonisation des écrans d'étude, d'analyse et de relecture */
+.opening-explorer-layout,.opening-practice-layout,.opening-study-shell{background:#f8faf7;border-color:#e0e8df;box-shadow:0 4px 15px #203a2908}
+.opening-practice-coach,.opening-study-side{background:#fff;border-color:#e1e9e1;color:#34463b}
+.opening-practice-coach p,.opening-study-side p,.opening-study-side small{color:#748178}
+.opening-explorer-controls button,.opening-variant-actions button,.opening-family-button,.opening-variant-row button{background:#f4f7f3;border-color:#dce6dc;color:#40564a}
+.opening-family-button.secondary{background:#edf3ed;color:#4c6855;border-color:#dce6dc}
+.opening-variant-preview,.pv-panel,.results-total{background:#f7faf6;border-color:#e0e8df;color:#405247}
+.pv-step{background:#edf3ed;border-color:#dce6dc;color:#405247}
+.recent-game-row,.recent-game-row:nth-child(even),.game-row-expanded,.game-row-expanded:nth-child(even){background:#fff;border-color:#e2e9e2;box-shadow:0 3px 12px #203a2907}
+.recent-game-elo{background:#edf3ed;border-color:#dce6dc;color:#405c49}
+.analysis-icon-button{background:#f1f5f0;border-color:#dce5dc;color:#54735e}
+.replay-controls .icon-nav{background:#f3f7f2;border-color:#d9e4d9;color:#526d59;box-shadow:0 2px 0 #dce5dc}
+.replay-controls .icon-nav:active{background:#e4eee4;border-color:#9fbea4}
+.review-free-exit{background:#f5f8f4;border-color:#dce5dc;color:#4c6252}
+.player-avatar{background:linear-gradient(145deg,#dce9dd,#b9cfbc);border-color:#cfddcf;color:#42604a;text-shadow:none;box-shadow:0 2px 8px #203a2912}
+.opening-study-overlay{background:rgba(32,45,36,.58);backdrop-filter:blur(5px)}
+.opening-status.solid{background:#e8f1e8;color:#4b7555;border-color:#d1e2d1}
+.summary-metric.brilliant,.move-quality.brilliant{background:#e9f3fa;border-color:#d1e5f2;color:#39759b}
+.summary-metric.brilliant .metric-icon{background:#6da8cb;color:#fff}
+.summary-metric.great,.move-quality.great{background:#edf2fa;border-color:#dce5f3;color:#5677a1}
+.summary-metric.best,.move-quality.best{background:#edf5ed;border-color:#d8e8d8;color:#4e8054}
+.summary-metric.excellent,.move-quality.excellent{background:#f0f5e9;border-color:#e0ebd1;color:#65834a}
