@@ -2,6 +2,7 @@ import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
 
 const $ = id => document.getElementById(id);
 let worker = null, engineReady = null, busy = false, positionRequestId = 0;
+let accuracyQueueRunning=false,accuracyQueueTotal=0,accuracyQueueDone=0,accuracyQueueSkipped=0;
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const user = "gone_1950";
 
@@ -310,6 +311,31 @@ async function analyseSelectedGame(gameIdOverride,options={}){
     }
   }
 }
+function updateAccuracyQueueStatus(){
+ const status=$("accuracy-queue-status"),button=$("accuracy-queue-button");
+ if(status)status.textContent=accuracyQueueRunning
+  ?"Calcul des précisions : "+accuracyQueueDone+" / "+accuracyQueueTotal+" · "+accuracyQueueSkipped+" ignorée(s)"
+  :accuracyQueueTotal
+   ?"Terminé : "+accuracyQueueDone+" partie(s) analysée(s), "+accuracyQueueSkipped+" ignorée(s)."
+   :"Les analyses déjà enregistrées sont conservées lors des synchronisations.";
+ if(button){button.disabled=accuracyQueueRunning||busy;button.textContent=accuracyQueueRunning?"Calcul en cours…":"Calculer les précisions manquantes";}
+}
+async function analyzeMissingAccuracies(){
+ if(accuracyQueueRunning||busy)return;
+ const games=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+ const pending=games.filter(g=>g.pgn&&(!g.analysis||!Array.isArray(g.analysis.moves)||g.analysis.partial));
+ accuracyQueueTotal=pending.length;accuracyQueueDone=0;accuracyQueueSkipped=0;
+ if(!pending.length){accuracyQueueRunning=false;updateAccuracyQueueStatus();const status=$("accuracy-queue-status");if(status)status.textContent="Toutes les parties avec PGN disposent déjà d’une analyse complète.";return;}
+ accuracyQueueRunning=true;updateAccuracyQueueStatus();
+ for(const game of pending){
+  if(!accuracyQueueRunning)break;
+  try{await analyseSelectedGame(game.id,{background:true,movetime:320});accuracyQueueDone++;}
+  catch(error){accuracyQueueSkipped++;console.warn("Analyse de précision ignorée",game.id,error);}
+  updateAccuracyQueueStatus();
+ }
+ accuracyQueueRunning=false;updateAccuracyQueueStatus();window.CoachApp?.refresh?.();
+}
+$("accuracy-queue-button")?.addEventListener("click",analyzeMissingAccuracies);
 function openGameInCoach(gameId){
   const id=String(gameId??"");
   document.querySelector('[data-tab="games"]')?.click();
