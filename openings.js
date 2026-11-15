@@ -5,6 +5,37 @@ let database=[],dbError="",groups=[],currentKey=null,exercise=null,showAllOpenin
 const glyph={wk:"♔",wq:"♕",wr:"♖",wb:"♗",wn:"♘",wp:"♙",bk:"♚",bq:"♛",br:"♜",bb:"♝",bn:"♞",bp:"♟"};
 const FR=[[/London System/gi,"Système de Londres"],[/Jobava London/gi,"Londres Jobava"],[/Sicilian Defense/gi,"Défense sicilienne"],[/King's Pawn Game/gi,"Partie du pion roi"],[/Queen's Pawn Game/gi,"Partie du pion dame"],[/Four Knights Game/gi,"Partie des quatre cavaliers"],[/King's Pawn Game/gi,"Partie du pion roi"],[/Queen's Pawn Game/gi,"Partie du pion dame"],[/Four Knights Game/gi,"Partie des quatre cavaliers"],[/French Defense/gi,"Défense française"],[/Caro-Kann Defense/gi,"Défense Caro-Kann"],[/King's Indian Defense/gi,"Défense est-indienne"],[/Queen's Gambit/gi,"Gambit dame"],[/King's Gambit/gi,"Gambit roi"],[/Ruy Lopez/gi,"Partie espagnole"],[/Italian Game/gi,"Partie italienne"],[/Scotch Game/gi,"Partie écossaise"],[/English Opening/gi,"Ouverture anglaise"],[/Scandinavian Defense/gi,"Défense scandinave"],[/Alekhine's Defense/gi,"Défense Alekhine"],[/Pirc Defense/gi,"Défense Pirc"],[/Dutch Defense/gi,"Défense hollandaise"],[/Slav Defense/gi,"Défense slave"],[/Nimzo-Indian Defense/gi,"Défense nimzo-indienne"],[/Grünfeld Defense/gi,"Défense Grünfeld"],[/Benoni Defense/gi,"Défense Benoni"],[/Reti Opening/gi,"Ouverture Réti"],[/Opening/gi,"Ouverture"],[/Defense/gi,"Défense"],[/Gambit/gi,"Gambit"],[/Advanced Variation/gi,"Variante d’avance"],[/Variation/gi,"Variante"],[/Attack/gi,"Attaque"],[/Accepted/gi,"accepté"],[/Declined/gi,"refusé"],[/Exchange/gi,"d'échange"],[/Classical/gi,"classique"],[/System/gi,"système"]];
 function frenchName(name){let s=name||"Ouverture non classée";for(const [re,to] of FR)s=s.replace(re,to);return s;}
+let strategicIdeasByEco=new Map();
+function parseCsvRows(source){
+ const rows=[];let row=[],field="",quoted=false;
+ for(let i=0;i<source.length;i++){const ch=source[i];
+  if(quoted){if(ch==='"'&&source[i+1]==='"'){field+='"';i++;}else if(ch==='"')quoted=false;else field+=ch;}
+  else if(ch==='"')quoted=true;
+  else if(ch===","){row.push(field);field="";}
+  else if(ch==="\n"){row.push(field);if(row.some(value=>value.trim()))rows.push(row);row=[];field="";}
+  else if(ch!=="\r")field+=ch;
+ }
+ if(field.length||row.length){row.push(field);rows.push(row);}return rows;
+}
+async function loadStrategicIdeas(){
+ const key="coach-echecs-dev-strategic-ideas-v1";
+ try{
+  const cached=localStorage.getItem(key);
+  if(cached){const rows=JSON.parse(cached);if(Array.isArray(rows)){strategicIdeasByEco=new Map(rows.map(item=>[item.eco,item]));return;}}
+  const response=await fetch("https://raw.githubusercontent.com/Maahi420/chess-openings-data/main/data/openings.csv",{cache:"force-cache"});
+  if(!response.ok)throw new Error("Référentiel stratégique indisponible");
+  const rows=parseCsvRows(await response.text()),headers=rows.shift()||[],index=Object.fromEntries(headers.map((name,i)=>[name,i]));
+  const selected=rows.map(row=>({eco:row[index.eco],kind:row[index.kind],name:row[index.name],description:row[index.description],white_ideas:row[index.white_ideas],black_ideas:row[index.black_ideas]})).filter(item=>item.eco&&item.white_ideas&&item.black_ideas);
+  const families=selected.filter(item=>item.kind==="family");
+  strategicIdeasByEco=new Map(families.map(item=>[item.eco,item]));
+  try{localStorage.setItem(key,JSON.stringify(families));}catch{}
+ }catch(error){console.info("Les explications stratégiques détaillées ne sont pas disponibles hors ligne.",error);}
+}
+function openingPlanFor(game,color){
+ const opening=classify(game||{}),idea=strategicIdeasByEco.get(opening.eco);
+ return idea?(color==="w"?idea.white_ideas:idea.black_ideas):"";
+}
+
 function familyName(name){return frenchName(String(name||"Ouverture non classée").split(/\s*[:–—]\s*/)[0].trim());}
 function gameMoves(game){try{const c=new Chess();c.loadPgn(game.pgn||"");return c.history({verbose:true}).map(m=>m.from+m.to+(m.promotion||""));}catch{return [];}}
 function parseLine(pgn){try{const c=new Chess();c.loadPgn(pgn);return c.history({verbose:true}).map(m=>m.from+m.to+(m.promotion||""));}catch{return [];}}
@@ -234,6 +265,10 @@ async function startExercise(group){
    return actor+" crée une pression sur une pièce ou un défenseur. Le but peut être de provoquer un échange, de forcer un déplacement ou de détourner une pièce de la défense du centre.";
   return actor+" améliore le placement de sa "+name+". Observe la case visée, les pièces qu’elle soutient et les cases de l’adversaire qui deviennent moins accessibles.";
  };
+ const describeForCoach=(position,move,moveIndex)=>{
+  const explanation=describeMove(position,move,moveIndex),plan=moveIndex<=1?openingPlanFor(candidate().game,move.color):"";
+  return explanation+(plan?" Plan stratégique de cette ouverture : "+plan:"");
+ };
  const squareCenter=sq=>{
   const file=sq.charCodeAt(0)-97,rank=Number(sq[1])-1;
   const col=side==="w"?file:7-file,row=side==="w"?7-rank:rank;
@@ -260,7 +295,7 @@ async function startExercise(group){
    const move=activeMove?moveFor(board,activeMove):null;
    status="ÉTAPE 1 · DÉMONSTRATION GUIDÉE";
    coachTitle=guidePly>=line.length?"Démonstration terminée":"Comprends l’idée du coup";
-   coachText=feedback||(move?"Pourquoi ce coup ? "+describeMove(board,move,guidePly)+ " Le déplacement à jouer est "+move.san+" ("+move.from.toUpperCase()+" → "+move.to.toUpperCase()+").":"La séquence est terminée. Tu vas maintenant la rejouer sans aide.");
+   coachText=feedback||(move?"Pourquoi ce coup ? "+describeForCoach(board,move,guidePly)+ " Le déplacement à jouer est "+move.san+" ("+move.from.toUpperCase()+" → "+move.to.toUpperCase()+").":"La séquence est terminée. Tu vas maintenant la rejouer sans aide.");
    actionLabel=guidePly>=line.length?"Rejouer sans les flèches":"";
   }else{
    status="ÉTAPE 2 · À TOI DE JOUER";
@@ -271,7 +306,7 @@ async function startExercise(group){
   root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Depuis le début · "+Math.min(guidePly+1,line.length)+" / "+line.length+" demi-coups · La flèche montre ton prochain coup.":"Rejoue depuis le début · "+practicePly+" / "+line.length+" demi-coups")+'</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'<button type="button" class="opening-exercise-return" data-exercise-close>← Retour aux ouvertures</button></aside></div></article>';
   root.querySelectorAll(".chess-piece-image").forEach(img=>img.addEventListener("error",()=>{const fallback=document.createElement("span");fallback.className="piece";fallback.textContent=img.alt;img.replaceWith(fallback);},{once:true}));
  };
- const playAutomaticReplies=()=>{const notes=[];while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;notes.push(describeMove(board,reply,guidePly));const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}if(notes.length)feedback="Réponse adverse : "+notes.join(" ");};
+ const playAutomaticReplies=()=>{const notes=[];while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;notes.push(describeForCoach(board,reply,guidePly));const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}if(notes.length)feedback="Réponse adverse : "+notes.join(" ");};
  const playPracticeReplies=()=>{while(practicePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[practicePly]);if(!reply)break;const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);practicePly++;}};
  const beginPosition=()=>{
   board=new Chess();selected=null;phase="guide";guidePly=0;practicePly=0;busy=false;finished=false;candidateFailed=false;feedback="";playAutomaticReplies();draw();
@@ -297,8 +332,8 @@ async function startExercise(group){
    const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;draw();return;}
    const expected=candidate().line[guidePly],played=move.from+move.to+(move.promotion||"");
    if(played!==expected){selected=null;feedback="Pas ce coup. Suis précisément la flèche et réessaie.";draw();return;}
-   const ownIdea=describeMove(board,move,guidePly);const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);guidePly++;selected=null;
-   let replyIdea="";while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;replyIdea=describeMove(board,reply,guidePly);const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}
+   const ownIdea=describeForCoach(board,move,guidePly);const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);guidePly++;selected=null;
+   let replyIdea="";while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;replyIdea=describeForCoach(board,reply,guidePly);const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}
    feedback="Ton idée : "+ownIdea+(replyIdea?" Réponse adverse : "+replyIdea:"")+(guidePly>=candidate().line.length?" La démonstration est terminée.":" Observe maintenant la nouvelle position.");
    draw();return;
   }
@@ -338,4 +373,5 @@ $("opening-explorer-search")?.addEventListener("input",event=>renderExplorer(eve
 
 window.addEventListener("coach:games-updated",()=>{if($("panel-openings")?.classList.contains("active"))render();});
 window.addEventListener("coach:account-changed",()=>{document.querySelectorAll(".opening-study-overlay").forEach(node=>node.remove());$("panel-openings")?.classList.remove("opening-exercise-active");$("opening-detail").innerHTML="";loadLearning();currentKey=null;showAllOpenings=false;showLearnSubview("learn-hub");render();});
+const strategicIdeasPromise=loadStrategicIdeas();
 loadLearning();loadDatabase().then(()=>{render();renderExplorer();});render();
