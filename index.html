@@ -25,16 +25,16 @@
     <main>
       <nav class="tabs" aria-label="Navigation principale">
         <button class="tab active" data-tab="dashboard"><span class="tab-icon">⌂</span>Accueil</button>
-        <button class="tab" data-tab="games"><span class="tab-icon">▤</span>Parties</button>
+        <button class="tab" data-tab="games"><span class="tab-icon">▤</span>Mes parties</button>
         <button class="tab" data-tab="openings"><span class="tab-icon">♞</span>Ouvertures</button>
         <button class="tab" data-tab="puzzles"><span class="tab-icon">♟</span>Puzzles</button>
-        <button class="tab" data-tab="training"><span class="tab-icon">◎</span>À revoir</button>
+        <button class="tab" data-tab="training" hidden aria-hidden="true" tabindex="-1">À revoir</button>
         <button class="tab" data-tab="progress"><span class="tab-icon">↗</span>Progression</button>
       </nav>
 
       <section class="panel active" id="panel-dashboard"><div class="home-screen">
 <div class="home-brand"><span class="home-knight">♞</span><div><p class="eyebrow">MON COACH D'ÉCHECS</p><h1>Bienvenue <span id="dashboard-greeting-name">gone_1950</span></h1><p>Choisis ton espace de travail.</p></div></div>
-<div class="home-menu">
+<div class="dashboard-metrics" aria-label="Résumé de ton activité"><article><span>PARTIES IMPORTÉES</span><strong id="dash-total-games">—</strong><small>Ton historique</small></article><article><span>VICTOIRES</span><strong id="dash-wins">—</strong><small>Résultats enregistrés</small></article><article><span>DÉFAITES</span><strong id="dash-losses">—</strong><small>Axes de progression</small></article><article><span>TAUX DE VICTOIRE</span><strong id="dash-win-rate">—</strong><small>Sur tes parties</small></article></div><div class="home-menu">
 <button class="home-menu-item" data-goto="games"><span class="home-menu-icon">▤</span><span><strong>Mes parties</strong><small>Historique et analyse</small></span><span class="home-menu-arrow">→</span></button>
 <button class="home-menu-item" data-goto="openings"><span class="home-menu-icon">♞</span><span><strong>Ouvertures</strong><small>Ton répertoire et tes variantes</small></span><span class="home-menu-arrow">→</span></button>
 <button class="home-menu-item" data-goto="puzzles"><span class="home-menu-icon">♟</span><span><strong>Puzzles</strong><small>Exercices tactiques et calcul</small></span><span class="home-menu-arrow">→</span></button>
@@ -84,7 +84,7 @@
         <div class="progress-kpis"><article class="training-kpi"><span>TAUX DE VICTOIRE</span><strong id="progress-win-rate">—</strong><small id="progress-win-rate-detail">Sur les parties décidées</small></article><article class="training-kpi"><span>PLUS HAUT ELO BATTU</span><strong id="progress-best-win-elo">—</strong><small id="progress-best-win-opponent">—</small></article></div><div class="content-grid"><article class="surface"><h3>Résultats des parties importées</h3><div id="result-bars" class="bar-list"><p class="muted">Les statistiques apparaîtront après l’import.</p></div></article></div>
       </section>
     </main>
-    <footer><span>MON COACH D'ÉCHECS</span><span>Version publiée · 15/11/2026 · v40</span></footer>
+    <footer><span>MON COACH D'ÉCHECS</span><span>ÉDITION DEV · PREMIUM</span></footer>
   </div>
   <div id="legacy-ui-bridge" hidden aria-hidden="true"><div class="filter-row"><input id="game-search" type="search" value="" placeholder="Rechercher un adversaire…" aria-label="Rechercher un adversaire"><select id="result-filter" aria-label="Filtrer par résultat"><option value="all">Tous les résultats</option><option value="win">Victoires</option><option value="draw">Nulles</option><option value="loss">Défaites</option></select></div><button id="sync-button-games" type="button"></button><button id="accuracy-queue-button" type="button"></button><span id="accuracy-queue-status"></span>
     <span id="stat-games"></span><span id="stat-wins"></span><span id="stat-losses"></span><span id="sync-state"></span><div id="recent-games"></div>
