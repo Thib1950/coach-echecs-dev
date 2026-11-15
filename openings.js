@@ -238,7 +238,7 @@ async function startExercise(group){
  }
  let currentIndex=chooseCandidate(candidates),board=null,selected=null,phase="guide",guidePly=0,practicePly=0,busy=false,finished=false,feedback="",candidateFailed=false;
  const files="abcdefgh",pieceNames={p:"pion",n:"cavalier",b:"fou",r:"tour",q:"dame",k:"roi"};
- const close=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);};
+ const close=()=>{phase="closed";board=null;$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);};
  const candidate=()=>candidates[currentIndex];
  const moveFor=(position,moveUci)=>position.moves({verbose:true}).find(m=>m.from+m.to+(m.promotion||"")===moveUci);
  const describeMove=(position,move,moveIndex)=>{
@@ -333,7 +333,7 @@ async function startExercise(group){
    let replyIdea="";while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;replyIdea=describeForCoach(board,reply,guidePly);const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}
    feedback=guidePly>=candidate().line.length?"Maintenant à toi de jouer. Rejoue toute la séquence sans flèches ni aide.":"Ton idée : "+ownIdea+(replyIdea?" Réponse adverse : "+replyIdea:"")+" Observe maintenant la nouvelle position.";
    draw();
-   if(guidePly>=candidate().line.length){window.setTimeout(()=>{if(phase!=="guide"||!board)return;phase="practice";board=new Chess();selected=null;practicePly=0;finished=false;feedback="À toi de jouer : retrouve la séquence que tu viens d’observer, sans aucune aide.";playPracticeReplies();draw();},1100);}
+   if(guidePly>=candidate().line.length){window.setTimeout(()=>{if(phase!=="guide"||!board||!$("panel-openings")?.classList.contains("opening-exercise-active"))return;phase="practice";board=new Chess();selected=null;practicePly=0;finished=false;feedback="À toi de jouer : retrouve la séquence que tu viens d’observer, sans aucune aide.";playPracticeReplies();draw();},1100);}
    return;
   }
   if(phase!=="practice"||busy||finished)return;
