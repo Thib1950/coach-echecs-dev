@@ -2365,3 +2365,42 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 @media(max-width:480px){#panel-puzzles .puzzle-mode-grid{grid-template-columns:1fr!important}}
 
 .opening-ideas-credit{display:block!important;margin-top:8px!important;color:#93a7bc!important;font-size:9px!important;line-height:1.4!important}
+
+/* v95 — interface concise, classement Chess.com partagé et Elo d'accueil. */
+.dashboard-hero-copy>p:not(.eyebrow),.dashboard-hero-actions{display:none!important}
+.dashboard-hero{min-height:118px!important;padding-top:23px!important;padding-bottom:23px!important}
+.dashboard-rating-strip{display:flex;align-items:center;gap:14px;padding:13px 18px;margin:-2px 0 22px;background:linear-gradient(110deg,#172a40,#1b3048);border:1px solid #38516b;border-radius:13px}
+.dashboard-rating-strip>div{display:grid;gap:4px;min-width:120px}
+.dashboard-rating-strip span{font-size:9px;letter-spacing:1px;font-weight:800;color:#9eb1c7}
+.dashboard-rating-strip strong{font:800 23px Manrope;color:#f3d58b}
+.dashboard-rating-strip small{margin-left:auto;color:#91a4ba;font-size:10px}
+.page-intro-row .page-intro-mark{display:none!important}
+.opening-color-toggle{display:flex;gap:4px;padding:4px;background:#101e30;border:1px solid #334960;border-radius:10px}
+.opening-color-toggle button{border:0;border-radius:7px;padding:8px 12px;background:transparent;color:#aabbd0;font:700 11px 'DM Sans';cursor:pointer}
+.opening-color-toggle button.active{background:#2d4661;color:#fff}
+.opening-practice-coach{gap:7px!important;padding:15px!important}
+.opening-practice-coach>p:not(.eyebrow){font-size:13px!important;line-height:1.45!important;margin:0!important;color:#e4edf6!important}
+.opening-practice-coach>small{font-size:10px!important;line-height:1.4!important}
+.opening-practice-coach .opening-quality-badge,.puzzle-quality-badge{display:inline-flex;align-items:center;align-self:flex-start;padding:6px 9px;border-radius:7px;font-size:9px;font-weight:900;letter-spacing:.45px}
+.opening-exercise-arrow{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4}
+.opening-practice-board-wrap{position:relative}
+.opening-ideas-credit{display:none!important}
+#games-analysis-workspace #analysis-results{display:none!important}
+#games-analysis-workspace .replay-card>.analysis-summary{margin-top:18px}
+.move-quality,.move-tag,.summary-metric{transition:background-color .15s ease,border-color .15s ease}
+.summary-metric.brilliant,.move-quality.brilliant,.move-tag.brilliant{background:#173b59!important;border:1px solid #287cb2!important;color:#9bdcff!important}
+.summary-metric.brilliant .metric-icon{background:#237db4!important;color:#fff!important}
+.summary-metric.great,.move-quality.great,.move-tag.great{background:#1d3557!important;border:1px solid #416ea7!important;color:#a9ccff!important}
+.summary-metric.great .metric-icon{background:#3d70aa!important;color:#fff!important}
+.summary-metric.best,.move-quality.best,.move-tag.best{background:#233f2b!important;border:1px solid #477f4f!important;color:#b7efb8!important}
+.summary-metric.best .metric-icon{background:#3d8a4c!important;color:#fff!important}
+.summary-metric.excellent,.move-quality.excellent,.move-tag.excellent{background:#1d3557!important;border:1px solid #416ea7!important;color:#a9ccff!important}
+.summary-metric.excellent .metric-icon{background:#3d70aa!important;color:#fff!important}
+.summary-metric.good,.move-quality.good,.move-tag.good{background:#303e2b!important;border:1px solid #657b45!important;color:#d4e9a5!important}
+.summary-metric.good .metric-icon{background:#637d40!important;color:#fff!important}
+.summary-metric.book,.move-quality.book,.move-tag.book{background:#343b45!important;border:1px solid #596777!important;color:#d0d8e2!important}
+.summary-metric.inaccuracy,.move-quality.inaccuracy,.move-tag.inaccuracy{background:#4a4125!important;border:1px solid #90752e!important;color:#f4d77d!important}
+.summary-metric.mistake,.move-quality.mistake,.move-tag.mistake{background:#4b3422!important;border:1px solid #a35e2d!important;color:#ffc08a!important}
+.summary-metric.miss,.move-quality.miss,.move-tag.miss{background:#492c47!important;border:1px solid #93568d!important;color:#efb7e7!important}
+.summary-metric.blunder,.move-quality.blunder,.move-tag.blunder{background:#4b292e!important;border:1px solid #a34850!important;color:#ffadb4!important}
+@media(max-width:600px){.dashboard-rating-strip{gap:9px;padding:11px 12px;flex-wrap:wrap}.dashboard-rating-strip>div{min-width:105px}.dashboard-rating-strip small{width:100%;margin:0}.opening-color-toggle button{padding:8px 9px}}
