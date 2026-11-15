@@ -150,17 +150,15 @@ function isBrilliantSacrifice(fen,uci,winLoss,beforeEval,afterEval){
   }catch{return false;}
 }
 function gameAccuracyFromMoves(moves){
-  const rows=(moves||[]).filter(m=>Number.isFinite(Number(m.winLossPercent))).map(m=>({accuracy:moveAccuracyFromWinLoss(m.winLossPercent),winBefore:Number(m.winPercentBefore)||50}));
-  if(!rows.length)return null;
-  const size=Math.max(2,Math.min(8,Math.round(rows.length/10))),weights=rows.map((row,i)=>{
-    const window=rows.slice(Math.max(0,Math.min(i-size+1,rows.length-size)),Math.max(0,Math.min(i-size+1,rows.length-size))+size);
-    const mean=window.reduce((sum,x)=>sum+x.winBefore,0)/window.length;
-    const deviation=Math.sqrt(window.reduce((sum,x)=>sum+(x.winBefore-mean)**2,0)/window.length);
-    return Math.max(.5,Math.min(12,deviation));
-  });
-  const weighted=rows.reduce((sum,row,i)=>sum+row.accuracy*weights[i],0)/weights.reduce((sum,w)=>sum+w,0);
-  const harmonic=rows.length/rows.reduce((sum,row)=>sum+1/Math.max(.1,row.accuracy),0);
-  return Math.round((weighted+harmonic)/2);
+  // Une précision n'est affichée que si l'échantillon contient assez de coups
+  // réellement évalués. Les coups de théorie et les positions incomplètes sont exclus.
+  const rows=(moves||[])
+    .filter(m=>m.kind!=="book"&&Number.isFinite(Number(m.winLossPercent)))
+    .map(m=>moveAccuracyFromWinLoss(m.winLossPercent))
+    .filter(Number.isFinite);
+  if(rows.length<6)return null;
+  // Moyenne simple et explicable : chaque coup joué compte une fois.
+  return Math.round(rows.reduce((sum,value)=>sum+value,0)/rows.length);
 }
 function resultName(g){
   const white = (g.white || "").toLowerCase() === user;
@@ -254,7 +252,8 @@ async function analyseSelectedGame(gameIdOverride,options={}){
       const winPercentBefore=winPercent(beforeEval.scoreWhite*moverSign);
       const winLossPercent=Math.max(0,winPercentBefore-winPercent(afterEval.scoreWhite*moverSign));
       const afterWinPercent=winPercent(afterEval.scoreWhite*moverSign);
-      const quality=(i<10&&(game.eco||game.opening))?{label:"Théorie",kind:"book"}:classify(winLossPercent,playedUci===beforeEval.bestmove);
+      const isOpeningPhase=i<6&&!!(game.eco||game.opening);
+      const quality=(isOpeningPhase&&winLossPercent<5)?{label:"Théorie",kind:"book"}:classify(winLossPercent,playedUci===beforeEval.bestmove);
       if(quality.kind!=="book"&&playedUci===beforeEval.bestmove&&((winPercentBefore<35&&afterWinPercent>=45)||(winPercentBefore>=45&&winPercentBefore<65&&afterWinPercent>=75))){quality.label="Grand coup";quality.kind="great";}
       const previousOpponentMove=report.positionDetails[report.positionDetails.length-1];
       if(quality.kind!=="book"&&move.color===userSide&&previousOpponentMove&&previousOpponentMove.color!==userSide&&previousOpponentMove.winLossPercent>=10&&winLossPercent>=2){quality.label="Occasion manquée";quality.kind="miss";}
@@ -283,7 +282,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
       renderResults(game,report);
       if(window.CoachReview?.updateAnalysis)window.CoachReview.updateAnalysis(report.moves,game);
       $("analysis-progress-fill").style.width="100%";
-      $("analysis-progress-label").textContent="Analyse terminée · "+elapsedText(startedAt)+" · Précision : "+game.analysis.accuracy+" %.";
+      $("analysis-progress-label").textContent="Analyse terminée · "+elapsedText(startedAt)+" · "+(game.analysis.accuracy===null?"Précision non disponible (moins de 6 coups évaluables).":"Précision estimée : "+game.analysis.accuracy+" %.");
     }else{
       updateAccuracyQueueStatus();
     }
