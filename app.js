@@ -1,24 +1,49 @@
-const USERNAME = "gone_1950";
-const STORAGE_KEY = "coach-echecs-dev-v1";
+const LEGACY_STORAGE_KEY = "coach-echecs-dev-v1";
+let USERNAME = (localStorage.getItem("coach-echecs-dev-account") || "gone_1950").trim().toLowerCase();
+const storageKey = () => LEGACY_STORAGE_KEY + ":" + USERNAME;
 let games = [];
 const $ = (id) => document.getElementById(id);
 const avatarCache=new Map(),avatarPending=new Set();
+let coachAudioContext=null;
+window.CoachSound={play(move){try{
+ const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;
+ if(!coachAudioContext)coachAudioContext=new AudioCtx();
+ const ctx=coachAudioContext;if(ctx.state==="suspended")ctx.resume();
+ const capture=!!move?.captured,duration=capture?.11:.075;
+ const osc=ctx.createOscillator(),gain=ctx.createGain(),filter=ctx.createBiquadFilter();
+ osc.type="triangle";osc.frequency.setValueAtTime(capture?430:760,ctx.currentTime);
+ osc.frequency.exponentialRampToValueAtTime(capture?260:510,ctx.currentTime+duration);
+ filter.type="lowpass";filter.frequency.value=1800;
+ gain.gain.setValueAtTime(.0001,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(capture?.075:.045,ctx.currentTime+.006);
+ gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+duration);
+ osc.connect(filter);filter.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+duration);
+ }catch(error){console.debug("Son du coup indisponible",error);}}};
 
 function readStoredGames(){
  try{
-  const developmentData=localStorage.getItem(STORAGE_KEY);
+  const developmentData=localStorage.getItem(storageKey());
   if(developmentData)return JSON.parse(developmentData);
-  // Première ouverture de la version dev : copie les parties de la version stable
-  // sans jamais modifier ni supprimer la clé utilisée par l'application stable.
-  const stableData=localStorage.getItem("coach-echecs-v1");
-  if(stableData){
-   const imported=JSON.parse(stableData);
-   if(Array.isArray(imported)){localStorage.setItem(STORAGE_KEY,JSON.stringify(imported));return imported;}
+  // Migration unique de l'historique DEV existant vers le profil actuel.
+  if(USERNAME==="gone_1950"){
+   const legacy=localStorage.getItem(LEGACY_STORAGE_KEY);
+   if(legacy){const imported=JSON.parse(legacy);if(Array.isArray(imported)){localStorage.setItem(storageKey(),JSON.stringify(imported));return imported;}}
+   // Première ouverture DEV : copie la base stable sans la modifier.
+   const stableData=localStorage.getItem("coach-echecs-v1");
+   if(stableData){const imported=JSON.parse(stableData);if(Array.isArray(imported)){localStorage.setItem(storageKey(),JSON.stringify(imported));return imported;}}
   }
   return [];
  }catch{return []}
 }
-function saveGames(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(games))}catch(e){setMessage("Le stockage du navigateur est plein. Exporte tes parties en PGN pour les conserver.")}}
+function saveGames(){try{localStorage.setItem(storageKey(),JSON.stringify(games))}catch(e){setMessage("Le stockage du navigateur est plein. Exporte tes parties en PGN pour les conserver.")}}
+function switchChessAccount(){
+ const field=$("chess-account-input"),next=String(field?.value||"").trim().replace(/^@/,"").toLowerCase();
+ if(!/^[a-z0-9_-]{2,30}$/.test(next)){setMessage("Saisis un identifiant Chess.com valide (2 à 30 caractères).");return;}
+ if(next===USERNAME){setMessage("Ce compte est déjà sélectionné.");return;}
+ saveGames();USERNAME=next;localStorage.setItem("coach-echecs-dev-account",USERNAME);games=readStoredGames();
+ const greeting=$("dashboard-greeting-name");if(greeting)greeting.textContent=USERNAME;
+ render();fetchPlayerRatings();window.dispatchEvent(new CustomEvent("coach:account-changed",{detail:{username:USERNAME}}));
+ setMessage("Compte actif : "+USERNAME+". Synchronise ou importe ses parties pour construire son répertoire.");
+}
 function setMessage(message){$("sync-message").textContent=message}
 function parsePgn(pgn){
   const chunks=pgn.replace(/\r/g,"").split(/(?=\[Event )/g).filter(x=>x.trim());
@@ -191,7 +216,9 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
  if(btn.dataset.tab==="openings"&&!openingsModuleLoaded){openingsModuleLoaded=true;import("./openings.js").catch(error=>{openingsModuleLoaded=false;console.error(error);$("opening-table").innerHTML='<div class="empty-state">Impossible de charger le module des ouvertures. Réessaie en ouvrant cet onglet.</div>';});}
 }));
 document.querySelectorAll("[data-goto]").forEach(btn=>btn.addEventListener("click",()=>document.querySelector('[data-tab="'+btn.dataset.goto+'"]')?.click()));
-$("sync-button").addEventListener("click",syncChessCom);$("sync-button-games").addEventListener("click",syncChessCom);$("pgn-file").addEventListener("change",e=>importPgnFile(e.target.files[0]));$("game-search").addEventListener("input",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));$("result-filter").addEventListener("change",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));
+$("sync-button").addEventListener("click",syncChessCom);$("sync-button-games").addEventListener("click",syncChessCom);
+$("change-chess-account")?.addEventListener("click",switchChessAccount);
+$("chess-account-input")?.addEventListener("keydown",event=>{if(event.key==="Enter")switchChessAccount();});$("pgn-file").addEventListener("change",e=>importPgnFile(e.target.files[0]));$("game-search").addEventListener("input",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));$("result-filter").addEventListener("change",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));
 document.addEventListener("click",e=>{const b=e.target.closest("[data-open-game]");if(!b)return;e.preventDefault();if(window.CoachAnalysis?.openGame){window.CoachAnalysis.openGame(b.dataset.openGame);return;}window.dispatchEvent(new CustomEvent("coach:analyze-game",{detail:{gameId:b.dataset.openGame}}));});
 document.addEventListener("click",e=>{if(e.target.closest("[data-games-back]")){$("panel-games")?.classList.remove("reviewing-game");$("game-replay-area").innerHTML="";$("analysis-results").innerHTML="";}});
 games=readStoredGames();render();fetchPlayerRatings();
@@ -212,7 +239,7 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 
 
 // Interface publique minimale pour le module d'analyse moteur.
-window.CoachApp = { getGames: () => games, saveGames: () => saveGames(), refresh: () => render() };
+window.CoachApp = { getGames: () => games, getUsername: () => USERNAME, accountStorageKey: () => storageKey(), saveGames: () => saveGames(), refresh: () => render() };
 const renderBeforeAnalysis = render;
 render = function(){ renderBeforeAnalysis(); window.dispatchEvent(new Event("coach:games-updated")); };
 render();
