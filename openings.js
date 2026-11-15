@@ -20,8 +20,7 @@ async function loadDatabase(){
   const letters=["a","b","c","d","e"];
   const files=await Promise.all(letters.map(async letter=>{const res=await fetch("https://raw.githubusercontent.com/lichess-org/chess-openings/master/"+letter+".tsv");if(!res.ok)throw new Error("Base des ouvertures indisponible");return await res.text();}));
   const all=[];
-  for(const file of files)for(const row of file.split(/\r?
-/)){const [eco,name,pgn]=row.split("\t");if(!eco||!name||!pgn||eco.toLowerCase()==="eco")continue;const moves=parseLine(pgn);if(moves.length)all.push({eco,name,display:frenchName(name),family:familyName(name),moves,pgn});}
+  for(const file of files)for(const row of file.split(/\r?\n/)){const [eco,name,pgn]=row.split("\t");if(!eco||!name||!pgn||eco.toLowerCase()==="eco")continue;const moves=parseLine(pgn);if(moves.length)all.push({eco,name,display:frenchName(name),family:familyName(name),moves,pgn});}
   database=all;try{localStorage.setItem("coach-echecs-dev-openings-db-v1",JSON.stringify(database));}catch{}
  }catch(e){dbError=e.message||"Dictionnaire indisponible";}
 }
