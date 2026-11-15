@@ -40,7 +40,7 @@ function switchChessAccount(){
  if(!/^[a-z0-9_-]{2,30}$/.test(next)){setMessage("Saisis un identifiant Chess.com valide (2 à 30 caractères).");return;}
  if(next===USERNAME){setMessage("Ce compte est déjà sélectionné.");return;}
  saveGames();USERNAME=next;localStorage.setItem("coach-echecs-dev-account",USERNAME);games=readStoredGames();
- const greeting=$("dashboard-greeting-name");if(greeting)greeting.textContent=USERNAME;const accountName=$("account-menu-name");if(accountName)accountName.textContent=USERNAME;
+ const greeting=$("dashboard-greeting-name");if(greeting)greeting.textContent=USERNAME;const accountName=$("account-menu-name");if(accountName)accountName.textContent=USERNAME;const topAccountName=$("account-name");if(topAccountName)topAccountName.textContent=USERNAME;
  render();fetchPlayerRatings();window.dispatchEvent(new CustomEvent("coach:account-changed",{detail:{username:USERNAME}}));
  setMessage("Compte actif : "+USERNAME+". Synchronise ou importe ses parties pour construire son répertoire.");
 }
