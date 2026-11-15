@@ -403,15 +403,17 @@ function analyzeMissingAccuracies(){
  return startAccuracyQueue();
 }
 function scheduleRecentAccuracy(){
- if(!isGamesPanelActive()||backgroundPauseRequested)return;
- const games=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
- const pending=games.filter(needsAccuracy);
- pending.forEach(game=>enqueueAccuracy(game.id));
- if(pending.length){
-  accuracyQueueTotal=Math.max(accuracyQueueTotal,accuracyQueueDone+accuracyQueueSkipped+pending.length);
-  updateAccuracyQueueStatus();
-  startAccuracyQueue();
- }
+ setTimeout(()=>{
+  if(!isGamesPanelActive()||backgroundPauseRequested)return;
+  const games=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const pending=games.filter(needsAccuracy);
+  pending.forEach(game=>enqueueAccuracy(game.id));
+  if(pending.length){
+   accuracyQueueTotal=Math.max(accuracyQueueTotal,accuracyQueueDone+accuracyQueueSkipped+pending.length);
+   updateAccuracyQueueStatus();
+   startAccuracyQueue();
+  }
+ },120);
 }
 $("accuracy-queue-button")?.addEventListener("click",analyzeMissingAccuracies);
 window.addEventListener("coach:games-updated",scheduleRecentAccuracy);
@@ -427,16 +429,6 @@ window.addEventListener("coach:tab-changing",event=>{
   backgroundPauseRequested=true;
   updateAccuracyQueueStatus();
  }
-});
-document.addEventListener("click",event=>{
- const button=event.target.closest("[data-calculate-accuracy]");
- if(!button)return;
- event.preventDefault();
- enqueueAccuracy(button.dataset.calculateAccuracy,true);
- const games=(window.CoachApp?.getGames?.()||[]).filter(needsAccuracy);
- accuracyQueueTotal=Math.max(accuracyQueueTotal,accuracyQueueDone+accuracyQueueSkipped+games.length);
- updateAccuracyQueueStatus();
- startAccuracyQueue();
 });
 async function analyzeWhenIdle(gameId,options={}){
  while(busy)await new Promise(resolve=>setTimeout(resolve,180));
@@ -472,7 +464,13 @@ window.addEventListener("coach:games-updated",refreshGamePicker);
 window.CoachAnalysis={
  openGame:openGameInCoach,
  analyze:gameId=>openGameInCoach(gameId),
- async analyzeAccuracy(gameId){return analyzeWhenIdle(gameId,{background:true,movetime:500});},
+ async analyzeAccuracy(gameId){
+  enqueueAccuracy(gameId,true);
+  const pending=(window.CoachApp?.getGames?.()||[]).filter(needsAccuracy);
+  accuracyQueueTotal=Math.max(accuracyQueueTotal,accuracyQueueDone+accuracyQueueSkipped+pending.length);
+  updateAccuracyQueueStatus();
+  return startAccuracyQueue();
+ },
  async analyzePosition(fen){
   const request=++positionRequestId;
   while(busy){
