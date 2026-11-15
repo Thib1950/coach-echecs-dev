@@ -104,8 +104,9 @@ function render(){
 function gameHtml(g){
  const o=outcome(g),accuracy=gameAccuracy(g);
  const accuracyText=!g.analysis?.partial?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":"—"):(g.pgn?"En cours…":"—");
- const side=userColor(g),opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
- return '<div class="game-row game-row-expanded"><div class="game-row-info"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div></div><div class="game-meta">'+formatDate(g.date)+'</div></div><div class="game-list-accuracy"><span>MA PRÉCISION</span><strong>'+accuracyText+'</strong></div><span class="game-result '+o+'">'+resultLabel(o)+'</span><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir et analyser cette partie" title="Revoir et analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>';
+ const side=userColor(g),myElo=side==="white"?g.whiteElo:side==="black"?g.blackElo:"",opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
+ const eloLabel=value=>value&&Number(value)>0?Number(value).toLocaleString("fr-FR")+" Elo":"Elo —";
+ return '<div class="game-row game-row-expanded"><div class="game-row-info"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div></div><div class="game-meta">'+formatDate(g.date)+'</div><div class="game-elo-line"><span>Toi <strong>'+eloLabel(myElo)+'</strong></span><span>Adversaire <strong>'+eloLabel(opponentElo)+'</strong></span></div></div><div class="game-list-accuracy"><span>MA PRÉCISION</span><strong>'+accuracyText+'</strong></div><span class="game-result '+o+'">'+resultLabel(o)+'</span><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir et analyser cette partie" title="Revoir et analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>';
 }
 function recentGameHtml(g){
  const result=outcome(g);
