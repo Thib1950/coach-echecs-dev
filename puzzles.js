@@ -62,7 +62,7 @@ async function startAdaptive(){
  personalized=personalCandidates();
  const queue=adaptiveCandidates(personalized);
  if(!queue.length){sessionActive=false;sessionQueue=[];await loadDaily(true);message("Je t’ai proposé un puzzle de la banque générale. Pour rendre ce parcours vraiment adaptatif, lance d’abord l’analyse Stockfish de tes parties : je pourrai alors cibler tes erreurs récurrentes.");return;}
- sessionLabel="Parcours adaptatif";sessionQueue=queue.slice(0,5);sessionTotal=sessionQueue.length;sessionSolved=0;sessionActive=true;loadNextSessionPuzzle();
+ sessionLabel="Série de problèmes";sessionQueue=queue.slice(0,5);sessionTotal=sessionQueue.length;sessionSolved=0;sessionActive=true;loadNextSessionPuzzle();
  message("Parcours adaptatif : les positions sont choisies selon les faiblesses qui reviennent le plus souvent dans tes parties analysées.");
 }
 function render(){
@@ -205,7 +205,7 @@ function startPuzzleMode(mode){
  openPuzzleExercise();loadDaily(true);
 }
 function startPuzzleSession(){
- sessionLabel="Session personnalisée";
+ sessionLabel="Série de problèmes";
  const available=personalized.filter(item=>!puzzleProgress.personalSolved.includes(item.id));
  if(!available.length){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;sessionMode="";message("Aucune position nouvelle pour le moment. Analyse quelques parties avec Stockfish pour créer ta première session personnalisée.");return;}
  sessionMode="adaptive";sessionFinished=false;stopPuzzleTimer();
