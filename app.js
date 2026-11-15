@@ -111,16 +111,29 @@ function saveGames(){
 }
 async function switchChessAccount(){
  const field=$("chess-account-input"),next=String(field?.value||"").trim().replace(/^@/,"").toLowerCase();
- if(!/^[a-z0-9_-]{2,30}$/.test(next)){setMessage("Saisis un identifiant Chess.com valide (2 à 30 caractères).");return;}
- if(next===USERNAME){setMessage("Ce compte est déjà connecté : synchronisation de ses parties…");await syncChessCom();return;}
- saveGames();USERNAME=next;localStorage.setItem("coach-echecs-dev-account",USERNAME);
- games=readStoredGames();
+ if(!/^[a-z0-9_-]{2,30}$/.test(next)){setMessage("Saisis le pseudo Chess.com (identifiant du profil, pas le nom affiché).");return;}
+ if(syncInFlight){setMessage("La synchronisation actuelle doit se terminer avant de changer de compte.");return;}
+ if(next===USERNAME){setMessage("Ce compte est déjà connecté : vérification de son historique…");await syncChessCom();return;}
+ // Sauvegarder le compte quitté avant de changer la partition active.
+ saveGames();
+ USERNAME=next;localStorage.setItem("coach-echecs-dev-account",USERNAME);
+ // Ne jamais réutiliser la promesse de chargement du compte précédent.
+ games=[];
+ storageReady=(async()=>{
+  try{
+   const indexed=await loadIndexedGames(next);
+   if(indexed.length)return indexed.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  }catch(error){console.warn("Lecture IndexedDB du compte "+next+" impossible",error);}
+  return readStoredGames();
+ })();
+ games=await storageReady;
+ if(!games.length)games=[];
  const greeting=$("dashboard-greeting-name");if(greeting)greeting.textContent=USERNAME;
  const accountName=$("account-menu-name");if(accountName)accountName.textContent=USERNAME;
  const topAccountName=$("account-name");if(topAccountName)topAccountName.textContent=USERNAME;
  const input=$("chess-account-input");if(input)input.value=USERNAME;
  render();fetchPlayerRatings();window.dispatchEvent(new CustomEvent("coach:account-changed",{detail:{username:USERNAME}}));
- setMessage("Compte "+USERNAME+" sélectionné. Récupération automatique de son historique Chess.com…");
+ setMessage("Compte "+USERNAME+" sélectionné. "+games.length.toLocaleString("fr-FR")+" parties déjà présentes sur cet appareil. Vérification de l'historique Chess.com…");
  await syncChessCom();
 }
 function setMessage(message){$("sync-message").textContent=message}
@@ -299,7 +312,9 @@ async function syncChessCom(){
   const needsHistoryRepair=!games.length||(Number(syncMeta.gameCount)>0&&games.length<Number(syncMeta.gameCount));
   const fullHistoryDone=!!syncMeta.fullHistory&&!needsHistoryRepair;
   const archivesToCheck=fullHistoryDone?urls.slice(-3):urls;
-  const completed=new Set(syncMeta.completedArchives||[]);
+  // Un checkpoint ne vaut que si les parties annoncées sont réellement présentes.
+  // En cas d'écart, on reprend toutes les archives au lieu de sauter celles déjà marquées.
+  const completed=new Set(needsHistoryRepair?[]:(syncMeta.completedArchives||[]));
   let newCount=0,verified=0,successfulArchives=0,failedArchives=0,processed=0;
   const byId=new Map(games.map(g=>[String(g.id),g]));
   const pendingArchives=archivesToCheck.filter(url=>!completed.has(url)).reverse();
