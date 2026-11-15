@@ -121,14 +121,14 @@ function exercisePositions(group,side){
 }
 async function startExercise(group){
  currentKey=group.key;
- $("panel-openings")?.classList.add("opening-exercise-active");
+ $("panel-openings")?.classList.add("opening-exercise-active");\n const backTab=$("[data-opening-back]");if(backTab)backTab.hidden=false;
  const filter=$("opening-color-filter").value,white=group.games.filter(g=>sideOf(g)==="white").length,black=group.games.length-white;
  let side=filter==="white"?"w":filter==="black"?"b":(white>=black?"w":"b");
  let candidates=exercisePositions(group,side);if(!candidates.length){side=side==="w"?"b":"w";candidates=exercisePositions(group,side);}
  const root=$("opening-detail");
  if(!candidates.length){
   root.innerHTML='<article class="surface opening-detail-card"><div class="surface-heading"><div><p class="eyebrow">ENTRAÎNEMENT PERSONNALISÉ</p><h3>'+esc(group.family)+'</h3></div><button type="button" class="text-button" id="close-opening-exercise">Retour</button></div><p class="muted">Je n’ai pas trouvé de position exploitable dans tes parties pour cette ouverture.</p></article>';
-  root.querySelector("#close-opening-exercise").onclick=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");renderDetail(group);};return;
+  root.querySelector("#close-opening-exercise").onclick=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);};return;
  }
  let currentIndex=Math.floor(Math.random()*candidates.length),board=null,selected=null,best=null,busy=false,finished=false;
  let feedback="Le coach prépare une position issue de tes parties et cherche le meilleur coup avec Stockfish.";
@@ -157,7 +157,7 @@ async function startExercise(group){
   busy=false;draw();
  };
  root.onclick=async event=>{
-  if(event.target.closest("[data-exercise-close]")){close();return;}
+  if(event.target.closest("[data-exercise-close]")){close();const back=$("[data-opening-back]");if(back)back.hidden=true;return;}
   if(event.target.closest("[data-exercise-next]")){if(!busy){currentIndex=(currentIndex+1)%candidates.length;await loadPosition();}return;}
   const button=event.target.closest("[data-opening-square]");if(!button||busy||finished||!best)return;
   const square=button.dataset.openingSquare,piece=board.get(square);
