@@ -41,15 +41,15 @@ function saveLearning(){try{localStorage.setItem(learningKey(),JSON.stringify(le
 function learningStats(key){return learning[key]||{reps:0,errors:0,dueAt:0,streak:0};}
 function targetPlyCount(stats){const reps=Number(stats?.reps)||0;return reps<2?8:reps<4?12:reps<6?14:reps<8?18:24;}
 function recordLearning(candidate,correct,hadError=false){
- const old=learningStats(candidate.key),now=Date.now(),next={...old};
+ const key=candidate.learningKey||candidate.key,old=learningStats(key),now=Date.now(),next={...old};
  if(correct){next.reps=(Number(old.reps)||0)+1;next.streak=(Number(old.streak)||0)+1;const days=hadError?1:[1,3,7,14,30][Math.min(next.reps-1,4)];next.dueAt=now+days*86400000;}
  else{next.errors=(Number(old.errors)||0)+1;next.streak=0;next.reps=Math.max(0,(Number(old.reps)||0)-1);next.dueAt=now+10*60*1000;}
- next.lastResult=correct?"ok":"error";next.updatedAt=now;learning[candidate.key]=next;saveLearning();
+ next.lastResult=correct?"ok":"error";next.updatedAt=now;learning[key]=next;saveLearning();
 }
 function chooseCandidate(candidates,previousKey=""){
  if(!candidates.length)return 0;
  const now=Date.now(),weights=candidates.map(candidate=>{
-  const p=learningStats(candidate.key),due=!p.dueAt||p.dueAt<=now?2.2:Math.max(.08,1/(1+(p.dueAt-now)/86400000));
+  const p=learningStats(candidate.learningKey||candidate.key),due=!p.dueAt||p.dueAt<=now?2.2:Math.max(.08,1/(1+(p.dueAt-now)/86400000));
   const difficulty=1+(Number(p.errors)||0)*1.5,mastery=1/(1+(Number(p.reps)||0)*.85);
   return Math.max(.02,due*difficulty*mastery*(candidate.key===previousKey ? .08 : 1));
  });
@@ -101,9 +101,9 @@ function renderVariantPreview(variant,index){
 }
 function startLineStudy(variant,index){
  const preview=$("opening-preview-"+index);if(!preview)return;
- const line=(variant.book?.moves?.length?variant.book.moves:gameMoves(variant.games[0]||{})).slice(0,24);
+ const game=variant.games[0]||{},bookLine=variant.book?.moves||[],playedLine=gameMoves(game),sourceLine=bookLine.length>=8?bookLine:playedLine,line=sourceLine.slice(0,24);
  if(!line.length){preview.hidden=false;preview.innerHTML='<p class="muted">Aucune suite de coups exploitable pour cette variante.</p>';return;}
- const game=variant.games[0]||{},userSide=sideOf(game)==="black"?"b":"w";
+ const userSide=sideOf(game)==="black"?"b":"w";
  let board=new Chess(),ply=0,selected=null,busy=false,feedback="Suis la flèche pour jouer le prochain coup de la ligne.";
  const autoReply=()=>{while(ply<line.length&&board.turn()!==userSide){const u=line[ply];try{const played=board.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]});window.CoachSound?.play(played);ply++;}catch{break;}}};
  autoReply();
@@ -144,10 +144,10 @@ function exercisePositions(group,side){
    const theoretical=opening.moves?.length>=8?opening.moves:playedLine;
    const line=theoretical.slice(0,Math.min(history.length,theoretical.length,24));
    if(line.length<4)continue;
-   const key=[group.key,openingName,side,line.slice(0,8).join(".")].join("|");
-   const stats=learningStats(key),target=targetPlyCount(stats),progressiveLine=line.slice(0,target);
+   const learningKey=[group.key,openingName,side,line.slice(0,8).join(".")].join("|"),key=learningKey+"::"+line.join(".");
+   const stats=learningStats(learningKey),target=targetPlyCount(stats),progressiveLine=line.slice(0,target);
    if(progressiveLine.length<4)continue;
-   if(!unique.has(key))unique.set(key,{key,fen:new Chess().fen(),game,ply:0,line:progressiveLine,fullLine:line,openingLength:progressiveLine.length,openingName,learning:stats});
+   if(!unique.has(key))unique.set(key,{key,learningKey,fen:new Chess().fen(),game,ply:0,line:progressiveLine,fullLine:line,openingLength:progressiveLine.length,openingName,learning:stats});
   }catch{}
  }
  return [...unique.values()];
