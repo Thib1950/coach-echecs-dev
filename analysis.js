@@ -2,8 +2,9 @@ import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
 
 const $ = id => document.getElementById(id);
 let worker = null, engineReady = null, busy = false, positionRequestId = 0;
-let backgroundPauseRequested=false;
+let backgroundPauseRequested=false,activePositionAbort=null,accuracyScheduleTimer=null;
 const isGamesPanelActive=()=>document.getElementById("panel-games")?.classList.contains("active")===true;
+const shouldPauseBackground=()=>backgroundPauseRequested||!isGamesPanelActive()||document.visibilityState==="hidden";
 let accuracyQueueRunning=false,accuracyQueueTotal=0,accuracyQueueDone=0,accuracyQueueSkipped=0;
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const user = () => String(window.CoachApp?.getUsername?.() || "").toLowerCase();
@@ -68,34 +69,42 @@ function getEngine(){
 
 function evalPosition(engine,fen,movetime=650){
   return new Promise((resolve,reject)=>{
-    let score=0,bestmove="",pv=[],depth=0,timer=null;
+    let score=0,bestmove="",pv=[],depth=0,timer=null,settled=false;
+    const finish=(callback,value)=>{
+      if(settled)return;
+      settled=true;
+      engine.removeEventListener("message",handler);
+      clearTimeout(timer);
+      if(activePositionAbort===abort)activePositionAbort=null;
+      callback(value);
+    };
+    const abort=reason=>{
+      try{engine.postMessage("stop");}catch{}
+      finish(reject,new Error(reason||"Analyse mise en pause par le navigateur."));
+    };
     const handler=event=>{
       const line=String(event.data||"");
-      const cp=line.match(/\bscore cp (-?\d+)/);
-      const mate=line.match(/\bscore mate (-?\d+)/);
+      const cp=line.match(/\\bscore cp (-?\\d+)/);
+      const mate=line.match(/\\bscore mate (-?\\d+)/);
       if(cp)score=Number(cp[1]);
       if(mate)score=Number(mate[1])>0?10000:-10000;
       if(line.startsWith("info ")){
-        const d=line.match(/\bdepth (\d+)/);
+        const d=line.match(/\\bdepth (\\d+)/);
         if(d)depth=Number(d[1]);
         const pvIndex=line.indexOf(" pv ");
-        if(pvIndex>=0)pv=line.slice(pvIndex+4).trim().split(/\s+/).filter(Boolean);
+        if(pvIndex>=0)pv=line.slice(pvIndex+4).trim().split(/\\s+/).filter(Boolean);
       }
       if(line.startsWith("bestmove")){
-        engine.removeEventListener("message",handler);
-        clearTimeout(timer);
-        bestmove=line.split(/\s+/)[1]||"";
+        const bestmoveValue=line.split(/\\s+/)[1]||"";
         const whiteToMove=fen.split(" ")[1]!=="b";
-        resolve({score,bestmove,pv,depth,scoreWhite:score*(whiteToMove?1:-1)});
+        finish(resolve,{score,bestmove:bestmoveValue,pv,depth,scoreWhite:score*(whiteToMove?1:-1)});
       }
     };
+    activePositionAbort=abort;
     engine.addEventListener("message",handler);
+    timer=setTimeout(()=>finish(reject,new Error("Stockfish n’a pas terminé l’analyse de cette position dans le délai prévu.")),45000);
     engine.postMessage("position fen "+fen);
     engine.postMessage("go movetime "+movetime);
-    timer=setTimeout(()=>{
-      engine.removeEventListener("message",handler);
-      reject(new Error("Stockfish n’a pas terminé l’analyse de cette position dans le délai prévu."));
-    },20000);
   });
 }
 
@@ -289,7 +298,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
       }
       // Dès que l'utilisateur quitte Mes parties, on libère Stockfish pour
       // que l'écran demandé soit prioritaire. Les coups déjà évalués sont conservés.
-      if(background&&(backgroundPauseRequested||!isGamesPanelActive())){
+      if(background&&shouldPauseBackground()){
         interruptedForNavigation=true;
         break;
       }
@@ -330,6 +339,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
     }
   }finally{
     busy=false;refreshGamePicker();
+setTimeout(scheduleRecentAccuracy,0);
     if(background)window.CoachApp?.refresh?.();
     if(!background){
       $("analyse-game-button").disabled=false;$("analyse-game-button").textContent="Analyser cette partie";
@@ -359,65 +369,92 @@ function enqueueAccuracy(gameId,first=false){
  }
 }
 function startAccuracyQueue(){
- if(accuracyQueuePromise)return accuracyQueuePromise;
- if(!accuracyQueueIds.length||!isGamesPanelActive()||backgroundPauseRequested)return Promise.resolve();
- accuracyQueueRunning=true;updateAccuracyQueueStatus();
- accuracyQueuePromise=(async()=>{
-  try{
-   while(accuracyQueueIds.length){
-    if(backgroundPauseRequested||!isGamesPanelActive())break;
-    const id=accuracyQueueIds.shift();
-    const game=(window.CoachApp?.getGames?.()||[]).find(g=>String(g.id)===id);
-    if(!game||!needsAccuracy(game))continue;
-    while(busy&&!backgroundPauseRequested&&isGamesPanelActive())await new Promise(resolve=>setTimeout(resolve,180));
-    if(backgroundPauseRequested||!isGamesPanelActive()){accuracyQueueIds.unshift(id);break;}
+  if(accuracyQueuePromise)return accuracyQueuePromise;
+  if(!accuracyQueueIds.length||shouldPauseBackground())return Promise.resolve();
+  accuracyQueueRunning=true;updateAccuracyQueueStatus();
+  accuracyQueuePromise=(async()=>{
     try{
-     await analyseSelectedGame(id,{background:true,movetime:650});
-     if(backgroundPauseRequested||!isGamesPanelActive()){accuracyQueueIds.unshift(id);break;}
-     const latest=(window.CoachApp?.getGames?.()||[]).find(g=>String(g.id)===id);
-     if(latest?.analysis?.partial===false&&Array.isArray(latest.analysis.moves))accuracyQueueDone++;
-     else accuracyQueueSkipped++;
-    }catch(error){
-     accuracyQueueSkipped++;
-     console.warn("Analyse de précision ignorée",id,error);
+      while(accuracyQueueIds.length){
+        if(shouldPauseBackground())break;
+        const id=accuracyQueueIds.shift();
+        const game=(window.CoachApp?.getGames?.()||[]).find(g=>String(g.id)===id);
+        if(!game||!needsAccuracy(game))continue;
+        while(busy&&!shouldPauseBackground())await new Promise(resolve=>setTimeout(resolve,180));
+        if(shouldPauseBackground()){accuracyQueueIds.unshift(id);break;}
+        try{
+          await analyseSelectedGame(id,{background:true,movetime:650});
+          if(shouldPauseBackground()){accuracyQueueIds.unshift(id);break;}
+          const latest=(window.CoachApp?.getGames?.()||[]).find(g=>String(g.id)===id);
+          if(latest?.analysis?.partial===false&&Array.isArray(latest.analysis.moves)){
+            accuracyQueueDone++;
+          }else{
+            // Une analyse interrompue ou échouée reste en attente : on ne la
+            // marque jamais comme terminée ni ne perd sa progression partielle.
+            accuracyQueueIds.push(id);
+            accuracyQueueSkipped++;
+            if(accuracyQueueSkipped>=accuracyQueueTotal+5)break;
+          }
+        }catch(error){
+          accuracyQueueSkipped++;
+          console.warn("Analyse de précision à reprendre",id,error);
+          accuracyQueueIds.push(id);
+          break;
+        }
+        updateAccuracyQueueStatus();
+      }
+    }finally{
+      accuracyQueueRunning=false;accuracyQueuePromise=null;updateAccuracyQueueStatus();
+      window.CoachApp?.refresh?.();
     }
-    updateAccuracyQueueStatus();
-   }
-  }finally{
-   accuracyQueueRunning=false;accuracyQueuePromise=null;updateAccuracyQueueStatus();
-   window.CoachApp?.refresh?.();
-  }
- })();
- return accuracyQueuePromise;
+  })();
+  return accuracyQueuePromise;
 }
 function scheduleRecentAccuracy(){
- setTimeout(()=>{
-  if(!isGamesPanelActive()||backgroundPauseRequested)return;
-  const games=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  // Automatique uniquement sur les cinq parties les plus récentes.
-  const pending=games.slice(0,5).filter(needsAccuracy);
-  pending.forEach(game=>enqueueAccuracy(game.id));
-  if(pending.length){
-   accuracyQueueTotal=Math.max(accuracyQueueTotal,accuracyQueueDone+accuracyQueueSkipped+pending.length);
-   updateAccuracyQueueStatus();
-   startAccuracyQueue();
-  }
- },120);
+  if(accuracyScheduleTimer)clearTimeout(accuracyScheduleTimer);
+  accuracyScheduleTimer=setTimeout(()=>{
+    accuracyScheduleTimer=null;
+    if(shouldPauseBackground())return;
+    const games=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+    // Automatique uniquement sur les cinq parties les plus récentes.
+    const pending=games.slice(0,5).filter(needsAccuracy);
+    pending.forEach(game=>enqueueAccuracy(game.id));
+    if(pending.length){
+      accuracyQueueTotal=Math.max(accuracyQueueTotal,accuracyQueueDone+accuracyQueueSkipped+pending.length);
+      updateAccuracyQueueStatus();
+      startAccuracyQueue();
+    }
+  },180);
+}
+function pauseAccuracyForLifecycle(){
+  backgroundPauseRequested=true;
+  if(activePositionAbort)activePositionAbort("Analyse mise en pause pendant que l’application est en arrière-plan.");
+}
+function resumeAccuracyForLifecycle(){
+  if(document.visibilityState==="hidden"||!isGamesPanelActive())return;
+  backgroundPauseRequested=false;
+  scheduleRecentAccuracy();
 }
 window.addEventListener("coach:games-updated",scheduleRecentAccuracy);
 window.addEventListener("coach:account-changed",()=>{
- accuracyQueueIds=[];accuracyQueueDone=0;accuracyQueueSkipped=0;accuracyQueueTotal=0;
- scheduleRecentAccuracy();
+  accuracyQueueIds=[];accuracyQueueDone=0;accuracyQueueSkipped=0;accuracyQueueTotal=0;
+  scheduleRecentAccuracy();
 });
 window.addEventListener("coach:tab-changing",event=>{
- if(event.detail?.tab==="games"){
-  backgroundPauseRequested=false;
-  scheduleRecentAccuracy();
- }else{
-  backgroundPauseRequested=true;
-  updateAccuracyQueueStatus();
- }
+  if(event.detail?.tab==="games"){
+    backgroundPauseRequested=false;
+    scheduleRecentAccuracy();
+  }else{
+    pauseAccuracyForLifecycle();
+    updateAccuracyQueueStatus();
+  }
 });
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden")pauseAccuracyForLifecycle();
+  else resumeAccuracyForLifecycle();
+});
+window.addEventListener("pageshow",resumeAccuracyForLifecycle);
+window.addEventListener("focus",resumeAccuracyForLifecycle);
+
 async function analyzeWhenIdle(gameId,options={}){
  while(busy)await new Promise(resolve=>setTimeout(resolve,180));
  return analyseSelectedGame(String(gameId),options);
