@@ -350,7 +350,7 @@ async function analyzeMissingAccuracies(){
  if(!pending.length){accuracyQueueRunning=false;updateAccuracyQueueStatus();const status=$("accuracy-queue-status");if(status)status.textContent="Toutes les parties avec PGN disposent déjà d’une analyse complète.";return;}
  accuracyQueueRunning=true;updateAccuracyQueueStatus();
  for(const game of pending){
-  if(!accuracyQueueRunning)break;
+  if(!accuracyQueueRunning||backgroundPauseRequested||!isGamesPanelActive())break;
   try{await analyseSelectedGame(game.id,{background:true,movetime:320});if(game.analysis&&!game.analysis.partial&&Array.isArray(game.analysis.moves))accuracyQueueDone++;else accuracyQueueSkipped++;}
   catch(error){accuracyQueueSkipped++;console.warn("Analyse de précision ignorée",game.id,error);}
   updateAccuracyQueueStatus();
