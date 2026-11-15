@@ -110,14 +110,17 @@ function exercisePositions(group,side){
  for(const game of group.games){
   if(sideOf(game)!==(side==="w"?"white":"black")||!game.pgn)continue;
   try{
-   const parsed=new Chess();parsed.loadPgn(game.pgn);const history=parsed.history({verbose:true}),board=new Chess();
-   for(let i=0;i<Math.min(history.length,14);i++){
-    if(i>=1&&board.turn()===side){
-     const line=history.slice(i,Math.min(history.length,i+8)).map(m=>m.from+m.to+(m.promotion||""));
-     if(line.length>=2)out.push({fen:board.fen(),game,ply:i,line});
-    }
-    const move=history[i];board.move({from:move.from,to:move.to,promotion:move.promotion});
-   }
+   const parsed=new Chess();parsed.loadPgn(game.pgn);
+   const history=parsed.history({verbose:true});
+   if(history.length<4)continue;
+   const opening=classify(game);
+   // La base ECO fournit la longueur de la ligne d'ouverture réellement jouée.
+   // Si l'en-tête PGN ne permet pas de retrouver la théorie, on prend les six
+   // premiers coups complets comme parcours de secours, sans inventer une variante.
+   const openingLength=Math.min(history.length,opening.moves?.length||12);
+   if(openingLength<4)continue;
+   const line=history.slice(0,openingLength).map(m=>m.from+m.to+(m.promotion||""));
+   if(line.length>=4)out.push({fen:new Chess().fen(),game,ply:0,line,openingLength,openingName:opening.display||opening.name||group.family});
   }catch{}
  }
  return out;
@@ -183,11 +186,13 @@ async function startExercise(group){
    coachText=finished?"Bravo, tu as retrouvé toute la séquence de cette ouverture. Tu peux passer à une autre position.":(feedback||"Joue les coups que tu viens d’observer. Les réponses adverses seront jouées automatiquement.");
    actionLabel=finished?"Nouvelle position":"";
   }
-  root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><button type="button" data-exercise-close hidden aria-hidden="true" tabindex="-1"></button><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Démonstration "+Math.min(guidePly+1,line.length)+" / "+line.length+" · La flèche montre le coup à jouer.":"Reproduction · "+practicePly+" / "+line.length+" demi-coups")+'</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'</aside></div></article>';
+  root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><button type="button" data-exercise-close hidden aria-hidden="true" tabindex="-1"></button><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Depuis le début · "+Math.min(guidePly+1,line.length)+" / "+line.length+" demi-coups · La flèche montre ton prochain coup.":"Rejoue depuis le début · "+practicePly+" / "+line.length+" demi-coups")+'</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'</aside></div></article>';
   root.querySelectorAll(".chess-piece-image").forEach(img=>img.addEventListener("error",()=>{const fallback=document.createElement("span");fallback.className="piece";fallback.textContent=img.alt;img.replaceWith(fallback);},{once:true}));
  };
+ const playAutomaticReplies=()=>{playAutomaticReplies();};
+ const playPracticeReplies=()=>{while(practicePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[practicePly]);if(!reply)break;board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});practicePly++;}};
  const beginPosition=()=>{
-  board=new Chess(candidate().fen);selected=null;phase="guide";guidePly=0;practicePly=0;busy=false;finished=false;feedback="";draw();
+  board=new Chess();selected=null;phase="guide";guidePly=0;practicePly=0;busy=false;finished=false;feedback="";playAutomaticReplies();draw();
  };
  root.onclick=async event=>{
   if(event.target.closest("[data-exercise-close]")){close();return;}
@@ -196,7 +201,7 @@ async function startExercise(group){
    if(busy)return;
    if(phase==="guide"){
     const line=candidate().line;
-    if(guidePly>=line.length){phase="practice";board=new Chess(candidate().fen);selected=null;practicePly=0;finished=false;feedback="À toi de retrouver la séquence, cette fois sans flèches.";draw();return;}
+    if(guidePly>=line.length){phase="practice";board=new Chess();selected=null;practicePly=0;finished=false;feedback="À toi de rejouer toute l’ouverture depuis le premier coup, sans flèches.";playPracticeReplies();draw();return;}
     return;
    }
    if(finished){currentIndex=(currentIndex+1)%candidates.length;beginPosition();return;}
@@ -225,18 +230,8 @@ async function startExercise(group){
   if(played!==expected){selected=null;feedback="Pas tout à fait. Reprends le coup montré pendant la démonstration.";draw();return;}
   board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});practicePly++;selected=null;
   if(practicePly>=candidate().line.length){finished=true;feedback="Bravo ! Tu as reproduit toute la ligne.";draw();return;}
-  if(board.turn()!==side){
-   busy=true;
-   window.setTimeout(()=>{
-    if(!board||phase!=="practice")return;
-    const reply=candidate().line[practicePly],replyMove=moveFor(board,reply);
-    if(replyMove){board.move({from:replyMove.from,to:replyMove.to,promotion:replyMove.promotion||"q"});practicePly++;}
-    busy=false;
-    if(practicePly>=candidate().line.length){finished=true;feedback="Bravo ! Tu as reproduit toute la ligne.";}
-    else feedback="Bien joué. À toi de jouer le prochain coup.";
-    draw();
-   },420);
-  }else{feedback="Bien joué. Continue la séquence.";draw();}
+  if(board.turn()!==side){busy=true;window.setTimeout(()=>{if(!board||phase!=="practice"){busy=false;return;}playPracticeReplies();busy=false;if(practicePly>=candidate().line.length){finished=true;feedback="Bravo ! Tu as reproduit toute la ligne.";}else feedback="Bien joué. À toi de jouer le prochain coup.";draw();},420);}
+  else{feedback="Bien joué. Continue la séquence.";draw();}
  };
  beginPosition();
 }
