@@ -4,7 +4,20 @@ let games = [];
 const $ = (id) => document.getElementById(id);
 const avatarCache=new Map(),avatarPending=new Set();
 
-function readStoredGames(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]")}catch{return []}}
+function readStoredGames(){
+ try{
+  const developmentData=localStorage.getItem(STORAGE_KEY);
+  if(developmentData)return JSON.parse(developmentData);
+  // Première ouverture de la version dev : copie les parties de la version stable
+  // sans jamais modifier ni supprimer la clé utilisée par l'application stable.
+  const stableData=localStorage.getItem("coach-echecs-v1");
+  if(stableData){
+   const imported=JSON.parse(stableData);
+   if(Array.isArray(imported)){localStorage.setItem(STORAGE_KEY,JSON.stringify(imported));return imported;}
+  }
+  return [];
+ }catch{return []}
+}
 function saveGames(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(games))}catch(e){setMessage("Le stockage du navigateur est plein. Exporte tes parties en PGN pour les conserver.")}}
 function setMessage(message){$("sync-message").textContent=message}
 function parsePgn(pgn){
