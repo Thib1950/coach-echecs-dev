@@ -2,7 +2,14 @@ import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const glyph={wk:"♔",wq:"♕",wr:"♖",wb:"♗",wn:"♘",wp:"♙",bk:"♚",bq:"♛",br:"♜",bb:"♝",bn:"♞",bp:"♟"};
-let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,personalized=[],showAllPersonal=false;
+const PROGRESS_KEY="coach-echecs-dev-puzzle-progress-v1";
+let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,currentDailyId="",personalized=[],showAllPersonal=false;
+let puzzleProgress={dailySolved:[],personalSolved:[],attempts:0,wrongMoves:0};
+function loadPuzzleProgress(){try{const p=JSON.parse(localStorage.getItem(PROGRESS_KEY)||"{}");puzzleProgress={dailySolved:Array.isArray(p.dailySolved)?p.dailySolved:[],personalSolved:Array.isArray(p.personalSolved)?p.personalSolved:[],attempts:Number(p.attempts)||0,wrongMoves:Number(p.wrongMoves)||0};}catch{}}
+function savePuzzleProgress(){try{localStorage.setItem(PROGRESS_KEY,JSON.stringify(puzzleProgress));}catch{}renderPuzzleProgress();}
+function renderPuzzleProgress(){const node=$("puzzle-progress");if(!node)return;const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length;node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" tentative"+(puzzleProgress.attempts>1?"s":"");}
+function personalKey(game,detail){return String(game.id)+"|"+detail.fen+"|"+detail.bestUci;}
+function markPuzzleSolved(){const key=currentPuzzle?personalKey(currentPuzzle.game,currentPuzzle.detail):currentDailyId;if(!key)return;const list=currentPuzzle?puzzleProgress.personalSolved:puzzleProgress.dailySolved;if(!list.includes(key)){list.push(key);savePuzzleProgress();}else renderPuzzleProgress();}
 function uci(move){return move.from+move.to+(move.promotion||"");}
 function loadPosition(pgn,initialPly){
  const game=new Chess();game.loadPgn(pgn);const history=game.history({verbose:true});const position=new Chess();
@@ -24,13 +31,13 @@ async function loadDaily(){
  try{
   const response=await fetch("https://lichess.org/api/puzzle/daily",{headers:{Accept:"application/json"}});
   if(!response.ok)throw new Error("Lichess a répondu HTTP "+response.status);
-  const data=await response.json();solution=data.puzzle?.solution||[];if(!solution.length||!data.game?.pgn)throw new Error("Le puzzle reçu est incomplet.");
+  const data=await response.json();solution=data.puzzle?.solution||[];currentDailyId=String(data.puzzle?.id||"");if(!solution.length||!data.game?.pgn)throw new Error("Le puzzle reçu est incomplet.");
   board=loadPosition(data.game.pgn,Number(data.puzzle.initialPly)||0);ply=0;selected=null;hinted=false;solved=false;orientation=board.turn()==="w"?"white":"black";
   $("puzzle-title").textContent="Puzzle du jour · "+data.puzzle.id;
   $("puzzle-rating").textContent=(data.puzzle.rating||"—")+" Elo";
   $("puzzle-themes").textContent="Thèmes : "+(data.puzzle.themes||[]).join(" · ");
-  message("Puzzle chargé. À toi de trouver la combinaison !");
-  render();renderPersonalized();
+  message(puzzleProgress.dailySolved.includes(currentDailyId)?"Tu as déjà résolu le puzzle du jour. Tu peux le refaire pour t’entraîner.":"Puzzle chargé. À toi de trouver la combinaison !");
+  render();renderPersonalized();renderPuzzleProgress();
  }catch(error){$("puzzle-title").textContent="Puzzle indisponible";$("puzzle-board-area").innerHTML='<div class="empty-state">Impossible de charger le puzzle : '+esc(error.message)+'. Vérifie ta connexion puis réessaie.</div>';message("Le problème tactique n’a pas pu être chargé.");}
  finally{loading=false;}
 }
@@ -43,7 +50,7 @@ function personalCandidates(){
   for(const detail of game.analysis?.positionDetails||[]){
    if(detail.color!==side||!detail.fen||!detail.bestUci||detail.bestUci===detail.playedUci)continue;
    if(!["inaccuracy","mistake","blunder","miss"].includes(detail.kind))continue;
-   out.push({game,detail});
+   out.push({game,detail,id:personalKey(game,detail)});
   }
  }
  const priority={blunder:4,mistake:3,miss:2,inaccuracy:1};
@@ -60,13 +67,14 @@ function renderPersonalized(){
  root.innerHTML=personalized.slice(0,showAllPersonal?personalized.length:8).map((item,i)=>{
   const g=item.game,d=item.detail,opponent=(g.white||"").toLowerCase()==="gone_1950"?g.black:g.white;
   const date=g.date?new Date(g.date+"T12:00:00").toLocaleDateString("fr-FR"):"Date inconnue";
-  return '<div class="personal-puzzle-row"><div class="personal-puzzle-info"><strong>'+esc(d.label||"Coup à revoir")+'</strong><span>Contre '+esc(opponent||"Adversaire")+' · '+date+'</span><small>Tu as joué '+esc(d.played||"—")+' · meilleure suite : '+esc(d.best||"—")+'</small></div><button type="button" class="secondary-button" data-personal-puzzle="'+i+'">S’entraîner</button></div>';
+  const done=puzzleProgress.personalSolved.includes(item.id);
+  return '<div class="personal-puzzle-row"><div class="personal-puzzle-info"><strong>'+esc(d.label||"Coup à revoir")+(done?' <span class="puzzle-solved-mark">✓ Résolu</span>':'')+'</strong><span>Contre '+esc(opponent||"Adversaire")+' · '+date+'</span><small>Tu as joué '+esc(d.played||"—")+' · meilleure suite : '+esc(d.best||"—")+'</small></div><button type="button" class="secondary-button" data-personal-puzzle="'+i+'">'+(done?"Refaire":"S’entraîner")+'</button></div>';
  }).join("");
  if(personalized.length>8){const more=document.createElement("button");more.type="button";more.className="text-button personal-puzzle-more";more.dataset.personalPuzzleMore="";more.textContent=showAllPersonal?"Réduire la liste":"Voir toutes les positions ("+personalized.length+")";root.appendChild(more);}
 }
 function startPersonalPuzzle(item){
  if(!item?.detail?.fen||!item.detail.bestUci)return;
- currentPuzzle=item;board=new Chess(item.detail.fen);solution=[item.detail.bestUci];ply=0;selected=null;hinted=false;solved=false;loading=false;
+ currentPuzzle=item;board=new Chess(item.detail.fen);solution=[item.detail.bestUci];puzzleProgress.attempts++;savePuzzleProgress();ply=0;selected=null;hinted=false;solved=false;loading=false;
  orientation=board.turn()==="w"?"white":"black";
  $("puzzle-title").textContent="À toi de corriger ce coup";
  $("puzzle-rating").textContent="Ton analyse";
@@ -82,11 +90,11 @@ function play(square){
  if(piece&&piece.color===board.turn()){selected=square;render();return;}
  const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;render();return;}
  const played=uci(move),expected=solution[ply];
- if(played!==expected){selected=null;message("Ce coup est légal, mais il ne résout pas le problème. Cherche une autre idée.");render();return;}
+ if(played!==expected){selected=null;puzzleProgress.wrongMoves++;savePuzzleProgress();message("Ce coup est légal, mais il ne résout pas le problème. Cherche une autre idée.");render();return;}
  board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});ply++;selected=null;
- if(ply>=solution.length){solved=true;message(currentPuzzle?"Bien joué ! Tu as trouvé le coup que Stockfish recommandait dans ta partie.":"Bravo ! Tu as trouvé toute la combinaison.");render();return;}
+ if(ply>=solution.length){solved=true;markPuzzleSolved();message(currentPuzzle?"Bien joué ! Tu as trouvé le coup que Stockfish recommandait dans ta partie.":"Bravo ! Tu as trouvé toute la combinaison.");render();return;}
  const reply=solution[ply];try{board.move({from:reply.slice(0,2),to:reply.slice(2,4),promotion:reply[4]});ply++;}catch{solved=true;}
- if(ply>=solution.length){solved=true;message("Bravo ! Tu as trouvé toute la combinaison.");}else message("Bien joué. La réponse adverse est jouée : trouve le prochain coup.");
+ if(ply>=solution.length){solved=true;markPuzzleSolved();message("Bravo ! Tu as trouvé toute la combinaison.");}else message("Bien joué. La réponse adverse est jouée : trouve le prochain coup.");
  render();
 }
 document.addEventListener("click",event=>{
@@ -97,5 +105,5 @@ document.addEventListener("click",event=>{
   if(event.target.closest("#puzzle-reload"))loadDaily();
 });
 window.addEventListener("coach:games-updated",renderPersonalized);
-renderPersonalized();
+loadPuzzleProgress();renderPuzzleProgress();renderPersonalized();
 loadDaily();
