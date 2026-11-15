@@ -137,7 +137,7 @@ function render(){
 }
 function gameHtml(g){
  const o=outcome(g),accuracy=gameAccuracy(g);
- const accuracyText=!g.analysis?.partial?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":"—"):(g.pgn?"En cours…":"—");
+ const accuracyText=!g.analysis?.partial?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":(g.pgn?"En attente…":"—")):(g.pgn?"En cours…":"—");
  const side=userColor(g),opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
  const elo=value=>value&&Number(value)>0?Number(value).toLocaleString("fr-FR"):"—";
  return '<div class="game-row game-row-expanded"><div class="game-row-info"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div><span class="game-opponent-elo">'+elo(opponentElo)+'</span></div><div class="game-meta">'+formatDate(g.date)+'</div></div><div class="game-list-accuracy"><span>MA PRÉCISION</span><strong>'+accuracyText+'</strong></div><span class="game-result '+o+'">'+resultLabel(o)+'</span><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir et analyser cette partie" title="Revoir et analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>';
