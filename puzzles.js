@@ -66,12 +66,13 @@ function puzzleFromLocalRow(row){
  }
  return {id:String(id),fen,solution:sequence,rating:Number(rating)||1400,themes:String(themes||"").split(/\\s+/).filter(Boolean)};
 }
-async function loadLocalDailyPuzzle(){
+async function loadLocalDailyPuzzle(randomize=false){
  const bands=[1200,1300,1400,1500,1600,1700];
- const band=bands[Math.floor(Math.random()*bands.length)];
+ const day=Math.floor(Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),new Date().getUTCDate())/86400000);
+ const band=bands[randomize?Math.floor(Math.random()*bands.length):day%bands.length];
  const rows=await getLocalPuzzleBucket(band);
  // Shuffle a short sample and skip any corrupt row rather than failing the whole session.
- const startAt=Math.floor(Math.random()*rows.length);
+ const startAt=randomize?Math.floor(Math.random()*rows.length):Math.abs((day*2654435761)%rows.length);
  let lastError=null;
  for(let n=0;n<Math.min(24,rows.length);n++){
   try{return puzzleFromLocalRow(rows[(startAt+n)%rows.length]);}
@@ -79,12 +80,12 @@ async function loadLocalDailyPuzzle(){
  }
  throw lastError||new Error("Aucun puzzle exploitable dans cette banque.");
 }
-async function loadDaily(){
+async function loadDaily(randomize=false){
  if(loading)return;loading=true;currentPuzzle=null;sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;board=null;
  $("puzzle-board-area").innerHTML='<div class="empty-state">Chargement de la banque tactique…</div>';
  message("Chargement des puzzles intégrés à l’application…");
  try{
-  const data=await loadLocalDailyPuzzle();
+  const data=await loadLocalDailyPuzzle(randomize);
   solution=data.solution;currentDailyId=data.id;
   board=new Chess(data.fen);selected=null;hinted=false;solved=false;
   const setupMove=legalSolutionMove(board,solution[0]);
@@ -178,7 +179,7 @@ function play(square){
 }
 document.addEventListener("click",event=>{
  const mode=event.target.closest("[data-puzzle-mode]");
- if(mode){openPuzzleExercise();if(mode.dataset.puzzleMode==="session"||mode.dataset.puzzleMode==="mistakes")startPuzzleSession();else loadDaily();return;}
+ if(mode){openPuzzleExercise();if(mode.dataset.puzzleMode==="session"||mode.dataset.puzzleMode==="mistakes")startPuzzleSession();else loadDaily(mode.dataset.puzzleMode==="adaptive");return;}
  if(event.target.closest("[data-puzzle-back]")){closePuzzleExercise();return;}
  if(event.target.closest("[data-start-puzzle-session]")){startPuzzleSession();return;}
  if(event.target.closest("[data-session-next]")){loadNextSessionPuzzle();return;}
@@ -186,7 +187,7 @@ document.addEventListener("click",event=>{
  if(event.target.closest("#puzzle-hint")){if(solution[ply]){hinted=true;message("Indice affiché sur le panneau du puzzle.");render();}return;}
  const more=event.target.closest("[data-personal-puzzle-more]");if(more){showAllPersonal=!showAllPersonal;renderPersonalized();return;}
   const personal=event.target.closest("[data-personal-puzzle]");if(personal){startPersonalPuzzle(personalized[Number(personal.dataset.personalPuzzle)]);return;}
-  if(event.target.closest("#puzzle-reload"))loadDaily();
+  if(event.target.closest("#puzzle-reload"))loadDaily(true);
 });
 window.addEventListener("coach:games-updated",renderPersonalized);
 loadPuzzleProgress();renderPuzzleProgress();renderPersonalized();
