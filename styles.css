@@ -1251,3 +1251,9 @@ nav.tabs .tab.active .tab-icon{color:#ffad5c!important}
  #panel-puzzles .puzzle-board-wrap{width:min(100%,min(58vh,calc(100dvh - 330px)))}
  #panel-puzzles .puzzle-side small{display:none}
 }
+
+.accuracy-queue-bar{display:flex;align-items:center;gap:12px;flex:none;margin:-3px 0 12px;padding:9px 12px;background:#13243a;border:1px solid #30465f;border-radius:11px}
+.accuracy-queue-bar span{min-width:0;color:#b8c8d8;font-size:11px;line-height:1.4}
+.accuracy-queue-bar button{flex:none}
+#panel-games #games-list{flex:1;min-height:0;overflow-y:auto}
+@media(max-width:760px){.accuracy-queue-bar{align-items:flex-start;flex-direction:column;gap:6px}.accuracy-queue-bar button{width:100%}}
