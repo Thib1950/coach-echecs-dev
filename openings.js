@@ -266,7 +266,7 @@ async function startExercise(group){
  };
  const arrowFor=move=>{
   if(!move)return "";
-  const a=squareCenter(move.slice(0,2)),b=squareCenter(move.slice(2,4)),piece=board?.get(move.slice(2,4));
+  const a=squareCenter(move.slice(0,2)),b=squareCenter(move.slice(2,4)),piece=board?.get(move.slice(0,2));
   const center=["d4","e4","d5","e5"].map(squareCenter);
   let target=center.sort((x,y)=>Math.hypot(x.x-b.x,x.y-b.y)-Math.hypot(y.x-b.x,y.y-b.y))[0];
   if(piece?.type==="n"){
