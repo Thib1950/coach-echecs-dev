@@ -191,10 +191,11 @@ function renderTraining(){
   $("training-games").innerHTML=losses.length?losses.slice(0,5).map(g=>'<div class="game-row training-game-row"><div><div class="game-opponent">Défaite contre '+escapeHtml(opponent(g)||"Adversaire")+'</div><div class="game-meta">'+formatDate(g.date)+'</div></div><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Analyser cette partie" title="Analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>').join(""):'<div class="empty-state">Aucune défaite enregistrée dans les parties importées.</div>';
 }
 async function fetchPlayerRatings(){
- const blitz=$("rating-blitz"),rapid=$("rating-rapid");if(!blitz||!rapid)return;
- blitz.textContent="…";rapid.textContent="…";
- try{const response=await fetch("https://api.chess.com/pub/player/"+USERNAME+"/stats",{headers:{"Accept":"application/json"}});if(!response.ok)throw new Error("Profil indisponible");const stats=await response.json();const b=stats.chess_blitz?.last?.rating,r=stats.chess_rapid?.last?.rating;blitz.textContent=Number.isFinite(Number(b))?Number(b).toLocaleString("fr-FR"):"—";rapid.textContent=Number.isFinite(Number(r))?Number(r).toLocaleString("fr-FR"):"—";}
- catch{blitz.textContent="—";rapid.textContent="—";}
+ const blitzNodes=[$("rating-blitz"),$("dashboard-rating-blitz")].filter(Boolean),rapidNodes=[$("rating-rapid"),$("dashboard-rating-rapid")].filter(Boolean);
+ if(!blitzNodes.length&&!rapidNodes.length)return;
+ [...blitzNodes,...rapidNodes].forEach(node=>node.textContent="…");
+ try{const response=await fetch("https://api.chess.com/pub/player/"+USERNAME+"/stats",{headers:{"Accept":"application/json"}});if(!response.ok)throw new Error("Profil indisponible");const stats=await response.json();const b=stats.chess_blitz?.last?.rating,r=stats.chess_rapid?.last?.rating;const bv=Number.isFinite(Number(b))?Number(b).toLocaleString("fr-FR"):"—",rv=Number.isFinite(Number(r))?Number(r).toLocaleString("fr-FR"):"—";blitzNodes.forEach(node=>node.textContent=bv);rapidNodes.forEach(node=>node.textContent=rv);}
+ catch{[...blitzNodes,...rapidNodes].forEach(node=>node.textContent="—");}
 }
 async function syncChessCom(){
  const buttons=[$("sync-button"),$("sync-button-games")].filter(Boolean);
