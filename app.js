@@ -144,7 +144,7 @@ function gameHtml(g,index=0){
 
  const side=userColor(g),opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
  const elo=value=>value&&Number(value)>0?Number(value).toLocaleString("fr-FR"):"—";
- return '<div class="game-row game-row-expanded"><div class="game-row-info"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div><span class="game-opponent-elo">'+elo(opponentElo)+'</span></div><div class="game-meta">'+formatDate(g.date)+'</div></div><div class="game-list-accuracy"><span>MA PRÉCISION</span><strong>'+accuracyText+'</strong></div><span class="game-result '+o+'">'+resultLabel(o)+'</span><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir et analyser cette partie" title="Revoir et analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>';
+ return '<div class="game-row game-row-expanded"><div class="game-row-info"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div><span class="game-opponent-elo">'+elo(opponentElo)+'</span></div><div class="game-meta">'+formatDate(g.date)+'</div></div><div class="game-list-accuracy"><span>MA PRÉCISION</span><strong>'+accuracyText+'</strong>'+calculateButton+'</div><span class="game-result '+o+'">'+resultLabel(o)+'</span><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir et analyser cette partie" title="Revoir et analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>';
 }
 function recentGameHtml(g){
  const result=outcome(g);
@@ -200,7 +200,7 @@ async function fetchPlayerRatings(){
  if(!blitzNodes.length&&!rapidNodes.length)return;
  [...blitzNodes,...rapidNodes].forEach(node=>node.textContent="…");
  try{const response=await fetch("https://api.chess.com/pub/player/"+encodeURIComponent(accountAtStart)+"/stats",{headers:{"Accept":"application/json"},cache:"no-store"});if(!response.ok)throw new Error("Profil indisponible");const stats=await response.json();if(USERNAME!==accountAtStart)return;const b=stats.chess_blitz?.last?.rating,r=stats.chess_rapid?.last?.rating;const bv=Number.isFinite(Number(b))?Number(b).toLocaleString("fr-FR"):"—",rv=Number.isFinite(Number(r))?Number(r).toLocaleString("fr-FR"):"—";blitzNodes.forEach(node=>node.textContent=bv);rapidNodes.forEach(node=>node.textContent=rv);}
- catch{[...blitzNodes,...rapidNodes].forEach(node=>node.textContent="—");}
+ catch{if(USERNAME!==accountAtStart)return;[...blitzNodes,...rapidNodes].forEach(node=>node.textContent="—");}
 }
 async function syncChessCom(){
  if(syncInFlight)return;
@@ -224,7 +224,7 @@ async function syncChessCom(){
   let imported=[],successfulArchives=0,failedArchives=0;
   for(let i=archivesToCheck.length-1;i>=0;i--){
    if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé pendant la synchronisation.");
-   const url=urls[i];
+   const url=archivesToCheck[i];
    setMessage("Récupération des archives "+(archivesToCheck.length-i)+"/"+archivesToCheck.length+"…");
    try{
     const res=await fetch(url,{headers:{"Accept":"application/json"},cache:"no-store"});
@@ -259,6 +259,7 @@ async function syncChessCom(){
  }finally{
   buttons.forEach(b=>{b.disabled=false;b.textContent=labelMap.get(b)||"Synchroniser mes parties";});
   syncInFlight=false;
+  if(USERNAME!==accountAtStart)setTimeout(()=>syncChessCom(),150);
  }
 }
 function importPgnFile(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{const added=parsePgn(String(reader.result||""));if(!added.length){setMessage("Je n'ai pas reconnu de parties dans ce fichier PGN.");return}const byId=new Map(games.map(g=>[String(g.id),g]));added.forEach(g=>{const previous=byId.get(String(g.id));const sameGame=previous&&previous.pgn&&g.pgn&&previous.pgn===g.pgn;byId.set(String(g.id),{...(sameGame?previous:{}),...g,...(sameGame&&previous.analysis&&!g.analysis?{analysis:previous.analysis}:{})});});games=[...byId.values()];saveGames();render();setMessage(added.length+" partie(s) importée(s) depuis le fichier PGN.")};reader.onerror=()=>setMessage("Impossible de lire ce fichier.");reader.readAsText(file)}
