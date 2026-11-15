@@ -2410,3 +2410,23 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 .summary-metric.brilliant .metric-icon{background:#3a9bc9!important;color:#fff!important}
 .summary-metric.excellent,.move-quality.excellent,.move-tag.excellent{background:#173b59!important;border:1px solid #287cb2!important;color:#a9d5ff!important}
 .summary-metric.excellent .metric-icon{background:#237db4!important;color:#fff!important}
+
+
+/* DEV v100 — cadence Elo, précision à la demande et affichage d'analyse */
+.dashboard-rating-strip{gap:22px;padding:12px 18px}
+.dashboard-rating-strip>div.dashboard-rating-item{display:flex;align-items:center;gap:10px;min-width:0}
+.dashboard-rating-item .rating-mode-icon{width:22px;height:22px;flex:0 0 22px;fill:none;stroke:#f3d58b;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dashboard-rating-item:first-child .rating-mode-icon{fill:#f3d58b;stroke:#f3d58b}
+.dashboard-rating-item strong{font:800 23px Manrope;color:#f3d58b}
+.accuracy-calculate-button{display:inline-flex;align-items:center;justify-content:center;margin-top:5px;padding:5px 9px;border:1px solid #58728d;border-radius:7px;background:#213a54;color:#dcecff;font:700 10px Manrope;cursor:pointer}
+.accuracy-calculate-button:disabled{opacity:.65;cursor:wait}
+.game-list-accuracy{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+#panel-games.reviewing-game .games-library-card,
+#panel-games.reviewing-game .games-overview-strip{display:none!important}
+#games-analysis-workspace .replay-card>.surface-heading h3{display:none}
+.engine-badge.loading{color:#f3d58b;border-color:#8b7040;background:#342d21}
+.summary-metric.brilliant .summary-top strong{color:#102f43!important;text-shadow:none!important}
+.summary-metric.brilliant .metric-icon{background:#3a9bc9!important;color:#fff!important}
+.move-quality.brilliant,.move-tag.brilliant{color:#12344a!important;text-shadow:none!important}
+.summary-metric.excellent .summary-top strong{color:#c6e4ff!important}
+.move-quality.excellent,.move-tag.excellent{color:#bfe0ff!important}
