@@ -331,7 +331,6 @@ async function analyseSelectedGame(gameIdOverride,options={}){
   }finally{
     busy=false;refreshGamePicker();
     if(background)window.CoachApp?.refresh?.();
-    if(background&&game.analysis?.partial&&!game.analysis?.paused)scheduleRecentAccuracy();
     if(!background){
       $("analyse-game-button").disabled=false;$("analyse-game-button").textContent="Analyser cette partie";
 
@@ -340,66 +339,105 @@ async function analyseSelectedGame(gameIdOverride,options={}){
 }
 function updateAccuracyQueueStatus(){
  const status=$("accuracy-queue-status"),button=$("accuracy-queue-button");
+ const waiting=accuracyQueueIds.length;
  if(status)status.textContent=accuracyQueueRunning
-  ?"Calcul des précisions : "+accuracyQueueDone+" / "+accuracyQueueTotal+" · "+accuracyQueueSkipped+" ignorée(s)"
+  ?"Précisions : "+accuracyQueueDone+" / "+accuracyQueueTotal+" parties terminées · "+waiting+" en attente"
   :accuracyQueueTotal
    ?"Terminé : "+accuracyQueueDone+" partie(s) analysée(s), "+accuracyQueueSkipped+" ignorée(s)."
-   :"Les analyses déjà enregistrées sont conservées lors des synchronisations.";
- if(button){button.disabled=accuracyQueueRunning||busy;button.textContent=accuracyQueueRunning?"Calcul en cours…":"Calculer les précisions manquantes";}
+   :"Les précisions se calculent automatiquement, une partie après l’autre, dans Mes parties.";
+ if(button){button.disabled=false;button.textContent=accuracyQueueRunning?"Calcul en cours…":"Calculer les précisions manquantes";}
 }
-async function analyzeMissingAccuracies(){
- if(accuracyQueueRunning||busy)return;
- const games=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
- const pending=games.filter(g=>g.pgn&&(!g.analysis||!Array.isArray(g.analysis.moves)||g.analysis.partial));
- accuracyQueueTotal=pending.length;accuracyQueueDone=0;accuracyQueueSkipped=0;
- if(!pending.length){accuracyQueueRunning=false;updateAccuracyQueueStatus();const status=$("accuracy-queue-status");if(status)status.textContent="Toutes les parties avec PGN disposent déjà d’une analyse complète.";return;}
- accuracyQueueRunning=true;updateAccuracyQueueStatus();
- for(const game of pending){
-  if(!accuracyQueueRunning||backgroundPauseRequested||!isGamesPanelActive())break;
-  try{await analyseSelectedGame(game.id,{background:true,movetime:320});if(game.analysis&&!game.analysis.partial&&Array.isArray(game.analysis.moves))accuracyQueueDone++;else accuracyQueueSkipped++;}
-  catch(error){accuracyQueueSkipped++;console.warn("Analyse de précision ignorée",game.id,error);}
-  updateAccuracyQueueStatus();
+let accuracyQueueIds=[];
+let accuracyQueuePromise=null;
+function needsAccuracy(game){
+ return !!(game?.pgn&&!(game.analysis&&game.analysis.partial===false&&Array.isArray(game.analysis.moves)));
+}
+function enqueueAccuracy(gameId,first=false){
+ const id=String(gameId);
+ if(!accuracyQueueIds.includes(id)){
+  if(first)accuracyQueueIds.unshift(id);else accuracyQueueIds.push(id);
  }
- accuracyQueueRunning=false;updateAccuracyQueueStatus();window.CoachApp?.refresh?.();
+}
+function startAccuracyQueue(){
+ if(accuracyQueuePromise)return accuracyQueuePromise;
+ if(!accuracyQueueIds.length||!isGamesPanelActive()||backgroundPauseRequested)return Promise.resolve();
+ accuracyQueueRunning=true;updateAccuracyQueueStatus();
+ accuracyQueuePromise=(async()=>{
+  try{
+   while(accuracyQueueIds.length){
+    if(backgroundPauseRequested||!isGamesPanelActive())break;
+    const id=accuracyQueueIds.shift();
+    const game=(window.CoachApp?.getGames?.()||[]).find(g=>String(g.id)===id);
+    if(!game||!needsAccuracy(game))continue;
+    while(busy&&!backgroundPauseRequested&&isGamesPanelActive())await new Promise(resolve=>setTimeout(resolve,180));
+    if(backgroundPauseRequested||!isGamesPanelActive()){accuracyQueueIds.unshift(id);break;}
+    try{
+     await analyseSelectedGame(id,{background:true,movetime:500});
+     const latest=(window.CoachApp?.getGames?.()||[]).find(g=>String(g.id)===id);
+     if(latest?.analysis?.partial===false&&Array.isArray(latest.analysis.moves))accuracyQueueDone++;
+     else accuracyQueueSkipped++;
+    }catch(error){
+     accuracyQueueSkipped++;
+     console.warn("Analyse de précision ignorée",id,error);
+    }
+    updateAccuracyQueueStatus();
+   }
+  }finally{
+   accuracyQueueRunning=false;accuracyQueuePromise=null;updateAccuracyQueueStatus();
+   window.CoachApp?.refresh?.();
+  }
+ })();
+ return accuracyQueuePromise;
+}
+function analyzeMissingAccuracies(){
+ const games=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+ const pending=games.filter(needsAccuracy);
+ accuracyQueueTotal=accuracyQueueDone+accuracyQueueSkipped+pending.length;
+ pending.forEach(game=>enqueueAccuracy(game.id));
+ updateAccuracyQueueStatus();
+ if(!pending.length&&!accuracyQueueRunning){
+  const status=$("accuracy-queue-status");
+  if(status)status.textContent="Toutes les parties avec PGN disposent déjà d’une analyse complète.";
+  return Promise.resolve();
+ }
+ return startAccuracyQueue();
+}
+function scheduleRecentAccuracy(){
+ if(!isGamesPanelActive()||backgroundPauseRequested)return;
+ const games=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+ const pending=games.filter(needsAccuracy);
+ pending.forEach(game=>enqueueAccuracy(game.id));
+ if(pending.length){
+  accuracyQueueTotal=Math.max(accuracyQueueTotal,accuracyQueueDone+accuracyQueueSkipped+pending.length);
+  updateAccuracyQueueStatus();
+  startAccuracyQueue();
+ }
 }
 $("accuracy-queue-button")?.addEventListener("click",analyzeMissingAccuracies);
-
-let autoRecentAnalysisSignature="";
-let autoRecentAnalysisRunning=false;
-async function analyzeRecentGamesInBackground(){
- if(autoRecentAnalysisRunning||busy||accuracyQueueRunning||backgroundPauseRequested||!isGamesPanelActive())return;
- const recent=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).filter(g=>g.pgn).slice(0,5);
- const signature=user()+":"+recent.map(g=>String(g.id)).join("|");
- if(!recent.length||signature===autoRecentAnalysisSignature)return;
- autoRecentAnalysisSignature=signature;
- const pending=recent.filter(g=>!g.analysis||!Array.isArray(g.analysis.moves)||g.analysis.partial);
- if(!pending.length)return;
- autoRecentAnalysisRunning=true;
- try{
-  for(const game of pending){
-   if(busy)break;
-   if(game.analysis&&game.analysis.partial===false&&Array.isArray(game.analysis.moves))continue;
-   try{await analyseSelectedGame(game.id,{background:true,movetime:500});}
-   catch(error){console.info("Précision différée pour",game.id,error);}
-  }
- }finally{
-  autoRecentAnalysisRunning=false;
-  if(backgroundPauseRequested||!isGamesPanelActive())autoRecentAnalysisSignature="";
-  window.CoachApp?.refresh?.();
- }
-}
-function scheduleRecentAccuracy(){setTimeout(analyzeRecentGamesInBackground,1800);}
 window.addEventListener("coach:games-updated",scheduleRecentAccuracy);
-window.addEventListener("coach:account-changed",()=>{autoRecentAnalysisSignature="";scheduleRecentAccuracy();});
+window.addEventListener("coach:account-changed",()=>{
+ accuracyQueueIds=[];accuracyQueueDone=0;accuracyQueueSkipped=0;accuracyQueueTotal=0;
+ scheduleRecentAccuracy();
+});
 window.addEventListener("coach:tab-changing",event=>{
  if(event.detail?.tab==="games"){
   backgroundPauseRequested=false;
   scheduleRecentAccuracy();
  }else{
   backgroundPauseRequested=true;
+  updateAccuracyQueueStatus();
  }
 });
-
+document.addEventListener("click",event=>{
+ const button=event.target.closest("[data-calculate-accuracy]");
+ if(!button)return;
+ event.preventDefault();
+ enqueueAccuracy(button.dataset.calculateAccuracy,true);
+ const games=(window.CoachApp?.getGames?.()||[]).filter(needsAccuracy);
+ accuracyQueueTotal=Math.max(accuracyQueueTotal,accuracyQueueDone+accuracyQueueSkipped+games.length);
+ updateAccuracyQueueStatus();
+ startAccuracyQueue();
+});
 async function analyzeWhenIdle(gameId,options={}){
  while(busy)await new Promise(resolve=>setTimeout(resolve,180));
  return analyseSelectedGame(String(gameId),options);
