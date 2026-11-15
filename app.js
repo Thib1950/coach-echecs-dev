@@ -139,7 +139,7 @@ function render(){
 function gameHtml(g,index=0){
  const o=outcome(g),accuracy=gameAccuracy(g);
  const hasCompleteAnalysis=!!(g.analysis&&!g.analysis.partial&&Array.isArray(g.analysis.moves));
- const accuracyText=hasCompleteAnalysis?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":"—"):(g.analysis?.partial?"En cours…":(g.pgn?(index<5?"En attente…":"Non calculée"):"—"));
+ const accuracyText=hasCompleteAnalysis?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":"—"):(g.analysis?.partial?"En cours…":(g.pgn?(index<5?"En attente…":""):"—"));
  const calculateButton=g.pgn&&index>=5&&!hasCompleteAnalysis?'<button type="button" class="accuracy-calculate-button" data-calculate-accuracy="'+escapeHtml(g.id)+'" '+(g.analysis?.partial?'disabled':'')+'>'+(g.analysis?.partial?'En cours…':'Calculer')+'</button>':'';
 
  const side=userColor(g),opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
@@ -220,7 +220,8 @@ async function syncChessCom(){
   let syncMeta={};try{syncMeta=JSON.parse(localStorage.getItem(metaKey)||"{}")||{};}catch{}
   // Première synchronisation : historique complet. Ensuite, seuls les deux derniers mois
   // sont revalidés à chaque lancement ; les archives anciennes restent en mémoire.
-  const archivesToCheck=syncMeta.fullHistory?urls.slice(-2):urls;
+  const needsHistoryRepair=!games.length||(Number(syncMeta.gameCount)>0&&games.length<Number(syncMeta.gameCount));
+  const archivesToCheck=syncMeta.fullHistory&&!needsHistoryRepair?urls.slice(-3):urls;
   let imported=[],successfulArchives=0,failedArchives=0;
   for(let i=archivesToCheck.length-1;i>=0;i--){
    if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé pendant la synchronisation.");
@@ -247,10 +248,10 @@ async function syncChessCom(){
   const merged=[...byId.values()].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   // Ne jamais remplacer un historique local non vide par un résultat vide.
   if(merged.length){games=merged;saveGames();render();}
-  if(!failedArchives){try{localStorage.setItem(metaKey,JSON.stringify({fullHistory:true,lastSync:Date.now()}));}catch{}}
+  if(!failedArchives){try{localStorage.setItem(metaKey,JSON.stringify({fullHistory:true,lastSync:Date.now(),gameCount:merged.length}));}catch{}}
   await fetchPlayerRatings();
   const status=failedArchives?(" Synchronisation partielle : "+failedArchives+" archive(s) indisponible(s)."):"";
-  setMessage(newCount+" nouvelle(s) partie(s), "+imported.length+" vérifiée(s) dans "+successfulArchives+" archive(s). "+games.length+" parties au total ; analyses conservées."+status);
+  setMessage("Synchronisation terminée : "+newCount+" nouvelle(s) partie(s), "+imported.length+" partie(s) vérifiée(s) dans "+successfulArchives+" archive(s). "+games.length+" parties au total ; analyses conservées."+status);
   $("sync-state").textContent="Compte connecté · "+accountAtStart;
  }catch(e){
   // L'historique en mémoire et dans localStorage reste intact en cas d'échec réseau.
