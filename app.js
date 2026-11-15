@@ -104,9 +104,9 @@ function render(){
 function gameHtml(g){
  const o=outcome(g),accuracy=gameAccuracy(g);
  const accuracyText=!g.analysis?.partial?(accuracy!==null&&accuracy!==undefined&&Number.isFinite(Number(accuracy))?Math.round(accuracy)+" %":"—"):(g.pgn?"En cours…":"—");
- const side=userColor(g),myElo=side==="white"?g.whiteElo:side==="black"?g.blackElo:"",opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
+ const side=userColor(g),opponentElo=side==="white"?g.blackElo:side==="black"?g.whiteElo:"";
  const elo=value=>value&&Number(value)>0?Number(value).toLocaleString("fr-FR"):"—";
- return '<div class="game-row game-row-expanded"><div class="game-row-info"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div></div><div class="game-meta">'+formatDate(g.date)+'</div><div class="game-elo"><span>TON ELO <b>'+elo(myElo)+'</b></span><span>ELO ADVERSAIRE <b>'+elo(opponentElo)+'</b></span></div></div><div class="game-list-accuracy"><span>MA PRÉCISION</span><strong>'+accuracyText+'</strong></div><span class="game-result '+o+'">'+resultLabel(o)+'</span><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir et analyser cette partie" title="Revoir et analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>';
+ return '<div class="game-row game-row-expanded"><div class="game-row-info"><div class="player-line">'+avatarMarkup(opponent(g))+'<div class="game-opponent">'+escapeHtml(opponent(g)||"Adversaire")+'</div></div><div class="game-meta">'+formatDate(g.date)+'</div><div class="game-elo"><span>ELO ADVERSAIRE <b>'+elo(opponentElo)+'</b></span></div></div><div class="game-list-accuracy"><span>MA PRÉCISION</span><strong>'+accuracyText+'</strong></div><span class="game-result '+o+'">'+resultLabel(o)+'</span><button type="button" class="analysis-icon-button" data-open-game="'+escapeHtml(g.id)+'" aria-label="Revoir et analyser cette partie" title="Revoir et analyser cette partie"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/></svg></button></div>';
 }
 function recentGameHtml(g){
  const result=outcome(g);
@@ -181,6 +181,7 @@ async function syncChessCom(){
 function importPgnFile(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{const added=parsePgn(String(reader.result||""));if(!added.length){setMessage("Je n'ai pas reconnu de parties dans ce fichier PGN.");return}const byId=new Map(games.map(g=>[String(g.id),g]));added.forEach(g=>{const previous=byId.get(String(g.id));const sameGame=previous&&previous.pgn&&g.pgn&&previous.pgn===g.pgn;byId.set(String(g.id),{...(sameGame?previous:{}),...g,...(sameGame&&previous.analysis&&!g.analysis?{analysis:previous.analysis}:{})});});games=[...byId.values()];saveGames();render();setMessage(added.length+" partie(s) importée(s) depuis le fichier PGN.")};reader.onerror=()=>setMessage("Impossible de lire ce fichier.");reader.readAsText(file)}
 let openingsModuleLoaded=false;
 document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>{
+ if(btn.hasAttribute("data-opening-back"))return;
  // Nettoyage explicite des états propres aux écrans d'ouverture avant tout changement de page.
  document.querySelectorAll(".opening-study-overlay").forEach(overlay=>overlay.remove());
  $("panel-openings")?.classList.remove("opening-exercise-active");
