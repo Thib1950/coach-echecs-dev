@@ -212,21 +212,7 @@ function showAnalysisMove(move){
  activeAnalysisMove=move;index=move.ply;variationIndex=0;freeBoard=null;freeSelected=null;freeRedo=[];freeAnalysis=null;freeAnalysisError="";freeLastMove="";freeAnalysisSeq++;render();
  $("active-game-review")?.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
-let moveAudioContext=null;
-function playMoveSound(direction,capture=false){
- try{
-  const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;
-  if(!moveAudioContext)moveAudioContext=new AudioCtx();
-  const ctx=moveAudioContext;if(ctx.state==="suspended")ctx.resume();
-  const duration=capture?0.105:0.07;
-  const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*duration),ctx.sampleRate),data=buffer.getChannelData(0);
-  for(let i=0;i<data.length;i++){const fade=1-i/data.length;data[i]=(Math.random()*2-1)*fade*fade;}
-  const source=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
-  source.buffer=buffer;filter.type="bandpass";filter.frequency.value=capture?520:1050;filter.Q.value=0.8;
-  gain.gain.setValueAtTime(0.0001,ctx.currentTime);gain.gain.exponentialRampToValueAtTime(direction<0?0.035:0.065,ctx.currentTime+0.004);gain.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+duration);
-  source.connect(filter);filter.connect(gain);gain.connect(ctx.destination);source.start();source.stop(ctx.currentTime+duration);
- }catch(error){console.debug("Son des coups indisponible",error);}
-}
+function playMoveSound(direction,capture=false){window.CoachSound?.play({captured:capture});}
 async function analyzeFreePosition(){
  if(!freeBoard)return;const seq=++freeAnalysisSeq;freeAnalysisError=freeAnalysis?"Stockfish actualise l’évaluation…":"Stockfish analyse la position…";render();
  try{if(!window.CoachAnalysis?.analyzePosition)throw new Error("Le moteur d’analyse n’est pas disponible.");const result=await window.CoachAnalysis.analyzePosition(freeBoard.fen());if(seq!==freeAnalysisSeq||!freeBoard)return;freeAnalysis=result;freeAnalysisError="";}
