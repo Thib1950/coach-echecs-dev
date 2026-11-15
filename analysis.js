@@ -329,7 +329,7 @@ async function analyzeMissingAccuracies(){
  accuracyQueueRunning=true;updateAccuracyQueueStatus();
  for(const game of pending){
   if(!accuracyQueueRunning)break;
-  try{await analyseSelectedGame(game.id,{background:true,movetime:320});accuracyQueueDone++;}
+  try{await analyseSelectedGame(game.id,{background:true,movetime:320});if(game.analysis&&!game.analysis.partial&&Array.isArray(game.analysis.moves))accuracyQueueDone++;else accuracyQueueSkipped++;}
   catch(error){accuracyQueueSkipped++;console.warn("Analyse de précision ignorée",game.id,error);}
   updateAccuracyQueueStatus();
  }
