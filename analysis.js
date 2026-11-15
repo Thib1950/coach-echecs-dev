@@ -147,7 +147,7 @@ function isBrilliantSacrifice(fen,uci,winLoss,beforeEval,afterEval){
     const moverSign=fen.split(" ")[1]==="w"?1:-1;
     const beforeWin=winPercent(beforeEval.scoreWhite*moverSign);
     const afterWin=winPercent(afterEval.scoreWhite*moverSign);
-    return beforeWin<85&&afterWin>35&&(afterEval.scoreWhite*moverSign)>-150;
+    return beforeWin<78&&afterWin>42&&afterWin>beforeWin&&(afterEval.scoreWhite*moverSign)>-100;
   }catch{return false;}
 }
 function gameAccuracyFromMoves(moves){
@@ -182,7 +182,7 @@ function refreshGamePicker(){
   $("analyse-game-button").disabled = !games.length || busy;
 }
 function renderResults(g, report){
-  const kinds=["brilliant","great","best","excellent","good","book","inaccuracy","mistake","miss","blunder"];
+  const kinds=["brilliant","excellent","best","great","good","book","inaccuracy","mistake","miss","blunder"];
   const counts=Object.fromEntries(kinds.map(k=>[k,0]));
   report.moves.forEach(m=>{if(counts[m.kind]!==undefined)counts[m.kind]++;});
   const meta={brilliant:["✦","Brillants"],great:["!","Grands coups"],best:["★","Meilleurs coups"],excellent:["◆","Excellents"],good:["✓","Bons coups"],book:["▤","Théorie"],inaccuracy:["?!","Imprécisions"],mistake:["?","Erreurs"],miss:["×","Occasions manquées"],blunder:["‼","Gaffes"]};
@@ -271,8 +271,11 @@ async function analyseSelectedGame(gameIdOverride,options={}){
         accuracy:accuracyFromMoves(report.moves),partial:true
       };
       if(move.color===userSide)window.CoachApp.saveGames();
+      if(move.color===userSide&&(report.moves.length%3===0||i===history.length-1)){
+        renderResults(game,report);
+        if(background)window.CoachApp.refresh?.();
+      }
       if(!background){
-        if(move.color===userSide&&(report.moves.length%3===0||i===history.length-1))renderResults(game,report);
         $("analysis-progress-fill").style.width=Math.round((i+1)/history.length*100)+"%";
         $("analysis-progress-label").textContent="Analyse en cours · "+(i+1)+" / "+history.length+" demi-coups · "+elapsedText(startedAt);
       }
@@ -286,6 +289,8 @@ async function analyseSelectedGame(gameIdOverride,options={}){
       $("analysis-progress-fill").style.width="100%";
       $("analysis-progress-label").textContent="Analyse terminée · "+elapsedText(startedAt)+" · "+(game.analysis.accuracy===null?"Précision non disponible (moins de 6 coups évaluables).":"Précision estimée : "+game.analysis.accuracy+" %.");
     }else{
+      renderResults(game,report);
+      window.CoachApp.refresh?.();
       updateAccuracyQueueStatus();
     }
   }catch(error){
@@ -377,7 +382,13 @@ function openGameInCoach(gameId){
   if(select)select.value=id;
   if(window.CoachReview?.open)window.CoachReview.open(id);
   $("games-analysis-workspace")?.scrollIntoView({behavior:"smooth",block:"start"});
-  analyseSelectedGame(id);
+  const cached=!!(game.analysis&&!game.analysis.partial&&Array.isArray(game.analysis.moves)&&game.analysis.moves.length);
+  if(cached){
+    if(window.CoachReview?.updateAnalysis)window.CoachReview.updateAnalysis(game.analysis.moves,game);
+    renderResults(game,{moves:game.analysis.moves});
+  }else{
+    analyseSelectedGame(id,{background:true,movetime:600});
+  }
   return true;
 }
 window.addEventListener("coach:analyze-game",event=>openGameInCoach(event.detail?.gameId));
@@ -386,6 +397,7 @@ window.addEventListener("coach:games-updated",refreshGamePicker);
 window.CoachAnalysis={
  openGame:openGameInCoach,
  analyze:gameId=>openGameInCoach(gameId),
+ analyzeAccuracy:gameId=>analyseSelectedGame(String(gameId),{background:true,movetime:500}),
  async analyzePosition(fen){
   const request=++positionRequestId;
   while(busy){
