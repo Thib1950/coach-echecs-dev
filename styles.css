@@ -2363,3 +2363,5 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 .opening-practice-coach>strong{display:block!important;margin:8px 0!important;color:#f2d58c!important;font-size:17px!important}
 @media(max-width:760px){#panel-puzzles .puzzle-mode-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#panel-puzzles .puzzle-mode-card{min-height:132px!important}}
 @media(max-width:480px){#panel-puzzles .puzzle-mode-grid{grid-template-columns:1fr!important}}
+
+.opening-ideas-credit{display:block!important;margin-top:8px!important;color:#93a7bc!important;font-size:9px!important;line-height:1.4!important}
