@@ -1350,9 +1350,9 @@ nav.tabs .tab.active .tab-icon{color:#ffad5c!important}
 #panel-openings.opening-exercise-active>.openings-surface{
  display:none!important;
 }
-#panel-openings.opening-exercise-active .topbar{height:54px;min-height:54px}
-#panel-openings.opening-exercise-active .tabs{margin-top:4px}
-#panel-openings.opening-exercise-active .tab{min-height:40px;padding-top:8px;padding-bottom:8px}
+body:has(#panel-openings.opening-exercise-active) .topbar{height:54px;min-height:54px}
+body:has(#panel-openings.opening-exercise-active) .tabs{margin-top:4px}
+body:has(#panel-openings.opening-exercise-active) .tab{min-height:40px;padding-top:8px;padding-bottom:8px}
 #panel-openings.opening-exercise-active>#opening-detail{
  display:flex!important;
  flex:1 1 0!important;
