@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101a2a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Coach Échecs">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Coach d'échecs personnel : parties Chess.com, progression et entraînement.">
+  <title>Mon Coach d'échecs</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Accueil">
+        <span class="brand-mark">♞</span><span>MON COACH<span class="brand-sub">D'ÉCHECS</span></span>
+      </a>
+      <div class="profile-chip"><span class="online-dot"></span><span id="account-name">gone_1950</span><span class="chip-label">CHESS.COM</span></div>
+    </header>
+    <main>
+      <nav class="tabs" aria-label="Navigation principale">
+        <button class="tab active" data-tab="dashboard">Accueil</button>
+        <button class="tab" data-tab="games">Mes parties</button>
+        <button class="tab" data-tab="training">Entraînement</button><button class="tab" data-tab="puzzles">Puzzles</button>
+        <button class="tab" data-tab="openings">Ouvertures</button>
+        <button class="tab" data-tab="progress">Progression</button>
+      </nav>
+
+      <section class="panel active" id="panel-dashboard">
+      <section class="welcome">
+        <div>
+          <p class="eyebrow">TON ESPACE D'ENTRAÎNEMENT</p>
+          <h1>On progresse <em>un coup à la fois.</em></h1>
+          <p class="welcome-copy">Tes parties, tes habitudes et tes prochains objectifs réunis au même endroit.</p>
+        </div>
+        <div class="welcome-piece" aria-hidden="true">♞</div>
+      </section>
+        <div class="section-heading dashboard-heading"><div><p class="eyebrow">TABLEAU DE BORD</p><h2>Salut, gone_1950 👋</h2></div></div>
+        <div class="dashboard-toolbar"><div class="dashboard-toolbar-right"><div class="button-row"><button class="primary-button" id="sync-button">Synchroniser les parties</button><label class="secondary-button file-button">Importer un PGN<input type="file" id="pgn-file" accept=".pgn,text/plain" hidden></label></div><span class="sync-state" id="sync-state">Version publiée · 15/11/2026 · v39</span></div></div>
+        <p class="small muted dashboard-sync-message" id="sync-message" aria-live="polite"></p>
+        <div class="stats-grid dashboard-stats"><article class="stat-card"><span class="stat-label">PARTIES IMPORTÉES</span><strong id="stat-games">0</strong></article><article class="stat-card stat-win"><span class="stat-label">VICTOIRES</span><strong id="stat-wins">0</strong></article><article class="stat-card stat-loss"><span class="stat-label">DÉFAITES</span><strong id="stat-losses">0</strong></article></div>
+        <article class="surface ratings-surface"><div class="ratings-grid"><div class="rating-card"><svg class="rating-mode-icon blitz-icon" viewBox="0 0 32 32" role="img" aria-label="Icône Blitz"><path d="M18.5 2 7 18h8l-1.5 12L25 13h-8z" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/></svg><span>BLITZ</span><strong id="rating-blitz">…</strong></div><div class="rating-card"><svg class="rating-mode-icon rapid-icon" viewBox="0 0 32 32" role="img" aria-label="Icône partie rapide"><circle cx="16" cy="17" r="11.5" fill="none" stroke="currentColor" stroke-width="3"/><path d="M16 9v8l5 3M12 2h8M16 2v3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>RAPIDE · 10 MIN</span><strong id="rating-rapid">…</strong></div></div></article>
+        <div class="dashboard-shortcuts"><button type="button" class="dashboard-shortcut puzzle-shortcut" data-goto="puzzles"><span class="shortcut-icon">♟</span><span><strong>Résoudre des problèmes</strong><small>Un défi tactique pour progresser</small></span><span class="shortcut-arrow">↗</span></button><button type="button" class="dashboard-shortcut puzzle-shortcut" data-goto="puzzles"><span class="shortcut-icon">◈</span><span><strong>Session de puzzles</strong><small>Entraîne ton calcul et tes réflexes</small></span><span class="shortcut-arrow">↗</span></button><button type="button" class="dashboard-shortcut" data-goto="training"><span class="shortcut-icon">♜</span><span><strong>Continuer à apprendre</strong><small>Reprendre ton entraînement</small></span><span class="shortcut-arrow">↗</span></button><button type="button" class="dashboard-shortcut" data-goto="openings"><span class="shortcut-icon">♞</span><span><strong>Réviser ton répertoire</strong><small>Travailler tes ouvertures</small></span><span class="shortcut-arrow">↗</span></button></div><article class="surface recent-surface"><div class="surface-heading"><div><p class="eyebrow">ACTIVITÉ RÉCENTE</p><h3>Dernières parties</h3></div><button class="text-button" data-goto="games">Tout voir →</button></div><div id="recent-games" class="empty-state">Tes parties apparaîtront ici après l'import.</div><p id="accuracy-queue-status" class="small muted" aria-live="polite"></p></article>
+      </section>
+
+      <section class="panel" id="panel-games">
+        <div class="section-heading"><div><p class="eyebrow">HISTORIQUE CHESS.COM</p><h2>Mes parties</h2><p class="muted">Retrouve tes parties importées et leurs informations.</p></div><button class="primary-button" id="sync-button-games">Synchroniser</button></div>
+        <div class="filter-row"><input id="game-search" type="search" placeholder="Rechercher un adversaire…" aria-label="Rechercher un adversaire"><select id="result-filter" aria-label="Filtrer par résultat"><option value="all">Tous les résultats</option><option value="win">Victoires</option><option value="draw">Nulles</option><option value="loss">Défaites</option></select></div>
+        <div id="games-list" class="games-list"><div class="empty-state">Aucune partie pour le moment. Lance une synchronisation ou importe un PGN.</div></div>
+      </section>
+
+      <section class="panel" id="panel-training">
+        <div class="section-heading"><div><p class="eyebrow">TRAVAIL PERSONNALISÉ</p><h2>Ton entraînement</h2><p class="muted">Un premier diagnostic calculé à partir de tes parties importées.</p></div></div>
+        <div class="training-kpis">
+          <article class="training-kpi kpi-review"><span>À REVOIR</span><strong id="training-losses">0</strong><small>Parties perdues</small></article>
+          <article class="training-kpi kpi-accuracy"><span>ÉVOLUTION DE TA PRÉCISION</span><div class="training-trend-main"><strong id="training-accuracy">—</strong><strong id="training-accuracy-delta" class="trend-neutral">—</strong></div><small id="training-accuracy-count">Analyse 25 parties pour établir ta référence.</small></article>
+        </div>
+        <article class="surface recent-surface"><div class="surface-heading"><div><p class="eyebrow">À ÉTUDIER EN PREMIER</p><h3>Parties à revoir</h3></div></div><div id="training-games" class="games-list"><div class="empty-state">Tes défaites récentes apparaîtront ici.</div></div></article>
+        <article class="surface engine-surface">
+          <div class="surface-heading"><div><p class="eyebrow">ANALYSE MOTEUR</p><h3>Analyser une de tes parties</h3></div><span class="engine-badge" id="engine-status">Moteur non chargé</span></div>
+          <p>Choisis une partie importée. Stockfish examinera les coups et signalera les imprécisions, erreurs et gaffes. L'analyse est effectuée sur ton appareil.</p>
+          <div class="analysis-controls">
+            <select id="analysis-game-select" aria-label="Choisir une partie à analyser"></select>
+            <button class="primary-button" id="analyse-game-button">Analyser cette partie</button>
+          </div>
+          <div id="analysis-progress" class="analysis-progress" hidden><div class="analysis-progress-track"><div id="analysis-progress-fill"></div></div><p id="analysis-progress-label">Préparation du moteur…</p></div>
+          <div id="game-replay-area"></div><div id="analysis-results"><div class="empty-state compact">Sélectionne une partie puis lance l'analyse pour obtenir des commentaires sur tes coups.</div></div><div id="lesson-area"></div>
+        </article>
+      </section>
+
+      <section class="panel" id="panel-puzzles"><div class="section-heading"><div><p class="eyebrow">TACTIQUE ET CALCUL</p><h2>Résoudre des problèmes</h2><p class="muted">Un puzzle quotidien issu de la base publique de Lichess, avec correction immédiate.</p></div></div><article class="surface puzzle-surface"><div class="surface-heading"><div><p class="eyebrow">DÉFI DU JOUR</p><h3 id="puzzle-title">Préparation du puzzle…</h3></div><span class="engine-badge" id="puzzle-rating">—</span></div><div id="puzzle-board-area" class="puzzle-board-area"><div class="empty-state">Chargement du problème tactique…</div></div><div class="puzzle-footer"><p id="puzzle-feedback" aria-live="polite">Repère la meilleure suite pour les Blancs ou les Noirs.</p><div class="puzzle-actions"><button type="button" class="secondary-button" id="puzzle-hint">Indice</button><button type="button" class="primary-button" id="puzzle-reload">Recharger le puzzle du jour</button></div></div><p class="small muted" id="puzzle-themes"></p></article></section><section class="panel" id="panel-openings">
+        <div class="section-heading"><div><p class="eyebrow">RÉPERTOIRE PERSONNEL</p><h2>Mes ouvertures</h2><p class="muted">Tes habitudes d'ouverture avec les Blancs et les Noirs.</p></div></div>
+        <article class="surface openings-surface"><div class="surface-heading"><div><p class="eyebrow">MON RÉPERTOIRE</p><h3>Mes ouvertures</h3></div><select id="opening-color-filter" aria-label="Filtrer les ouvertures"><option value="all">Blancs et Noirs</option><option value="white">Avec les Blancs</option><option value="black">Avec les Noirs</option></select></div><div id="opening-table" class="opening-table"><div class="empty-state">Les ouvertures apparaîtront après le chargement de tes parties.</div></div></article><div id="opening-detail"></div>
+      </section>
+
+      <section class="panel" id="panel-progress">
+        <div class="section-heading"><div><p class="eyebrow">BILAN ET OBJECTIFS</p><h2>Ta progression</h2><p class="muted">Un suivi basé sur tes résultats réels, pas sur des impressions.</p></div></div>
+        <div class="progress-kpis"><article class="training-kpi"><span>TAUX DE VICTOIRE</span><strong id="progress-win-rate">—</strong><small id="progress-win-rate-detail">Sur les parties décidées</small></article><article class="training-kpi"><span>PLUS HAUT ELO BATTU</span><strong id="progress-best-win-elo">—</strong><small id="progress-best-win-opponent">—</small></article></div><div class="content-grid"><article class="surface"><h3>Résultats des parties importées</h3><div id="result-bars" class="bar-list"><p class="muted">Les statistiques apparaîtront après l’import.</p></div></article></div>
+      </section>
+    </main>
+    <footer><span>MON COACH D'ÉCHECS</span><span>Version publiée · 15/11/2026 · v39</span></footer>
+  </div>
+  <script src="app.js"></script>
+  <script type="module" src="review.js"></script>
+  <script type="module" src="analysis.js"></script>
+  <script type="module" src="lesson.js"></script><script type="module" src="puzzles.js"></script>
+  
+</body>
+</html>

@@ -1,0 +1,21 @@
+name: Validate coach JavaScript
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check browser modules
+        run: |
+          node --input-type=module --check < analysis.js
+          node --input-type=module --check < review.js
+          node --input-type=module --check < sw.js
+          node --input-type=module --check < app.js
