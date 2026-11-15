@@ -2404,3 +2404,9 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 .summary-metric.miss,.move-quality.miss,.move-tag.miss{background:#492c47!important;border:1px solid #93568d!important;color:#efb7e7!important}
 .summary-metric.blunder,.move-quality.blunder,.move-tag.blunder{background:#4b292e!important;border:1px solid #a34850!important;color:#ffadb4!important}
 @media(max-width:600px){.dashboard-rating-strip{gap:9px;padding:11px 12px;flex-wrap:wrap}.dashboard-rating-strip>div{min-width:105px}.dashboard-rating-strip small{width:100%;margin:0}.opening-color-toggle button{padding:8px 9px}}
+
+/* Ajustement Chess.com : brillant bleu clair, excellent bleu foncé. */
+.summary-metric.brilliant,.move-quality.brilliant,.move-tag.brilliant{background:#8bd3f5!important;border:1px solid #b6e8fb!important;color:#12344a!important}
+.summary-metric.brilliant .metric-icon{background:#3a9bc9!important;color:#fff!important}
+.summary-metric.excellent,.move-quality.excellent,.move-tag.excellent{background:#173b59!important;border:1px solid #287cb2!important;color:#a9d5ff!important}
+.summary-metric.excellent .metric-icon{background:#237db4!important;color:#fff!important}
