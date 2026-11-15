@@ -1912,3 +1912,55 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
  #panel-puzzles.puzzle-exercise-active .puzzle-board-wrap{width:min(94vw,calc(100dvh - 300px))!important}
  #panel-puzzles.puzzle-exercise-active .puzzle-title-row{flex-wrap:wrap!important}
 }
+
+
+/* v78 — barre compacte en mode travail, Elo comme dans la version stable. */
+.app-shell:has(#panel-dashboard.active) .topbar{display:flex}
+.app-shell:has(.panel.active:not(#panel-dashboard)) .topbar{display:none!important}
+.app-shell:has(.panel.active) main{padding-top:0!important}
+.tabs{position:relative;z-index:5}
+.opening-back-tab[hidden]{display:none!important}
+.opening-back-tab:not([hidden]){display:inline-flex!important;align-items:center;color:#f5d58b!important;border:1px solid #806a3b!important;border-radius:9px;margin:5px 8px 5px 0;padding:9px 13px!important;background:#302a20!important}
+#panel-openings.opening-exercise-active~*{display:none}
+#panel-openings.opening-exercise-active{padding:5px 0 0!important;height:calc(100dvh - 64px)!important;min-height:0!important;overflow:hidden!important}
+#panel-openings.opening-exercise-active #opening-detail{height:100%!important;max-height:100%!important;overflow:hidden!important}
+#panel-openings.opening-exercise-active .opening-exercise-screen{height:100%!important;max-height:100%!important;margin:0!important;padding:8px!important;display:flex!important;flex-direction:column!important;gap:8px!important}
+#panel-openings.opening-exercise-active .opening-exercise-screen>.surface-heading{flex:none!important;margin:0!important;padding:0 4px 7px!important}
+#panel-openings.opening-exercise-active .opening-practice-layout{flex:1 1 auto!important;min-height:0!important;grid-template-columns:minmax(0,1fr) minmax(250px,310px)!important;gap:16px!important;align-items:center!important}
+#panel-openings.opening-exercise-active .opening-practice-board{width:min(100%,calc(100dvh - 150px),780px)!important;max-width:780px!important;justify-self:center!important}
+#panel-openings.opening-exercise-active .opening-practice-coach{max-height:100%!important;overflow-y:auto!important}
+#panel-openings.opening-exercise-active~*{display:none!important}
+.app-shell:has(#panel-openings.opening-exercise-active.active) .opening-back-tab:not([hidden]){display:inline-flex!important}
+@media(max-width:900px){
+ #panel-openings.opening-exercise-active{height:auto!important;min-height:calc(100dvh - 62px)!important;overflow:visible!important}
+ #panel-openings.opening-exercise-active #opening-detail{height:auto!important;overflow:visible!important}
+ #panel-openings.opening-exercise-active .opening-exercise-screen{height:auto!important;max-height:none!important;overflow:visible!important}
+ #panel-openings.opening-exercise-active .opening-practice-layout{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;justify-items:center!important}
+ #panel-openings.opening-exercise-active .opening-practice-board{width:min(92vw,calc(100dvh - 210px),700px)!important}
+ #panel-openings.opening-exercise-active .opening-practice-coach{width:min(100%,700px)!important;max-height:none!important}
+}
+#panel-puzzles.puzzle-exercise-active{padding:0!important;min-height:0!important;height:calc(100dvh - 64px)!important;overflow:hidden!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-hub{display:none!important}
+#panel-puzzles.puzzle-exercise-active #puzzle-exercise{display:block!important;height:100%!important;max-height:100%!important;overflow:hidden!important}
+#panel-puzzles.puzzle-exercise-active #puzzle-exercise>.section-heading{display:none!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-surface{height:100%!important;min-height:0!important;margin:0!important;padding:6px 8px!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-title-row{display:none!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-feedback-stage{flex:none!important;margin:0 0 6px!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-board-area{flex:1 1 auto!important;min-height:0!important;margin:0!important;grid-template-columns:minmax(0,1fr) minmax(250px,310px)!important;align-items:center!important;gap:14px!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-board-wrap{width:min(100%,calc(100dvh - 130px),780px)!important;max-width:780px!important;justify-self:center!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-side{max-height:100%!important;overflow-y:auto!important}
+@media(max-width:900px){
+ #panel-puzzles.puzzle-exercise-active{height:auto!important;min-height:calc(100dvh - 62px)!important;overflow:visible!important}
+ #panel-puzzles.puzzle-exercise-active #puzzle-exercise{height:auto!important;overflow:visible!important}
+ #panel-puzzles.puzzle-exercise-active .puzzle-surface{height:auto!important;min-height:0!important;overflow:visible!important}
+ #panel-puzzles.puzzle-exercise-active .puzzle-board-area{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;justify-items:center!important;overflow:visible!important}
+ #panel-puzzles.puzzle-exercise-active .puzzle-board-wrap{width:min(92vw,calc(100dvh - 180px),700px)!important}
+ #panel-puzzles.puzzle-exercise-active .puzzle-side{width:min(100%,700px)!important;max-height:none!important;overflow:visible!important}
+}
+#panel-games .game-elo{display:flex;gap:9px;flex-wrap:wrap;margin-top:9px}
+#panel-games .game-elo span{display:inline-flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.65px;color:#c2d1e0;background:#1a2b40;border:1px solid #3a5068;border-radius:8px;padding:6px 10px}
+#panel-games .game-elo b{font:900 21px Manrope;color:#d8f2a5;font-variant-numeric:tabular-nums;margin:0}
+#panel-games .game-row-expanded .game-row-info{min-width:0;flex:1}
+#panel-games .game-row-expanded .game-opponent{font-size:19px;font-weight:850}
+#panel-games .game-row-expanded .game-result{font-size:13px;padding:8px 12px}
+@media(max-width:600px){#panel-games .game-elo{gap:5px}#panel-games .game-elo span{font-size:9px;padding:5px 7px}#panel-games .game-elo b{font-size:18px}}
