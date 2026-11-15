@@ -168,14 +168,20 @@ function play(square){
  if(!board||solved||loading)return;const piece=board.get(square);
  if(!selected){if(piece&&piece.color===board.turn()){selected=square;render();}return;}
  if(piece&&piece.color===board.turn()){selected=square;render();return;}
- const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;render();return;}
+ const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;message("Coup impossible : choisis une case indiquée par un point.");render();return;}
  const played=uci(move),expectedMove=legalSolutionMove(board,solution[ply]),expected=expectedMove?uci(expectedMove):"";
- if(played!==expected){selected=null;puzzleProgress.wrongMoves++;savePuzzleProgress();message("Ce coup est légal, mais il ne résout pas le problème. Cherche une autre idée.");render();return;}
+ if(played!==expected){selected=null;puzzleProgress.wrongMoves++;savePuzzleProgress();message("Faux ! Ce n’est pas le bon coup. Réessaie, la position n’a pas changé.");render();return;}
  board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});ply++;selected=null;
- if(ply>=solution.length){solved=true;markPuzzleSolved();if(sessionActive)sessionSolved++;message(currentPuzzle?"Bien joué ! Tu as trouvé le coup que Stockfish recommandait dans ta partie.":"Bravo ! Tu as trouvé toute la combinaison.");render();return;}
- const reply=solution[ply];try{board.move({from:reply.slice(0,2),to:reply.slice(2,4),promotion:reply[4]});ply++;}catch{solved=true;}
- if(ply>=solution.length){solved=true;markPuzzleSolved();if(sessionActive)sessionSolved++;message("Bravo ! Tu as trouvé toute la combinaison.");}else message("Bien joué. La réponse adverse est jouée : trouve le prochain coup.");
- render();
+ if(ply>=solution.length){solved=true;markPuzzleSolved();if(sessionActive)sessionSolved++;message(currentPuzzle?"Bravo ! Tu as trouvé le meilleur coup de cette position.":"Bravo ! Tu as terminé toute la combinaison.");render();return;}
+ loading=true;message("Bien joué ! L’adversaire réfléchit…");render();
+ window.setTimeout(()=>{
+  if(!board||solved)return;
+  const reply=solution[ply];try{board.move({from:reply.slice(0,2),to:reply.slice(2,4),promotion:reply[4]});ply++;}catch{solved=true;}
+  loading=false;
+  if(ply>=solution.length){solved=true;markPuzzleSolved();if(sessionActive)sessionSolved++;message("Bravo ! Tu as terminé toute la combinaison.");}
+  else message("Réponse de l’adversaire jouée. À toi de trouver la suite !");
+  render();
+ },560);
 }
 document.addEventListener("click",event=>{
  const mode=event.target.closest("[data-puzzle-mode]");
