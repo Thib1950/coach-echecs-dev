@@ -74,7 +74,8 @@ function startPersonalPuzzle(item){
  render();
  $("puzzle-board-area").scrollIntoView({behavior:"smooth",block:"center"});
 }
-\nfunction play(square){
+
+function play(square){
  if(!board||solved||loading)return;const piece=board.get(square);
  if(!selected){if(piece&&piece.color===board.turn()){selected=square;render();}return;}
  if(piece&&piece.color===board.turn()){selected=square;render();return;}
@@ -90,6 +91,9 @@ function startPersonalPuzzle(item){
 document.addEventListener("click",event=>{
  const square=event.target.closest("[data-puzzle-square]");if(square){play(square.dataset.puzzleSquare);return;}
  if(event.target.closest("#puzzle-hint")){if(solution[ply]){hinted=true;message("Indice affiché sur le panneau du puzzle.");render();}return;}
- const personal=event.target.closest("[data-personal-puzzle]");if(personal){startPersonalPuzzle(personalized[Number(personal.dataset.personalPuzzle)]);return;}\n  if(event.target.closest("#puzzle-reload"))loadDaily();
+ const personal=event.target.closest("[data-personal-puzzle]");if(personal){startPersonalPuzzle(personalized[Number(personal.dataset.personalPuzzle)]);return;}
+  if(event.target.closest("#puzzle-reload"))loadDaily();
 });
+window.addEventListener("coach:games-updated",renderPersonalized);
+renderPersonalized();
 loadDaily();
