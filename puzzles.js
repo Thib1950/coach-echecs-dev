@@ -95,7 +95,7 @@ function render(){
  const backButton='<div class="puzzle-side-back"><button type="button" class="secondary-button" data-puzzle-back>'+(learnExerciseMode?"← Retour à mon entraînement":"← Retour aux puzzles")+'</button></div>';
  boardArea.innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div></div>'+panel+backButton+modal;
 }
-function message(text){puzzleFeedbackText=String(text??"");puzzleFeedbackClass=/^Faux\s*!/i.test(puzzleFeedbackText)?"feedback-wrong":/^(Bravo|Bien joué)/i.test(puzzleFeedbackText)?"feedback-correct":"feedback-neutral";const node=$("puzzle-feedback");if(!node)return;node.textContent=puzzleFeedbackText;node.classList.remove("feedback-wrong","feedback-correct","feedback-neutral");node.classList.add(puzzleFeedbackClass);}
+function message(text){puzzleFeedbackText=String(text??"");puzzleFeedbackClass=/^Faux[.!]?/i.test(puzzleFeedbackText)?"feedback-wrong":/^(Bravo|Bien joué)/i.test(puzzleFeedbackText)?"feedback-correct":"feedback-neutral";const node=$("puzzle-feedback");if(!node)return;node.textContent=puzzleFeedbackText;node.classList.remove("feedback-wrong","feedback-correct","feedback-neutral");node.classList.add(puzzleFeedbackClass);}
 
 const localPuzzleBuckets=[1200,1300,1400,1500,1600,1700];
 const localPuzzleCache=new Map();
@@ -259,8 +259,8 @@ function play(square){
  const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;message("Coup impossible : choisis une case indiquée par un point.");render();return;}
  const played=uci(move),expectedMove=legalSolutionMove(board,solution[ply]),expected=expectedMove?uci(expectedMove):"";
  if(played!==expected){selected=null;puzzleProgress.wrongMoves++;savePuzzleProgress();
-  if(sessionMode==="lives"||sessionMode==="daily"){sessionLives=Math.max(0,sessionLives-1);if(sessionMode==="daily"){puzzleProgress.dailyDate=localDayKey();puzzleProgress.dailyLives=sessionLives;}if(sessionLives===0){sessionActive=false;sessionFinished=true;dailyDecisionOpen=sessionMode==="daily";stopPuzzleTimer();message(sessionMode==="daily"?"Tu as utilisé tes cinq vies. Choisis un indice ou affiche la solution.":"Tu as perdu tes trois vies. La série est terminée.");}else message("Faux. Ce n'est pas le bon coup. Réessaye.");if(sessionMode==="daily")savePuzzleProgress();}
-  else message("Faux ! Ce n’est pas le bon coup. La position ne change pas : prends un instant pour calculer.");
+  if(sessionMode==="lives"||sessionMode==="daily"){sessionLives=Math.max(0,sessionLives-1);if(sessionMode==="daily"){puzzleProgress.dailyDate=localDayKey();puzzleProgress.dailyLives=sessionLives;}if(sessionLives===0){sessionActive=false;sessionFinished=true;dailyDecisionOpen=sessionMode==="daily";stopPuzzleTimer();}message("Faux. Ce n'est pas le bon coup. Réessaye.");if(sessionMode==="daily")savePuzzleProgress();}
+  else message("Faux. Ce n'est pas le bon coup. Réessaye.");
   render();return;
  }
  const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);ply++;selected=null;hinted=false;
