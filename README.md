@@ -27,7 +27,8 @@ Le dépôt contient le code de l'application, pas les parties personnelles. Les 
 - Analyse des parties avec Stockfish et relecture des coups.
 - Mode libre avec coups légaux, évaluation et flèches.
 - Répertoire d'ouvertures et entraînement des variantes.
-- Puzzle quotidien et positions personnalisées issues des erreurs analysées.
+- Puzzle quotidien, positions personnalisées issues des erreurs analysées et sessions de cinq exercices ciblés.
+- Suivi local des puzzles résolus, des sessions et des erreurs, indépendant des données de la version stable.
 - 20 leçons interactives réparties en cinq parcours, avec sauvegarde de la progression.
 
 La version de développement évoluera régulièrement avant toute proposition de remplacement de la version stable.
