@@ -44,13 +44,13 @@ function playSquare(sq){
  if(!move){lesson.selected=null;draw("Ce coup n’est pas légal. Essaie une autre destination.");return;}
  const uci=move.from+move.to+(move.promotion||"");
  if(uci===lesson.move.bestUci){
-  b.move({from:move.from,to:move.to,promotion:move.promotion});lesson.fen=b.fen();lesson.done=true;
+  const playedMove=b.move({from:move.from,to:move.to,promotion:move.promotion});window.CoachSound?.play(playedMove);lesson.fen=b.fen();lesson.done=true;
   draw("Bravo ! C’est le meilleur coup indiqué par Stockfish : "+lesson.move.best+". Tu as trouvé la correction.");
  }else{lesson.selected=null;draw("Coup légal, mais ce n’est pas le meilleur. Cherche les échecs, les captures et les menaces.");}
 }
 function showBest(){
  const u=lesson.move.bestUci,b=new Chess(lesson.fen);
- try{b.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||"q"});lesson.fen=b.fen();lesson.done=true;draw("Le meilleur coup était "+lesson.move.best+". Observe la position obtenue et demande-toi ce qu’il menace.");}
+ try{const playedMove=b.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||"q"});window.CoachSound?.play(playedMove);lesson.fen=b.fen();lesson.done=true;draw("Le meilleur coup était "+lesson.move.best+". Observe la position obtenue et demande-toi ce qu’il menace.");}
  catch{draw("Le meilleur coup n’a pas pu être affiché dans cette position.");}
 }
 window.CoachLessons={openForGameMove(gameId,moveIndex){
