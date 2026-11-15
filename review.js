@@ -191,6 +191,7 @@ function render(){
 
 }
 function open(id){
+ window.CoachAnalysisSummaryHTML="";
  document.querySelector('[data-tab="games"]')?.click();
  $("panel-games")?.classList.add("reviewing-game");
  const game=(window.CoachApp?.getGames?.()||[]).find(g=>String(g.id)===String(id));
