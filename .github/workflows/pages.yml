@@ -32,6 +32,8 @@ jobs:
           node --input-type=module --check < sw.js
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
