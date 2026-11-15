@@ -1630,3 +1630,30 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 @media(max-width:430px){.profile-chip{padding:7px 9px;font-size:10px}.chip-label{display:none}.tab{padding-left:9px;padding-right:9px}.dashboard-metrics article span{font-size:8px}}
 @media(min-width:761px){.home-menu-item{min-height:91px}.games-page #games-list{max-height:100%}}
 @media(max-height:760px) and (min-width:761px){.home-brand{padding-top:10px;padding-bottom:12px}.home-knight{width:58px;height:58px;font-size:38px}.dashboard-metrics article{padding:12px 15px}.home-menu-item{min-height:70px}}
+
+/* Final layout refinements */
+.panel.games-page.active{display:flex;flex-direction:column}
+.panel.puzzles-hub-page.active{display:block}
+.panel#panel-openings.active,.panel#panel-progress.active,.panel#panel-training.active{display:block}
+#panel-openings .section-heading{padding:4px 2px 12px}
+#panel-openings .openings-surface{background:linear-gradient(145deg,#182a42,#101c2d)}
+#panel-openings .opening-detail-card{margin-top:16px}
+#panel-openings .opening-detail-card h3{color:#fff}
+#panel-openings .opening-detail-card .muted{color:#b5c3d6!important}
+#panel-progress .content-grid{margin-top:16px}
+#panel-progress .surface{min-width:0}
+#panel-progress .progress-kpis .training-kpi{background:linear-gradient(145deg,#1b2d44,#121f32)}
+#panel-training .section-heading{margin-bottom:18px}
+#panel-training .coach-plan-surface{border-color:#536c5b}
+#panel-training .personal-puzzles-surface{border-color:#3c5069}
+#puzzle-feedback.feedback-neutral{color:#dce5f1;background:#1b2d44;border:1px solid #3d5572;border-radius:10px;padding:12px 15px}
+#puzzle-feedback.feedback-wrong{animation:wrongPulse .32s ease-out}
+#puzzle-feedback.feedback-correct{animation:correctPulse .32s ease-out}
+@keyframes wrongPulse{0%{transform:scale(.985)}100%{transform:scale(1)}}
+@keyframes correctPulse{0%{transform:scale(.985)}100%{transform:scale(1)}}
+.puzzle-board-area{gap:18px}
+.puzzle-side{background:linear-gradient(145deg,#1b3048,#142238);border:1px solid #3b526e;border-radius:15px;color:#f5f7fb}
+.puzzle-side p,.puzzle-side small{color:#c0ccdc}
+.puzzle-turn-indicator{font-weight:800}
+@media(min-width:900px){.puzzle-board-area{align-items:start}.puzzle-side{max-width:340px}}
+@media(max-width:760px){.panel.games-page.active{display:flex}.games-page #games-list{overflow-y:auto}.puzzle-board-area{display:flex;flex-direction:column}.puzzle-side{width:100%}}
