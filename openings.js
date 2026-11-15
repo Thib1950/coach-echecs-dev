@@ -14,14 +14,14 @@ function sideOf(g){return (g.white||"").toLowerCase()===USER?"white":"black";}
 function performance(games){const decided=games.filter(g=>["win","loss"].includes(outcome(g)));return decided.length?Math.round(decided.filter(g=>outcome(g)==="win").length/decided.length*100):null;}
 function sanLine(uci){const c=new Chess(),out=[];for(let i=0;i<uci.length;i++){const m=c.moves({verbose:true}).find(x=>x.from+x.to+(x.promotion||"")===uci[i]);if(!m)break;c.move({from:m.from,to:m.to,promotion:m.promotion});out.push((i%2===0?(Math.floor(i/2)+1)+". ":"")+m.san);}return out.join(" ");}
 async function loadDatabase(){
- const cached=localStorage.getItem("coach-echecs-openings-db-v1");
+ const cached=localStorage.getItem("coach-echecs-dev-openings-db-v1");
  if(cached){try{database=JSON.parse(cached).map(item=>({...item,display:frenchName(item.name),family:familyName(item.name)}));return;}catch{}}
  try{
   const letters=["a","b","c","d","e"];
   const files=await Promise.all(letters.map(async letter=>{const res=await fetch("https://raw.githubusercontent.com/lichess-org/chess-openings/master/"+letter+".tsv");if(!res.ok)throw new Error("Base des ouvertures indisponible");return await res.text();}));
   const all=[];
   for(const file of files)for(const row of file.split(/\r?\n/)){const [eco,name,pgn]=row.split("\t");if(!eco||!name||!pgn||eco.toLowerCase()==="eco")continue;const moves=parseLine(pgn);if(moves.length)all.push({eco,name,display:frenchName(name),family:familyName(name),moves,pgn});}
-  database=all;try{localStorage.setItem("coach-echecs-openings-db-v1",JSON.stringify(database));}catch{}
+  database=all;try{localStorage.setItem("coach-echecs-dev-openings-db-v1",JSON.stringify(database));}catch{}
  }catch(e){dbError=e.message||"Dictionnaire indisponible";}
 }
 function classify(game){
