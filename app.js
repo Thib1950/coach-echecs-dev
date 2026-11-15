@@ -93,6 +93,7 @@ function groupOpenings(source){const groups=new Map();source.forEach(g=>{const n
 function render(){
   const wins=games.filter(g=>outcome(g)==="win").length, draws=games.filter(g=>outcome(g)==="draw").length, losses=games.filter(g=>outcome(g)==="loss").length;
   $("stat-games").textContent=games.length;$("stat-wins").textContent=wins;$("stat-losses").textContent=losses;
+  const dashValues={"dash-total-games":games.length,"dash-wins":wins,"dash-losses":losses,"dash-win-rate":games.length?Math.round(wins/games.length*100)+" %":"—"};Object.entries(dashValues).forEach(([id,value])=>{const node=$(id);if(node)node.textContent=String(value);});
   const greeting=$("dashboard-greeting-name");if(greeting)greeting.textContent=USERNAME;
   $("sync-state").textContent="Version développement · v40";
   const sorted=[...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
@@ -183,7 +184,7 @@ document.querySelectorAll(".tab").forEach(btn=>btn.addEventListener("click",()=>
  document.querySelectorAll(".panel").forEach(x=>x.classList.toggle("active",x.id==="panel-"+btn.dataset.tab));
  if(btn.dataset.tab==="openings"&&!openingsModuleLoaded){openingsModuleLoaded=true;import("./openings.js").catch(error=>{openingsModuleLoaded=false;console.error(error);$("opening-table").innerHTML='<div class="empty-state">Impossible de charger le module des ouvertures. Réessaie en ouvrant cet onglet.</div>';});}
 }));
-document.querySelectorAll("[data-goto]").forEach(btn=>btn.addEventListener("click",()=>document.querySelector('[data-tab="'+btn.dataset.goto+'"]').click()));
+document.querySelectorAll("[data-goto]").forEach(btn=>btn.addEventListener("click",()=>document.querySelector('[data-tab="'+btn.dataset.goto+'"]')?.click()));
 $("sync-button").addEventListener("click",syncChessCom);$("sync-button-games").addEventListener("click",syncChessCom);$("pgn-file").addEventListener("change",e=>importPgnFile(e.target.files[0]));$("game-search").addEventListener("input",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));$("result-filter").addEventListener("change",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));
 document.addEventListener("click",e=>{const b=e.target.closest("[data-open-game]");if(!b)return;e.preventDefault();if(window.CoachAnalysis?.openGame){window.CoachAnalysis.openGame(b.dataset.openGame);return;}window.dispatchEvent(new CustomEvent("coach:analyze-game",{detail:{gameId:b.dataset.openGame}}));});
 document.addEventListener("click",e=>{if(e.target.closest("[data-games-back]")){$("panel-games")?.classList.remove("reviewing-game");$("game-replay-area").innerHTML="";$("analysis-results").innerHTML="";}});
