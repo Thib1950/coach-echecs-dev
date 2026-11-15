@@ -2223,3 +2223,107 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
  #panel-puzzles .puzzle-side-actions{grid-template-columns:1fr 1fr!important}
  #panel-puzzles .puzzle-side-actions [data-puzzle-back]{grid-column:1/-1!important;grid-row:2!important}
 }
+
+
+/* v90 — compte centralisé, parcours Apprendre et alignement des lignes de parties. */
+.dashboard-account-row{display:flex;justify-content:flex-end;align-items:flex-start;gap:12px;margin-top:14px;position:relative;z-index:30}
+.account-menu{position:relative}
+.account-menu>summary{
+ list-style:none;display:flex;align-items:center;gap:9px;cursor:pointer;
+ padding:12px 22px;border:1px solid #536a82;border-radius:12px;
+ background:linear-gradient(145deg,#263e57,#182b40);color:#f4f7fb;
+ font:850 14px 'DM Sans',sans-serif;box-shadow:0 8px 22px #0003;
+}
+.account-menu>summary::-webkit-details-marker{display:none}
+.account-menu>summary span{font-size:19px;color:#e4ffad}
+.account-menu[open]>summary{border-color:#9bbd70}
+.account-menu-panel{
+ position:absolute;right:0;top:calc(100% + 9px);z-index:100;display:grid;gap:10px;
+ width:min(360px,calc(100vw - 38px));padding:17px;border:1px solid #536b82;
+ border-radius:15px;background:#14263a;box-shadow:0 18px 45px #0009;color:#eff5fb;
+}
+.account-menu-heading strong,.account-menu-heading small{display:block}
+.account-menu-heading strong{font-size:15px}.account-menu-heading small{margin-top:4px;color:#b9c9d8;font-size:11px}
+.account-menu-panel>label{font-size:10px;font-weight:850;letter-spacing:.7px;color:#b9c9d8}
+.account-change-row{display:flex;gap:8px;align-items:center}
+.account-change-row input{
+ min-width:0;flex:1;padding:10px 11px;border:1px solid #536a80;border-radius:9px;
+ background:#0d1b2a;color:#f1f6fb;font:700 13px 'DM Sans',sans-serif;
+}
+.account-menu-actions{display:grid;gap:8px}
+.account-menu-actions>*{width:100%;justify-content:center;box-sizing:border-box}
+.account-menu-panel>small{font-size:10px;line-height:1.45;color:#9fb1c3}
+.dashboard-account-row>#sync-message{margin:10px 0 0}
+#panel-games .game-row-expanded .game-row-info{min-width:0!important;flex:1 1 auto!important;width:100%!important}
+#panel-games .game-row-expanded .player-line{
+ display:grid!important;grid-template-columns:40px minmax(0,1fr) 76px!important;
+ align-items:center!important;justify-content:stretch!important;gap:9px!important;
+ width:100%!important;min-width:0!important;box-sizing:border-box!important;
+}
+#panel-games .game-row-expanded .player-line .player-avatar{grid-column:1!important;width:38px!important;height:38px!important;min-width:38px!important}
+#panel-games .game-row-expanded .player-line .game-opponent{
+ grid-column:2!important;min-width:0!important;max-width:100%!important;
+ overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+#panel-games .game-row-expanded .player-line .game-opponent-elo{
+ grid-column:3!important;align-self:center!important;justify-self:stretch!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:76px!important;min-width:0!important;max-width:76px!important;
+ box-sizing:border-box!important;text-align:center!important;font-variant-numeric:tabular-nums!important;
+}
+.learn-module-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.learn-module-grid .learn-entry-card{min-height:158px;padding:19px}
+.learn-subview{margin-top:3px}
+.learn-subview[hidden]{display:none!important}
+.learn-subview-heading{display:flex;align-items:flex-start;gap:16px;margin:0 0 17px}
+.learn-subview-heading>div{min-width:0}
+.learn-subview-heading h2{font:850 22px Manrope;margin:0;color:#f3f6fb}
+.learn-subview-heading p:not(.eyebrow){margin:6px 0 0;font-size:12px;color:#b4c4d5}
+.learn-subview-heading>.text-button{flex:0 0 auto;margin-top:3px}
+.learn-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.opening-explorer-search{margin:0 0 12px}
+.opening-explorer-search input{
+ width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid #435a72;border-radius:10px;
+ background:#0f1e30;color:#f1f6fb;font:600 13px 'DM Sans',sans-serif;
+}
+.opening-explorer-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opening-explorer-family{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;
+ min-width:0;padding:12px;border:1px solid #3a5068;border-radius:10px;
+ background:#192d43;color:#edf4fb;cursor:pointer;
+}
+.opening-explorer-family span{min-width:0}
+.opening-explorer-family strong,.opening-explorer-family small{display:block}
+.opening-explorer-family strong{font-size:12px}
+.opening-explorer-family small{font-size:10px;color:#aebed0;margin-top:4px}
+.opening-explorer-family b{flex:0 0 auto;font-size:10px;color:#e4ffad}
+.opening-explorer-lines-heading{margin:20px 0 8px}
+.opening-explorer-lines-heading h3{margin:0;font-size:17px}
+.opening-explorer-lines-heading p{margin:5px 0 0}
+.opening-exercise-return{
+ display:block;width:100%;margin-top:15px;padding:12px 14px;border:1px solid #718a4d;
+ border-radius:10px;background:#263b2a;color:#e4ffad;font:850 12px 'DM Sans',sans-serif;
+ cursor:pointer;
+}
+#panel-openings.opening-exercise-active>.page-intro-row,
+#panel-openings.opening-exercise-active>.learn-module-grid,
+#panel-openings.opening-exercise-active>.learn-subview-heading,
+#panel-openings.opening-exercise-active .learn-subview-heading{display:none!important}
+#panel-openings.opening-exercise-active #learn-opening-detected{display:block!important}
+#panel-openings.opening-exercise-active #learn-opening-detected>.openings-surface{display:none!important}
+#panel-openings.opening-exercise-active #opening-detail{display:flex!important}
+#panel-progress .page-intro-mark{display:none!important}
+@media(max-width:900px){
+ .learn-module-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .opening-explorer-list{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+ .dashboard-account-row{justify-content:flex-start}
+ .account-menu-panel{left:0;right:auto}
+ .learn-module-grid,.learn-choice-grid{grid-template-columns:1fr!important}
+ .learn-module-grid .learn-entry-card{min-height:122px}
+ .learn-subview-heading{flex-wrap:wrap}
+ #panel-games .game-row-expanded .player-line{grid-template-columns:36px minmax(0,1fr) 68px!important;gap:6px!important}
+ #panel-games .game-row-expanded .player-line .player-avatar{width:34px!important;height:34px!important;min-width:34px!important}
+ #panel-games .game-row-expanded .player-line .game-opponent-elo{width:68px!important;max-width:68px!important;font-size:14px!important;padding:4px!important}
+}
