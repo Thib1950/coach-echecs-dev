@@ -2896,3 +2896,12 @@ body{
  #panel-games #active-game-review .replay-layout{grid-template-columns:1fr!important}
  #panel-games #active-game-review .replay-board-wrap{max-width:min(100%,560px)!important}
 }
+
+
+/* Séance de révision : un écran dédié, sans la navigation ni l'en-tête de la page Apprendre. */
+.tabs.learn-session-active{display:none!important}
+#panel-openings.learn-session-active{padding-top:12px!important;min-height:calc(100vh - 20px)}
+#panel-openings.learn-session-active>.page-intro-row{display:none!important}
+#panel-openings.learn-session-active #learn-training-exercise{display:block!important;margin:0 auto!important;width:100%!important;max-width:1100px!important}
+#panel-openings.learn-session-active #learn-training-exercise .learn-subview-heading{align-items:center;padding:8px 0 18px}
+#panel-openings.learn-session-active #learn-training-exercise .puzzle-board-area{min-height:0}
