@@ -1,7 +1,7 @@
 import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
-const $=id=>document.getElementById(id),USER="gone_1950";
+const $=id=>document.getElementById(id),currentUser=()=>String(window.CoachApp?.getUsername?.()||"").toLowerCase();
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let database=[],dbError="",groups=[],currentKey=null,exercise=null;
+let database=[],dbError="",groups=[],currentKey=null,exercise=null,showAllOpenings=false;
 const glyph={wk:"♔",wq:"♕",wr:"♖",wb:"♗",wn:"♘",wp:"♙",bk:"♚",bq:"♛",br:"♜",bb:"♝",bn:"♞",bp:"♟"};
 const FR=[[/London System/gi,"Système de Londres"],[/Jobava London/gi,"Londres Jobava"],[/Sicilian Defense/gi,"Défense sicilienne"],[/King's Pawn Game/gi,"Partie du pion roi"],[/Queen's Pawn Game/gi,"Partie du pion dame"],[/Four Knights Game/gi,"Partie des quatre cavaliers"],[/King's Pawn Game/gi,"Partie du pion roi"],[/Queen's Pawn Game/gi,"Partie du pion dame"],[/Four Knights Game/gi,"Partie des quatre cavaliers"],[/French Defense/gi,"Défense française"],[/Caro-Kann Defense/gi,"Défense Caro-Kann"],[/King's Indian Defense/gi,"Défense est-indienne"],[/Queen's Gambit/gi,"Gambit dame"],[/King's Gambit/gi,"Gambit roi"],[/Ruy Lopez/gi,"Partie espagnole"],[/Italian Game/gi,"Partie italienne"],[/Scotch Game/gi,"Partie écossaise"],[/English Opening/gi,"Ouverture anglaise"],[/Scandinavian Defense/gi,"Défense scandinave"],[/Alekhine's Defense/gi,"Défense Alekhine"],[/Pirc Defense/gi,"Défense Pirc"],[/Dutch Defense/gi,"Défense hollandaise"],[/Slav Defense/gi,"Défense slave"],[/Nimzo-Indian Defense/gi,"Défense nimzo-indienne"],[/Grünfeld Defense/gi,"Défense Grünfeld"],[/Benoni Defense/gi,"Défense Benoni"],[/Reti Opening/gi,"Ouverture Réti"],[/Opening/gi,"Ouverture"],[/Defense/gi,"Défense"],[/Gambit/gi,"Gambit"],[/Advanced Variation/gi,"Variante d’avance"],[/Variation/gi,"Variante"],[/Attack/gi,"Attaque"],[/Accepted/gi,"accepté"],[/Declined/gi,"refusé"],[/Exchange/gi,"d'échange"],[/Classical/gi,"classique"],[/System/gi,"système"]];
 function frenchName(name){let s=name||"Ouverture non classée";for(const [re,to] of FR)s=s.replace(re,to);return s;}
@@ -9,8 +9,8 @@ function familyName(name){return frenchName(String(name||"Ouverture non classée
 function gameMoves(game){try{const c=new Chess();c.loadPgn(game.pgn||"");return c.history({verbose:true}).map(m=>m.from+m.to+(m.promotion||""));}catch{return [];}}
 function parseLine(pgn){try{const c=new Chess();c.loadPgn(pgn);return c.history({verbose:true}).map(m=>m.from+m.to+(m.promotion||""));}catch{return [];}}
 function validEco(v){return (String(v||"").match(/\b([A-E]\d{2})\b/i)||[])[1]?.toUpperCase()||"";}
-function outcome(g){const w=(g.white||"").toLowerCase()===USER,b=(g.black||"").toLowerCase()===USER;if(g.result==="1/2-1/2")return "draw";if((w&&g.result==="1-0")||(b&&g.result==="0-1"))return "win";if((w&&g.result==="0-1")||(b&&g.result==="1-0"))return "loss";return "unknown";}
-function sideOf(g){return (g.white||"").toLowerCase()===USER?"white":"black";}
+function outcome(g){const user=currentUser(),w=(g.white||"").toLowerCase()===user,b=(g.black||"").toLowerCase()===user;if(g.result==="1/2-1/2")return "draw";if((w&&g.result==="1-0")||(b&&g.result==="0-1"))return "win";if((w&&g.result==="0-1")||(b&&g.result==="1-0"))return "loss";return "unknown";}
+function sideOf(g){return (g.white||"").toLowerCase()===currentUser()?"white":"black";}
 function performance(games){const decided=games.filter(g=>["win","loss"].includes(outcome(g)));return decided.length?Math.round(decided.filter(g=>outcome(g)==="win").length/decided.length*100):null;}
 function sanLine(uci){const c=new Chess(),out=[];for(let i=0;i<uci.length;i++){const m=c.moves({verbose:true}).find(x=>x.from+x.to+(x.promotion||"")===uci[i]);if(!m)break;c.move({from:m.from,to:m.to,promotion:m.promotion});out.push((i%2===0?(Math.floor(i/2)+1)+". ":"")+m.san);}return out.join(" ");}
 async function loadDatabase(){
@@ -33,6 +33,30 @@ function classify(game){
  if(eco){const item=database.filter(x=>x.eco===eco).sort((a,b)=>b.moves.length-a.moves.length)[0];if(item)return item;}
  return {eco:"",name:"Ouverture non classée",display:"Ouverture non identifiée",family:"Ouverture non identifiée",moves:[],pgn:""};
 }
+const LEARNING_PREFIX="coach-echecs-dev-opening-learning-v2";
+const learningKey=()=>LEARNING_PREFIX+":"+currentUser();
+let learning={};
+function loadLearning(){try{learning=JSON.parse(localStorage.getItem(learningKey())||"{}");if(!learning||typeof learning!=="object")learning={};}catch{learning={};}}
+function saveLearning(){try{localStorage.setItem(learningKey(),JSON.stringify(learning));}catch{}}
+function learningStats(key){return learning[key]||{reps:0,errors:0,dueAt:0,streak:0};}
+function targetPlyCount(stats){const reps=Number(stats?.reps)||0;return reps<2?8:reps<4?12:reps<6?14:reps<8?18:24;}
+function recordLearning(candidate,correct,hadError=false){
+ const old=learningStats(candidate.key),now=Date.now(),next={...old};
+ if(correct){next.reps=(Number(old.reps)||0)+1;next.streak=(Number(old.streak)||0)+1;const days=hadError?1:[1,3,7,14,30][Math.min(next.reps-1,4)];next.dueAt=now+days*86400000;}
+ else{next.errors=(Number(old.errors)||0)+1;next.streak=0;next.reps=Math.max(0,(Number(old.reps)||0)-1);next.dueAt=now+10*60*1000;}
+ next.lastResult=correct?"ok":"error";next.updatedAt=now;learning[candidate.key]=next;saveLearning();
+}
+function chooseCandidate(candidates,previousKey=""){
+ if(!candidates.length)return 0;
+ const now=Date.now(),weights=candidates.map(candidate=>{
+  const p=learningStats(candidate.key),due=!p.dueAt||p.dueAt<=now?2.2:Math.max(.08,1/(1+(p.dueAt-now)/86400000));
+  const difficulty=1+(Number(p.errors)||0)*1.5,mastery=1/(1+(Number(p.reps)||0)*.85);
+  return Math.max(.02,due*difficulty*mastery*(candidate.key===previousKey?.08:1));
+ });
+ const total=weights.reduce((a,b)=>a+b,0);let roll=Math.random()*total;
+ for(let i=0;i<weights.length;i++){roll-=weights[i];if(roll<=0)return i;}
+ return 0;
+}
 function buildGroups(){
  const map=new Map(),games=window.CoachApp?.getGames?.()||[];
  for(const game of games){
@@ -48,9 +72,11 @@ function buildGroups(){
 }
 function render(){
  buildGroups();const filter=$("opening-color-filter")?.value||"all",totalGames=(window.CoachApp?.getGames?.()||[]).filter(game=>filter==="all"||sideOf(game)===filter).length;
- const rows=groups.map(g=>{const games=g.games.filter(x=>filter==="all"||sideOf(x)===filter);return {...g,shown:games.length,shownGames:games,w:games.filter(x=>outcome(x)==="win").length,d:games.filter(x=>outcome(x)==="draw").length,l:games.filter(x=>outcome(x)==="loss").length,white:games.filter(x=>sideOf(x)==="white").length,black:games.filter(x=>sideOf(x)==="black").length,winRate:performance(games)};}).filter(g=>g.shown).sort((a,b)=>b.shown-a.shown||a.family.localeCompare(b.family,"fr"));
+ const visibleGroups=showAllOpenings?groups:groups.slice(0,12);const rows=visibleGroups.map(g=>{const games=g.games.filter(x=>filter==="all"||sideOf(x)===filter);return {...g,shown:games.length,shownGames:games,w:games.filter(x=>outcome(x)==="win").length,d:games.filter(x=>outcome(x)==="draw").length,l:games.filter(x=>outcome(x)==="loss").length,white:games.filter(x=>sideOf(x)==="white").length,black:games.filter(x=>sideOf(x)==="black").length,winRate:performance(games)};}).filter(g=>g.shown).sort((a,b)=>b.shown-a.shown||a.family.localeCompare(b.family,"fr"));
  $("opening-table").innerHTML=rows.length?rows.map(g=>{const decided=g.w+g.d+g.l,points=(g.w+g.d/2)/(decided||1),status=decided<3?"À confirmer":points<.45?"À travailler":points>=.6?"Bon repère":"À consolider";const statusClass=decided>=3&&points<.45?"needs-work":decided>=3&&points>=.6?"solid":"neutral";return '<div class="opening-family-row"><div class="opening-family-main"><strong>'+esc(g.family)+'</strong><small>Blancs : '+g.white+' partie(s) · Noirs : '+g.black+' partie(s)</small></div><div class="opening-family-status"><span class="opening-status '+statusClass+'">'+status+'</span></div><div class="opening-family-stats"><b>'+g.shown+' partie(s)</b><small>'+Math.round(g.shown/(totalGames||1)*100)+' % des parties</small><small class="opening-win-rate">'+(g.winRate===null?"—":g.winRate+" % de victoires")+'</small></div><div class="opening-family-actions"><button type="button" class="opening-family-button" data-opening-family="'+esc(g.key)+'">Étudier</button><button type="button" class="opening-family-button secondary" data-opening-family-exercise="'+esc(g.key)+'">Exercice</button></div></div>';}).join(""):'<div class="empty-state">'+(dbError?"Les noms d'ouvertures n'ont pas pu être chargés. Vérifie ta connexion puis rouvre cet onglet.":"Aucune ouverture reconnue dans tes parties importées.")+'</div>';
+ if(groups.length>12){const toggle=document.createElement("button");toggle.type="button";toggle.className="opening-show-all-button";toggle.textContent=showAllOpenings?"Réduire la liste":"Afficher les "+groups.length+" ouvertures";toggle.addEventListener("click",()=>{showAllOpenings=!showAllOpenings;render();});$("opening-table").appendChild(toggle);}
  $("opening-table").querySelectorAll("[data-opening-family-exercise]").forEach(button=>button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();const group=groups.find(x=>x.key===button.dataset.openingFamilyExercise);if(group)startExercise(group);}));
+ $("opening-table").querySelectorAll("[data-opening-family]").forEach(button=>button.addEventListener("click",event=>{event.preventDefault();const group=groups.find(x=>x.key===button.dataset.openingFamily);if(group)renderDetail(group);}));
  if(currentKey){const g=groups.find(x=>x.key===currentKey);if(g)renderDetail(g);}
 }
 function renderDetail(g){
@@ -79,7 +105,7 @@ function startLineStudy(variant,index){
  if(!line.length){preview.hidden=false;preview.innerHTML='<p class="muted">Aucune suite de coups exploitable pour cette variante.</p>';return;}
  const game=variant.games[0]||{},userSide=sideOf(game)==="black"?"b":"w";
  let board=new Chess(),ply=0,selected=null,busy=false,feedback="Suis la flèche pour jouer le prochain coup de la ligne.";
- const autoReply=()=>{while(ply<line.length&&board.turn()!==userSide){const u=line[ply];try{board.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]});ply++;}catch{break;}}};
+ const autoReply=()=>{while(ply<line.length&&board.turn()!==userSide){const u=line[ply];try{const played=board.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]});window.CoachSound?.play(played);ply++;}catch{break;}}};
  autoReply();
  const overlay=document.createElement("div");overlay.className="opening-study-overlay";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");document.body.appendChild(overlay);
  const close=()=>overlay.remove();
@@ -101,29 +127,29 @@ function startLineStudy(variant,index){
   if(piece&&piece.color===userSide){selected=sq;draw();return;}
   const legal=board.moves({square:selected,verbose:true}).find(m=>m.to===sq);if(!legal){selected=null;draw();return;}
   const played=legal.from+legal.to+(legal.promotion||"");if(played!==line[ply]){feedback="Faux ! Ce coup ne suit pas la ligne. Regarde la flèche et réessaie.";selected=null;draw();return;}
-  board.move({from:legal.from,to:legal.to,promotion:legal.promotion||"q"});ply++;selected=null;feedback="Bien joué ! L’adversaire réfléchit…";busy=true;draw();await new Promise(resolve=>setTimeout(resolve,560));autoReply();busy=false;feedback=ply>=line.length?"Bravo, tu as terminé toute la séquence !":"La réponse adverse est jouée. À toi de continuer.";draw();
+  const playedMove=board.move({from:legal.from,to:legal.to,promotion:legal.promotion||"q"});window.CoachSound?.play(playedMove);ply++;selected=null;feedback="Bien joué ! L’adversaire réfléchit…";busy=true;draw();await new Promise(resolve=>setTimeout(resolve,560));autoReply();busy=false;feedback=ply>=line.length?"Bravo, tu as terminé toute la séquence !":"La réponse adverse est jouée. À toi de continuer.";draw();
  });
  draw();
 }
 function exercisePositions(group,side){
- const out=[];
+ const unique=new Map();
  for(const game of group.games){
   if(sideOf(game)!==(side==="w"?"white":"black")||!game.pgn)continue;
   try{
    const parsed=new Chess();parsed.loadPgn(game.pgn);
    const history=parsed.history({verbose:true});
    if(history.length<4)continue;
-   const opening=classify(game);
-   // La base ECO fournit la longueur de la ligne d'ouverture réellement jouée.
-   // Si l'en-tête PGN ne permet pas de retrouver la théorie, on prend les six
-   // premiers coups complets comme parcours de secours, sans inventer une variante.
-   const openingLength=Math.min(history.length,opening.moves?.length||12);
-   if(openingLength<4)continue;
-   const line=history.slice(0,openingLength).map(m=>m.from+m.to+(m.promotion||""));
-   if(line.length>=4)out.push({fen:new Chess().fen(),game,ply:0,line,openingLength,openingName:opening.display||opening.name||group.family});
+   const opening=classify(game),openingName=opening.display||opening.name||group.family;
+   const theoretical=opening.moves?.length?opening.moves:history.map(m=>m.from+m.to+(m.promotion||""));
+   const line=theoretical.slice(0,Math.min(history.length,theoretical.length,24));
+   if(line.length<4)continue;
+   const key=[group.key,openingName,side,line.slice(0,8).join(".")].join("|");
+   const stats=learningStats(key),target=targetPlyCount(stats),progressiveLine=line.slice(0,target);
+   if(progressiveLine.length<4)continue;
+   if(!unique.has(key))unique.set(key,{key,fen:new Chess().fen(),game,ply:0,line:progressiveLine,fullLine:line,openingLength:progressiveLine.length,openingName,learning:stats});
   }catch{}
  }
- return out;
+ return [...unique.values()];
 }
 async function startExercise(group){
  currentKey=group.key;
@@ -137,7 +163,7 @@ async function startExercise(group){
   root.innerHTML='<article class="surface opening-detail-card"><p class="muted">Je n’ai pas trouvé de séquence assez complète dans tes parties pour construire cet exercice.</p><button type="button" class="text-button" id="close-opening-exercise">← Retour</button></article>';
   root.querySelector("#close-opening-exercise").onclick=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);};return;
  }
- let currentIndex=Math.floor(Math.random()*candidates.length),board=null,selected=null,phase="guide",guidePly=0,practicePly=0,busy=false,finished=false,feedback="";
+ let currentIndex=chooseCandidate(candidates),board=null,selected=null,phase="guide",guidePly=0,practicePly=0,busy=false,finished=false,feedback="",candidateFailed=false;
  const files="abcdefgh",pieceNames={p:"pion",n:"cavalier",b:"fou",r:"tour",q:"dame",k:"roi"};
  const close=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);};
  const candidate=()=>candidates[currentIndex];
@@ -189,10 +215,10 @@ async function startExercise(group){
   root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><button type="button" data-exercise-close hidden aria-hidden="true" tabindex="-1"></button><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Depuis le début · "+Math.min(guidePly+1,line.length)+" / "+line.length+" demi-coups · La flèche montre ton prochain coup.":"Rejoue depuis le début · "+practicePly+" / "+line.length+" demi-coups")+'</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'</aside></div></article>';
   root.querySelectorAll(".chess-piece-image").forEach(img=>img.addEventListener("error",()=>{const fallback=document.createElement("span");fallback.className="piece";fallback.textContent=img.alt;img.replaceWith(fallback);},{once:true}));
  };
- const playAutomaticReplies=()=>{while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});guidePly++;}};
- const playPracticeReplies=()=>{while(practicePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[practicePly]);if(!reply)break;board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});practicePly++;}};
+ const playAutomaticReplies=()=>{while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}};
+ const playPracticeReplies=()=>{while(practicePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[practicePly]);if(!reply)break;const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);practicePly++;}};
  const beginPosition=()=>{
-  board=new Chess();selected=null;phase="guide";guidePly=0;practicePly=0;busy=false;finished=false;feedback="";playAutomaticReplies();draw();
+  board=new Chess();selected=null;phase="guide";guidePly=0;practicePly=0;busy=false;finished=false;candidateFailed=false;feedback="";playAutomaticReplies();draw();
  };
  root.onclick=async event=>{
   if(event.target.closest("[data-exercise-close]")){close();return;}
@@ -204,7 +230,7 @@ async function startExercise(group){
     if(guidePly>=line.length){phase="practice";board=new Chess();selected=null;practicePly=0;finished=false;feedback="À toi de rejouer toute l’ouverture depuis le premier coup, sans flèches.";playPracticeReplies();draw();return;}
     return;
    }
-   if(finished){currentIndex=(currentIndex+1)%candidates.length;beginPosition();return;}
+   if(finished){const previous=candidate().key;currentIndex=chooseCandidate(candidates,previous);beginPosition();return;}
   }
   if(phase==="guide"){
    if(guidePly>=candidate().line.length)return;
@@ -215,7 +241,7 @@ async function startExercise(group){
    const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;draw();return;}
    const expected=candidate().line[guidePly],played=move.from+move.to+(move.promotion||"");
    if(played!==expected){selected=null;feedback="Pas ce coup. Suis précisément la flèche et réessaie.";draw();return;}
-   board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});guidePly++;selected=null;
+   const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);guidePly++;selected=null;
    while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});guidePly++;}
    feedback=guidePly>=candidate().line.length?"Tu as joué toute la démonstration. Passe maintenant à la reproduction sans flèches.":"Bien joué ! Observe la nouvelle flèche et joue le coup suivant.";
    draw();return;
@@ -227,9 +253,9 @@ async function startExercise(group){
   if(piece&&piece.color===side){selected=square;draw();return;}
   const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;draw();return;}
   const played=move.from+move.to+(move.promotion||""),expected=candidate().line[practicePly];
-  if(played!==expected){selected=null;feedback="Pas tout à fait. Reprends le coup montré pendant la démonstration.";draw();return;}
-  board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});practicePly++;selected=null;
-  if(practicePly>=candidate().line.length){finished=true;feedback="Bravo ! Tu as reproduit toute la ligne.";draw();return;}
+  if(played!==expected){if(!candidateFailed){recordLearning(candidate(),false);candidateFailed=true;}selected=null;feedback="Pas tout à fait. Cette position sera reproposée plus souvent pour la mémoriser.";draw();return;}
+  const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);practicePly++;selected=null;
+  if(practicePly>=candidate().line.length){finished=true;recordLearning(candidate(),true,candidateFailed);feedback="Bravo ! Tu as reproduit toute la ligne. Ta prochaine révision est programmée selon tes résultats.";draw();return;}
   if(board.turn()!==side){busy=true;window.setTimeout(()=>{if(!board||phase!=="practice"){busy=false;return;}playPracticeReplies();busy=false;if(practicePly>=candidate().line.length){finished=true;feedback="Bravo ! Tu as reproduit toute la ligne.";}else feedback="Bien joué. À toi de jouer le prochain coup.";draw();},420);}
   else{feedback="Bien joué. Continue la séquence.";draw();}
  };
@@ -243,5 +269,7 @@ document.addEventListener("click",event=>{
  const button=event.target.closest("[data-opening-family]");if(button){const g=groups.find(x=>x.key===button.dataset.openingFamily);if(g)renderDetail(g);}
 });
 $("opening-color-filter")?.addEventListener("change",render);
+document.querySelectorAll("[data-opening-scroll]").forEach(button=>button.addEventListener("click",()=>$("opening-table")?.scrollIntoView({behavior:"smooth",block:"start"})));
 window.addEventListener("coach:games-updated",()=>{if($("panel-openings")?.classList.contains("active"))render();});
-loadDatabase().then(render);render();
+window.addEventListener("coach:account-changed",()=>{loadLearning();currentKey=null;showAllOpenings=false;render();});
+loadLearning();loadDatabase().then(render);render();
