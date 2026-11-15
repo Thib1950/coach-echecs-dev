@@ -57,6 +57,27 @@ function chooseCandidate(candidates,previousKey=""){
  for(let i=0;i<weights.length;i++){roll-=weights[i];if(roll<=0)return i;}
  return 0;
 }
+
+function renderExplorer(query=""){
+ const root=$("opening-explorer-list");if(!root)return;
+ const q=String(query||"").trim().toLocaleLowerCase("fr");
+ const families=new Map();
+ for(const item of database){const key=item.family||familyName(item.name);if(!families.has(key))families.set(key,[]);families.get(key).push(item);}
+ const rows=[...families.entries()].filter(([name,items])=>!q||name.toLocaleLowerCase("fr").includes(q)||items.some(x=>x.display.toLocaleLowerCase("fr").includes(q)||x.eco.toLowerCase().includes(q))).sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0],"fr")).slice(0,60);
+ root.innerHTML=rows.length?rows.map(([name,items],i)=>'<button type="button" class="opening-explorer-family" data-explorer-family="'+i+'"><span><strong>'+esc(name)+'</strong><small>'+items.length+' ligne(s) de référence</small></span><b>Voir les variantes →</b></button>').join(""):'<div class="empty-state">Aucune ouverture ne correspond à cette recherche.</div>';
+ root._families=rows;$("opening-explorer-lines").innerHTML="";
+}
+function renderExplorerLines(index){
+ const root=$("opening-explorer-list"),rows=root?._families||[],entry=rows[index];if(!entry)return;
+ const [name,items]=entry,lines=items.slice().sort((a,b)=>b.moves.length-a.moves.length).slice(0,18);
+ $("opening-explorer-lines").innerHTML='<div class="opening-explorer-lines-heading"><h3>'+esc(name)+'</h3><p class="muted">'+lines.length+' variantes de la base de référence</p></div>'+lines.map((item,i)=>'<div class="opening-variant-row"><div><strong>'+esc(item.display)+'</strong><small>'+esc(item.eco)+' · '+item.moves.length+' demi-coups</small></div><div class="opening-variant-actions"><button type="button" data-explorer-study="'+i+'">Étudier la ligne</button></div></div>').join("");
+ $("opening-explorer-lines")._lines=lines;
+}
+function showLearnSubview(view){
+ ["learn-hub","learn-opening-choice","learn-opening-detected","learn-opening-explorer"].forEach(id=>{const node=$(id);if(node)node.hidden=id!==view;});
+ if(view==="learn-opening-detected")render();
+ if(view==="learn-opening-explorer")renderExplorer($("opening-explorer-search")?.value||"");
+}
 function buildGroups(){
  const map=new Map(),games=window.CoachApp?.getGames?.()||[];
  for(const game of games){
@@ -213,7 +234,7 @@ async function startExercise(group){
    coachText=finished?"Bravo, tu as retrouvé toute la séquence de cette ouverture. Tu peux passer à une autre position.":(feedback||"Joue les coups que tu viens d’observer. Les réponses adverses seront jouées automatiquement.");
    actionLabel=finished?"Nouvelle position":"";
   }
-  root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><button type="button" data-exercise-close hidden aria-hidden="true" tabindex="-1"></button><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Depuis le début · "+Math.min(guidePly+1,line.length)+" / "+line.length+" demi-coups · La flèche montre ton prochain coup.":"Rejoue depuis le début · "+practicePly+" / "+line.length+" demi-coups")+'</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'</aside></div></article>';
+  root.innerHTML='<article class="surface opening-detail-card opening-exercise-screen"><div class="opening-practice-layout"><div class="opening-practice-board-wrap"><div class="opening-practice-board">'+cells+'</div>'+(phase==="guide"?arrowFor(activeMove):"")+'</div><aside class="opening-practice-coach"><p class="eyebrow">'+status+'</p><h4>'+esc(group.family)+'</h4><strong>'+esc(coachTitle)+'</strong><p>'+esc(coachText)+'</p><small>'+(phase==="guide"?"Depuis le début · "+Math.min(guidePly+1,line.length)+" / "+line.length+" demi-coups · La flèche montre ton prochain coup.":"Rejoue depuis le début · "+practicePly+" / "+line.length+" demi-coups")+'</small>'+(actionLabel?'<button type="button" data-exercise-action>'+(finished?"Nouvelle position":actionLabel)+'</button>':"")+'<button type="button" class="opening-exercise-return" data-exercise-close>← Retour aux ouvertures</button></aside></div></article>';
   root.querySelectorAll(".chess-piece-image").forEach(img=>img.addEventListener("error",()=>{const fallback=document.createElement("span");fallback.className="piece";fallback.textContent=img.alt;img.replaceWith(fallback);},{once:true}));
  };
  const playAutomaticReplies=()=>{while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}};
@@ -264,13 +285,23 @@ async function startExercise(group){
 }
 
 document.addEventListener("click",event=>{
- if(event.target.closest("[data-opening-back]")){event.preventDefault();document.querySelector("[data-exercise-close],#close-opening-exercise")?.click();return;}
+ const moduleButton=event.target.closest("[data-learn-module]");
+ if(moduleButton?.dataset.learnModule==="openings"){showLearnSubview("learn-opening-choice");return;}
+ const back=event.target.closest("[data-learn-back]");
+ if(back){showLearnSubview(back.closest("#learn-opening-choice")?"learn-hub":"learn-opening-choice");return;}
+ const viewButton=event.target.closest("[data-learn-opening-view]");
+ if(viewButton){showLearnSubview(viewButton.dataset.learnOpeningView==="explorer"?"learn-opening-explorer":"learn-opening-detected");return;}
+ const explorerFamily=event.target.closest("[data-explorer-family]");
+ if(explorerFamily){renderExplorerLines(Number(explorerFamily.dataset.explorerFamily));return;}
+ const explorerStudy=event.target.closest("[data-explorer-study]");
+ if(explorerStudy){const item=$("opening-explorer-lines")._lines?.[Number(explorerStudy.dataset.explorerStudy)];if(item){const game={pgn:item.pgn,white:currentUser(),black:"Bibliothèque",opening:item.name,eco:item.eco};startLineStudy({name:item.display,games:[game],book:item},"explorer");}return;}
  const exerciseButton=event.target.closest("[data-opening-family-exercise]");
  if(exerciseButton){event.preventDefault();const g=groups.find(x=>x.key===exerciseButton.dataset.openingFamilyExercise);if(g)startExercise(g);return;}
  const button=event.target.closest("[data-opening-family]");if(button){const g=groups.find(x=>x.key===button.dataset.openingFamily);if(g)renderDetail(g);}
 });
 $("opening-color-filter")?.addEventListener("change",render);
-document.querySelectorAll("[data-opening-scroll]").forEach(button=>button.addEventListener("click",()=>$("opening-table")?.scrollIntoView({behavior:"smooth",block:"start"})));
+$("opening-explorer-search")?.addEventListener("input",event=>renderExplorer(event.target.value));
+
 window.addEventListener("coach:games-updated",()=>{if($("panel-openings")?.classList.contains("active"))render();});
-window.addEventListener("coach:account-changed",()=>{document.querySelectorAll(".opening-study-overlay").forEach(node=>node.remove());$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;$("opening-detail").innerHTML="";loadLearning();currentKey=null;showAllOpenings=false;render();});
-loadLearning();loadDatabase().then(render);render();
+window.addEventListener("coach:account-changed",()=>{document.querySelectorAll(".opening-study-overlay").forEach(node=>node.remove());$("panel-openings")?.classList.remove("opening-exercise-active");$("opening-detail").innerHTML="";loadLearning();currentKey=null;showAllOpenings=false;showLearnSubview("learn-hub");render();});
+loadLearning();loadDatabase().then(()=>{render();renderExplorer();});render();
