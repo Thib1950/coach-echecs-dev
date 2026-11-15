@@ -1752,3 +1752,40 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 #panel-openings.opening-exercise-active.active{display:flex}
 .opening-study-overlay{z-index:1000}
 .tabs .tab.active{background:linear-gradient(180deg,#263b55,#1a2b40);color:#fff;border-color:#d6b66d;box-shadow:inset 0 -2px 0 #e5c47b}
+
+
+/* v74 — direction premium hybride : rail latéral, espace de travail dédié, cartes profondes. */
+@media(min-width:901px){
+ .app-shell{max-width:1560px;min-height:100vh;padding:0 clamp(22px,3vw,48px);display:flex;flex-direction:column}
+ .topbar{height:82px;flex:0 0 82px;border-bottom:1px solid #2a3b52}
+ main{display:grid;grid-template-columns:224px minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:clamp(20px,2.2vw,34px);flex:1;min-height:0;padding-top:18px}
+ .tabs{grid-column:1;grid-row:1;display:flex;flex-direction:column;align-items:stretch;gap:8px;overflow:visible;padding:18px 12px;background:linear-gradient(180deg,#14243a,#101c2d);border:1px solid #2e435d;border-radius:20px;align-self:start;position:sticky;top:16px}
+ .tabs:before{content:"ESPACE DE TRAVAIL";display:block;padding:0 12px 12px;color:#8395ab;font:800 9px 'DM Sans',sans-serif;letter-spacing:1.8px}
+ .tab{display:flex;align-items:center;gap:13px;width:100%;min-height:50px;padding:0 14px;text-align:left;border:1px solid transparent;border-radius:12px;border-bottom:1px solid transparent;color:#a9b8ca;font-size:13px;font-weight:700;transition:all .18s ease}
+ .tab .tab-icon{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:#20334b;color:#c4d0df;font-size:17px}
+ .tab:hover{background:#1a2c43;color:#fff}
+ .tab.active{background:linear-gradient(110deg,#2a4059,#1b2d43);border:1px solid #536982;border-bottom:1px solid #536982;box-shadow:inset 3px 0 #e4c27c,0 6px 18px #02081235;color:#fff}
+ .tab.active .tab-icon{background:#e2bf77;color:#172338}
+ .panel{grid-column:2;grid-row:1;min-width:0;padding:8px 0 34px}
+ .panel.active{min-width:0}
+ .dashboard-hero{min-height:230px;border-radius:22px;background:radial-gradient(circle at 82% 44%,#344d68 0,transparent 27%),linear-gradient(115deg,#1b3049,#111d2e 70%);border:1px solid #405873}
+ .dashboard-hero h1{font-size:clamp(32px,3vw,46px)}
+ .dashboard-metrics{gap:14px}
+ .dashboard-metrics article{min-height:120px;border-radius:16px;background:linear-gradient(145deg,#1b3048,#122035);border:1px solid #354b64}
+ .home-menu-item{min-height:86px;border:1px solid #354b64;border-radius:15px;background:linear-gradient(145deg,#1b3048,#142238);transition:transform .18s ease,border-color .18s ease}
+ .home-menu-item:hover{transform:translateY(-2px);border-color:#b8955d}
+ .dashboard-recent-card,.games-library-card,.openings-surface,.puzzle-surface{border:1px solid #354b64;border-radius:18px;background:linear-gradient(145deg,#172a41,#111e30)}
+ .page-intro-row{margin-bottom:20px}
+ .page-intro-row h1{font-size:34px;letter-spacing:-1px}
+ .surface{border-radius:17px}
+}
+@media(min-width:901px) and (max-height:760px){
+ .tabs{padding:10px}
+ .tab{min-height:43px}
+ .tab .tab-icon{width:26px;height:26px;flex-basis:26px}
+}
+@media(max-width:900px){
+ main{display:flex;flex-direction:column;min-height:0}
+ .tabs{order:0;flex:0 0 auto;display:flex;flex-direction:row;gap:5px;overflow-x:auto}
+ .panel{order:1;min-width:0}
+}
