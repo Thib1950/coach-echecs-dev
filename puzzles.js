@@ -20,7 +20,7 @@ function render(){
 }
 function message(text){$("puzzle-feedback").textContent=text;}
 async function loadDaily(){
- if(loading)return;loading=true;board=null;$("puzzle-board-area").innerHTML='<div class="empty-state">Chargement du puzzle du jour…</div>';message("Connexion à la base publique de puzzles Lichess…");
+ if(loading)return;loading=true;currentPuzzle=null;board=null;$("puzzle-board-area").innerHTML='<div class="empty-state">Chargement du puzzle du jour…</div>';message("Connexion à la base publique de puzzles Lichess…");
  try{
   const response=await fetch("https://lichess.org/api/puzzle/daily",{headers:{Accept:"application/json"}});
   if(!response.ok)throw new Error("Lichess a répondu HTTP "+response.status);
@@ -30,7 +30,7 @@ async function loadDaily(){
   $("puzzle-rating").textContent=(data.puzzle.rating||"—")+" Elo";
   $("puzzle-themes").textContent="Thèmes : "+(data.puzzle.themes||[]).join(" · ");
   message("Puzzle chargé. À toi de trouver la combinaison !");
-  render();
+  render();renderPersonalized();
  }catch(error){$("puzzle-title").textContent="Puzzle indisponible";$("puzzle-board-area").innerHTML='<div class="empty-state">Impossible de charger le puzzle : '+esc(error.message)+'. Vérifie ta connexion puis réessaie.</div>';message("Le problème tactique n’a pas pu être chargé.");}
  finally{loading=false;}
 }
