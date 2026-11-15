@@ -145,10 +145,15 @@ function showLearnSubview(view){
   }else renderExplorer($("opening-explorer-search")?.value||"");
  }
 }
+function isRecognizedOpening(op){
+ const raw=String(op?.name||op?.display||"").trim().toLowerCase();
+ const generic=new Set(["formation","opening","ouverture","unknown","unclassified","not classified","not identified","unidentified opening","ouverture non identifiée","ouverture non classée","autre","other","game","chess"]);
+ return !!(op?.eco&&/^[A-E]\d{2}$/.test(op.eco)) || (!!raw&&!generic.has(raw)&&!/^code\s+[a-e]\d{2}$/i.test(raw));
+}
 function buildGroups(){
  const map=new Map(),games=window.CoachApp?.getGames?.()||[];
  for(const game of games){
-  const op=classify(game);if(op.family==="Ouverture non identifiée")continue;const key=op.family;
+  const op=classify(game);if(!isRecognizedOpening(op))continue;const key=op.family;
   if(!map.has(key))map.set(key,{key,family:op.family,games:[],variants:new Map(),white:0,black:0,wins:0,draws:0,losses:0});
   const group=map.get(key);group.games.push(game);const side=sideOf(game);group[side]++;
   const result=outcome(game);if(result==="win")group.wins++;if(result==="draw")group.draws++;if(result==="loss")group.losses++;
