@@ -123,8 +123,9 @@ function renderExplorerLines(index){
  $("opening-explorer-lines")._lines=lines;
 }
 function showLearnSubview(view){
- ["learn-hub","learn-opening-choice","learn-opening-detected","learn-opening-explorer"].forEach(id=>{const node=$(id);if(node)node.hidden=id!==view;});
+ ["learn-hub","learn-training-choice","learn-errors-view","learn-training-exercise","learn-opening-choice","learn-opening-detected","learn-opening-explorer"].forEach(id=>{const node=$(id);if(node)node.hidden=id!==view;});
  if(view==="learn-opening-detected")render();
+ if(view==="learn-training-choice"||view==="learn-errors-view")window.dispatchEvent(new CustomEvent("coach:learn-personal-view",{detail:{view}}));
  if(view==="learn-opening-explorer")renderExplorer($("opening-explorer-search")?.value||"");
 }
 function buildGroups(){
@@ -292,7 +293,7 @@ async function startExercise(group){
    status="ÉTAPE 1 · DÉMONSTRATION GUIDÉE";
    coachTitle=guidePly>=line.length?"Démonstration terminée":"L’idée du coup";
    coachText=feedback||(move?describeForCoach(board,move,guidePly)+" À jouer : "+move.san+".":"La séquence est terminée. Rejoue-la sans aide.");
-   actionLabel=guidePly>=line.length?"Rejouer sans les flèches":"";
+   actionLabel="";
   }else{
    status="ÉTAPE 2 · À TOI DE JOUER";
    coachTitle=finished?"Séquence maîtrisée !":"Reproduis la ligne sans aide";
@@ -330,8 +331,10 @@ async function startExercise(group){
    if(played!==expected){selected=null;feedback="Pas ce coup. Suis précisément la flèche et réessaie.";draw();return;}
    const ownIdea=describeForCoach(board,move,guidePly);const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);guidePly++;selected=null;
    let replyIdea="";while(guidePly<candidate().line.length&&board.turn()!==side){const reply=moveFor(board,candidate().line[guidePly]);if(!reply)break;replyIdea=describeForCoach(board,reply,guidePly);const replyMove=board.move({from:reply.from,to:reply.to,promotion:reply.promotion||"q"});window.CoachSound?.play(replyMove);guidePly++;}
-   feedback="Ton idée : "+ownIdea+(replyIdea?" Réponse adverse : "+replyIdea:"")+(guidePly>=candidate().line.length?" La démonstration est terminée.":" Observe maintenant la nouvelle position.");
-   draw();return;
+   feedback=guidePly>=candidate().line.length?"Maintenant à toi de jouer. Rejoue toute la séquence sans flèches ni aide.":"Ton idée : "+ownIdea+(replyIdea?" Réponse adverse : "+replyIdea:"")+" Observe maintenant la nouvelle position.";
+   draw();
+   if(guidePly>=candidate().line.length){window.setTimeout(()=>{if(phase!=="guide"||!board)return;phase="practice";board=new Chess();selected=null;practicePly=0;finished=false;feedback="À toi de jouer : retrouve la séquence que tu viens d’observer, sans aucune aide.";playPracticeReplies();draw();},1100);}
+   return;
   }
   if(phase!=="practice"||busy||finished)return;
   const button=event.target.closest("[data-opening-square]");if(!button)return;
@@ -352,8 +355,10 @@ async function startExercise(group){
 document.addEventListener("click",event=>{
  const moduleButton=event.target.closest("[data-learn-module]");
  if(moduleButton?.dataset.learnModule==="openings"){showLearnSubview("learn-opening-choice");return;}
+ if(moduleButton?.dataset.learnModule==="training"){showLearnSubview("learn-training-choice");return;}
+ if(moduleButton?.dataset.learnModule==="errors"){showLearnSubview("learn-errors-view");return;}
  const back=event.target.closest("[data-learn-back]");
- if(back){showLearnSubview(back.closest("#learn-opening-choice")?"learn-hub":"learn-opening-choice");return;}
+ if(back){const parent=back.closest(".learn-subview")?.id;showLearnSubview(["learn-opening-choice","learn-training-choice","learn-errors-view"].includes(parent)?"learn-hub":"learn-opening-choice");return;}
  const viewButton=event.target.closest("[data-learn-opening-view]");
  if(viewButton){showLearnSubview(viewButton.dataset.learnOpeningView==="explorer"?"learn-opening-explorer":"learn-opening-detected");return;}
  const explorerFamily=event.target.closest("[data-explorer-family]");
