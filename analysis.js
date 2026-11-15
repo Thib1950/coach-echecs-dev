@@ -278,6 +278,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
     }
     game.analysis={date:new Date().toISOString(),moves:report.moves,positions:report.positions,positionDetails:report.positionDetails,covered:report.covered,accuracy:accuracyFromMoves(report.moves),partial:false,depth:report.depth};
     window.CoachApp.saveGames();
+    window.CoachApp.refresh?.();
     if(!background){
       renderResults(game,report);
       if(window.CoachReview?.updateAnalysis)window.CoachReview.updateAnalysis(report.moves,game);
@@ -297,6 +298,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
     }else{
       game.analysis={date:new Date().toISOString(),moves:report.moves,positions:report.positions,positionDetails:report.positionDetails,covered:report.covered,accuracy:accuracyFromMoves(report.moves),partial:true};
       window.CoachApp.saveGames();
+      window.CoachApp.refresh?.();
       if(!background){
         renderResults(game,report);
         $("analysis-progress-label").textContent="Analyse interrompue après "+report.covered+" demi-coups. Les positions déjà calculées restent disponibles.";
