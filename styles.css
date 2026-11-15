@@ -1863,3 +1863,52 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 .dashboard-recent-card .recent-review-button{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border-radius:9px;background:#243a53;border:1px solid #45617f;color:#e6c77f;font-size:18px}
 .dashboard-recent-card .recent-review-button svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .dashboard-recent-card .recent-review-button:hover{background:#314d6b;border-color:#d6b66d}
+
+/* v77 — listes et espaces de jeu réellement exploitables sur iPad. */
+#panel-games.games-page.active{display:block!important;height:auto!important;min-height:0!important;overflow:visible!important}
+#panel-games .games-library-card{display:flex!important;max-height:none!important;height:auto!important;min-height:0!important;overflow:visible!important}
+#panel-games .games-library-card #games-list{flex:none!important;height:auto!important;max-height:none!important;min-height:0!important;overflow:visible!important;padding-bottom:24px!important}
+#panel-games .game-elo-line{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:5px;color:#b7c8da;font-size:11px;line-height:1.35}
+#panel-games .game-elo-line span{white-space:nowrap}
+#panel-games .game-elo-line strong{color:#f1d18c;font-weight:800;font-variant-numeric:tabular-nums}
+#panel-openings:not(.opening-exercise-active)>.page-intro-row,#panel-openings:not(.opening-exercise-active)>.opening-feature-banner{display:none!important}
+#panel-openings:not(.opening-exercise-active){padding-top:4px!important}
+#panel-openings:not(.opening-exercise-active)>.openings-surface{margin:0!important;min-height:calc(100dvh - 150px)!important;display:flex!important;flex-direction:column!important}
+#panel-openings:not(.opening-exercise-active)>.openings-surface>.surface-heading{flex:none!important}
+#panel-openings:not(.opening-exercise-active) #opening-table{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+#panel-openings.opening-exercise-active{position:relative!important;min-height:0!important;height:calc(100dvh - 112px)!important;overflow:hidden!important}
+#panel-openings.opening-exercise-active>#opening-detail{height:100%!important;max-height:100%!important}
+#panel-openings.opening-exercise-active .opening-exercise-screen{height:100%!important;max-height:100%!important;padding:6px 10px!important;gap:6px!important}
+#panel-openings.opening-exercise-active .opening-exercise-screen>.surface-heading{padding:4px 8px!important}
+#panel-openings.opening-exercise-active .opening-practice-layout{grid-template-columns:minmax(0,1fr) minmax(210px,260px)!important;gap:12px!important;padding:0!important}
+#panel-openings.opening-exercise-active .opening-practice-board{width:min(100%,calc(100dvh - 170px),760px)!important;max-width:760px!important}
+#panel-openings.opening-exercise-active .opening-practice-coach{max-width:260px!important;padding:13px!important;gap:7px!important}
+.app-shell:has(#panel-openings.opening-exercise-active.active) .tabs{display:none!important}
+.app-shell:has(#panel-openings.opening-exercise-active.active) main{padding-top:0!important;gap:0!important}
+@media(max-width:900px){
+ #panel-openings.opening-exercise-active{height:auto!important;min-height:calc(100dvh - 105px)!important;overflow:visible!important}
+ #panel-openings.opening-exercise-active>#opening-detail{height:auto!important;overflow:visible!important}
+ #panel-openings.opening-exercise-active .opening-exercise-screen{height:auto!important;max-height:none!important;overflow:visible!important}
+ #panel-openings.opening-exercise-active .opening-practice-layout{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;justify-items:center!important;align-content:start!important}
+ #panel-openings.opening-exercise-active .opening-practice-board{width:min(92vw,calc(100dvh - 250px),680px)!important}
+ #panel-openings.opening-exercise-active .opening-practice-coach{width:min(100%,680px)!important;max-width:680px!important}
+}
+#panel-puzzles.puzzle-exercise-active{padding-top:0!important;min-height:0!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-hub{display:none!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-surface{display:flex!important;flex-direction:column!important;margin:0!important;padding:8px 10px!important;min-height:0!important;height:calc(100dvh - 175px)!important;overflow:visible!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-title-row{flex:none!important;margin:0 0 6px!important;padding:0 0 7px!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-feedback-stage{flex:none!important;margin:0 0 7px!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-board-area{flex:1 1 auto!important;min-height:0!important;grid-template-columns:minmax(0,1fr) minmax(240px,300px)!important;align-items:center!important;gap:14px!important;overflow:visible!important;margin:0!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-board-wrap{width:min(100%,calc(100dvh - 230px),760px)!important;max-width:760px!important;justify-self:center!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-side{width:100%!important;max-width:none!important;max-height:100%!important;overflow-y:auto!important;align-self:center!important}
+.app-shell:has(#panel-puzzles.puzzle-exercise-active.active) main{padding-top:0!important;gap:8px!important}
+@media(max-width:900px){
+ #panel-puzzles.puzzle-exercise-active .puzzle-surface{height:auto!important;min-height:calc(100dvh - 155px)!important;overflow:visible!important}
+ #panel-puzzles.puzzle-exercise-active .puzzle-board-area{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;align-content:start!important;justify-items:center!important;overflow:visible!important}
+ #panel-puzzles.puzzle-exercise-active .puzzle-board-wrap{width:min(92vw,calc(100dvh - 270px),700px)!important}
+ #panel-puzzles.puzzle-exercise-active .puzzle-side{width:min(100%,700px)!important;max-height:none!important;overflow:visible!important}
+}
+@media(max-width:520px){
+ #panel-puzzles.puzzle-exercise-active .puzzle-board-wrap{width:min(94vw,calc(100dvh - 300px))!important}
+ #panel-puzzles.puzzle-exercise-active .puzzle-title-row{flex-wrap:wrap!important}
+}
