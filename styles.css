@@ -2807,3 +2807,92 @@ body{
  #panel-puzzles .puzzle-mode-card{min-height:115px!important}
  #panel-games #active-game-review .pv-heading{align-items:flex-start;flex-direction:column}
 }
+
+
+/* Direction artistique premium — alignement sur les deux ébauches validées */
+:root{
+ --premium-navy:#0b1425;--premium-panel:#111f34;--premium-panel-raised:#172a43;
+ --premium-line:#2b405b;--premium-gold:#e8bd68;--premium-gold-soft:#f5d99a;
+ --premium-blue:#6da9e8;--premium-cyan:#65c6d7;
+}
+#panel-dashboard .dashboard-hero{
+ background:radial-gradient(ellipse at 78% 35%,rgba(82,139,198,.26),transparent 34%),linear-gradient(118deg,#14263e 0%,#101c30 58%,#1b2c43 100%)!important;
+ border:1px solid #304763!important;border-radius:22px!important;box-shadow:0 18px 42px rgba(0,0,0,.22)!important;overflow:hidden
+}
+#panel-dashboard .dashboard-hero-copy h1{letter-spacing:-1.5px}
+#panel-dashboard .dashboard-hero-emblem{background:linear-gradient(145deg,#233d5c,#13233a)!important;border:1px solid #496381!important;box-shadow:inset 0 1px rgba(255,255,255,.08),0 12px 28px rgba(0,0,0,.2)}
+#panel-dashboard .dashboard-hero-emblem span{color:var(--premium-gold)!important}
+#panel-dashboard .dashboard-rating-strip{background:linear-gradient(100deg,#152941,#101d30)!important;border:1px solid #30445f!important;border-radius:15px!important}
+#panel-dashboard .dashboard-metrics article{background:linear-gradient(145deg,#172a43,#111e31)!important;border:1px solid #2e4561!important;border-radius:16px!important;box-shadow:0 9px 24px rgba(0,0,0,.14)}
+#panel-dashboard .dashboard-metrics .metric-wins{border-top:2px solid #5dbd91!important}
+#panel-dashboard .dashboard-metrics .metric-losses{border-top:2px solid #d97983!important}
+#panel-dashboard .dashboard-metrics .metric-rate{border-top:2px solid var(--premium-gold)!important}
+#panel-dashboard .dashboard-workspace-grid{gap:18px!important}
+#panel-dashboard .dashboard-recent-card,#panel-dashboard .dashboard-destinations{background:linear-gradient(145deg,#14243a,#101b2d)!important;border:1px solid #2c405a!important;border-radius:18px!important;padding:20px!important}
+#panel-dashboard .home-menu-item{background:#172a42!important;border:1px solid #304763!important;border-radius:13px!important;transition:transform .18s,border-color .18s,background .18s}
+#panel-dashboard .home-menu-item:hover{transform:translateY(-2px);border-color:#6686aa!important;background:#1b314c!important}
+#panel-openings .page-intro-row,#panel-puzzles .section-heading{margin-bottom:25px}
+#panel-openings .learn-module-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:18px!important}
+#panel-openings .learn-entry-card{
+ position:relative;isolation:isolate;overflow:hidden;min-height:230px!important;padding:26px!important;
+ display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:flex-end!important;gap:12px!important;
+ text-align:left!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:20px!important;
+ box-shadow:0 16px 32px rgba(0,0,0,.22)!important;transition:transform .2s,border-color .2s,box-shadow .2s
+}
+#panel-openings .learn-entry-card::before{content:"";position:absolute;z-index:-1;width:190px;height:190px;border-radius:50%;right:-48px;top:-58px;background:rgba(255,255,255,.09);filter:blur(1px)}
+#panel-openings .learn-entry-card:hover{transform:translateY(-5px);border-color:rgba(255,255,255,.45)!important;box-shadow:0 22px 38px rgba(0,0,0,.3)!important}
+#panel-openings .learn-entry-card>span:first-child{width:58px;height:58px;display:grid;place-items:center;border-radius:17px;background:rgba(8,18,33,.28);border:1px solid rgba(255,255,255,.22);font-size:30px!important;color:#fff!important}
+#panel-openings .learn-entry-card strong{font:800 clamp(19px,2vw,24px) Manrope,sans-serif!important;color:#fff!important;line-height:1.18}
+#panel-openings .learn-entry-card small{font-size:12px!important;line-height:1.55!important;color:rgba(255,255,255,.84)!important;max-width:270px}
+#panel-openings .learn-visual-opening{background:linear-gradient(135deg,#244d73,#17314f 60%,#14243b)!important}
+#panel-openings .learn-visual-training{background:linear-gradient(135deg,#345b50,#1c413d 58%,#142e35)!important}
+#panel-openings .learn-visual-errors{background:linear-gradient(135deg,#74533c,#50382f 58%,#342a30)!important}
+#panel-openings .learn-training-focus-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:16px!important}
+#panel-openings .learn-training-focus{min-height:205px!important;padding:22px!important;border-radius:18px!important;border:1px solid #35516f!important;background:linear-gradient(145deg,#1b3552,#13253c)!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:12px!important;text-align:left!important}
+#panel-openings .learn-training-focus:nth-child(2){background:linear-gradient(145deg,#285247,#183a3b)!important;border-color:#3e6b5b!important}
+#panel-openings .learn-training-focus:nth-child(3){background:linear-gradient(145deg,#5a4537,#3a3033)!important;border-color:#765a45!important}
+#panel-openings .learn-training-focus>span{font-size:30px!important;color:var(--premium-gold)!important}
+#panel-openings .learn-training-focus strong{font:800 21px Manrope!important;color:#fff!important}
+#panel-openings .learn-training-focus small{font-size:12px!important;color:#d4dfeb!important;line-height:1.5}
+#panel-openings .learn-training-focus b{margin-top:auto;color:var(--premium-gold-soft)!important;font-size:11px}
+#panel-puzzles .puzzle-mode-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:17px!important}
+#panel-puzzles .puzzle-mode-card{
+ min-height:155px!important;padding:24px!important;display:flex!important;align-items:center!important;gap:19px!important;
+ border-radius:19px!important;border:1px solid rgba(255,255,255,.14)!important;
+ background:linear-gradient(135deg,#1d3857,#14263e)!important;box-shadow:0 13px 28px rgba(0,0,0,.2)!important;
+ transition:transform .18s,border-color .18s,filter .18s
+}
+#panel-puzzles .puzzle-mode-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.42)!important;filter:brightness(1.1)}
+#panel-puzzles .puzzle-mode-card .puzzle-mode-icon{width:60px;height:60px;flex:0 0 60px;display:grid;place-items:center;border-radius:17px;background:rgba(8,18,33,.3);border:1px solid rgba(255,255,255,.16);font-size:31px!important;color:#fff!important}
+#panel-puzzles .puzzle-mode-card strong{font:800 19px Manrope!important;color:#fff!important}
+#panel-puzzles .puzzle-mode-card small{display:block;margin-top:7px;color:rgba(255,255,255,.82)!important;font-size:12px!important;line-height:1.45}
+#panel-puzzles .puzzle-mode-featured{background:linear-gradient(135deg,#285b75,#183c58)!important}
+#panel-puzzles .puzzle-mode-lives{background:linear-gradient(135deg,#66404b,#402d3b)!important}
+#panel-puzzles .puzzle-mode-timed{background:linear-gradient(135deg,#665337,#40352e)!important}
+#panel-puzzles .puzzle-mode-arrow{margin-left:auto;color:var(--premium-gold-soft)!important;font-size:27px!important}
+#panel-puzzles .puzzle-hub-stats{margin-top:23px!important;padding:18px!important;border:1px solid #2c425d!important;border-radius:16px!important;background:linear-gradient(100deg,#152941,#101d30)!important}
+#panel-games .replay-card{background:linear-gradient(145deg,#14243a,#0f1b2d)!important;border:1px solid #304762!important;border-radius:20px!important;padding:22px!important;box-shadow:0 18px 38px rgba(0,0,0,.22)!important}
+#panel-games #active-game-review .replay-layout{grid-template-columns:minmax(0,1.12fr) minmax(270px,.88fr)!important;gap:24px!important;align-items:start!important}
+#panel-games #active-game-review .replay-board-column{min-width:0}
+#panel-games #active-game-review .replay-board-wrap{max-width:650px!important;margin:0 auto!important}
+#panel-games #active-game-review .replay-board{box-shadow:0 15px 34px rgba(0,0,0,.32)!important;border:5px solid #30445e!important;border-radius:8px!important;overflow:hidden}
+#panel-games #active-game-review .pv-panel{margin-top:18px!important;padding:17px!important;border-radius:15px!important;background:linear-gradient(135deg,#1b3552,#12253d)!important;border:1px solid #496887!important;box-shadow:inset 0 1px rgba(255,255,255,.05),0 10px 25px rgba(0,0,0,.2)!important}
+#panel-games #active-game-review .pv-heading{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:13px}
+#panel-games #active-game-review .pv-heading strong{font:800 16px Manrope!important;color:var(--premium-gold-soft)!important}
+#panel-games #active-game-review .pv-heading span{font-size:11px!important;color:#c5d5e7!important}
+#panel-games #active-game-review .pv-step{background:#203c5a!important;border:1px solid #3b5c7e!important;color:#f1f5fa!important;border-radius:9px!important}
+#panel-games #active-game-review .pv-step.active{background:#e8bd68!important;border-color:#f4d99d!important;color:#172236!important}
+#panel-games #active-game-review .review-side .coach-card{background:linear-gradient(145deg,#1b304b,#14243a)!important;border:1px solid #3b5572!important;border-radius:17px!important;padding:20px!important;box-shadow:0 12px 28px rgba(0,0,0,.2)!important}
+#panel-games #active-game-review .coach-avatar{background:#263f5d!important;color:var(--premium-gold)!important;border:1px solid #496887!important}
+#panel-games #active-game-review .coach-message{color:#e7eef7!important}
+#panel-games #active-game-review .coach-message strong{color:var(--premium-gold-soft)!important}
+#panel-games #active-game-review .coach-message p{color:#d0dbea!important;line-height:1.65}
+#sync-message{padding:9px 12px;border-radius:10px;background:rgba(21,41,65,.72);border:1px solid #2c4562;color:#d7e4f3!important;line-height:1.5}
+@media(max-width:760px){
+ #panel-openings .learn-module-grid,#panel-openings .learn-training-focus-grid{grid-template-columns:1fr!important}
+ #panel-openings .learn-entry-card{min-height:180px!important}
+ #panel-puzzles .puzzle-mode-grid{grid-template-columns:1fr!important}
+ #panel-puzzles .puzzle-mode-card{min-height:125px!important}
+ #panel-games #active-game-review .replay-layout{grid-template-columns:1fr!important}
+ #panel-games #active-game-review .replay-board-wrap{max-width:min(100%,560px)!important}
+}
