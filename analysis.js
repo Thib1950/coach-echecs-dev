@@ -271,9 +271,9 @@ async function analyseSelectedGame(gameIdOverride,options={}){
         accuracy:accuracyFromMoves(report.moves),partial:true
       };
       if(move.color===userSide)window.CoachApp.saveGames();
-      if(move.color===userSide&&(report.moves.length%3===0||i===history.length-1)){
+      if(move.color===userSide){
         renderResults(game,report);
-        if(background)window.CoachApp.refresh?.();
+        if(background&&report.moves.length%3===0)window.CoachApp.refresh?.();
       }
       if(!background){
         $("analysis-progress-fill").style.width=Math.round((i+1)/history.length*100)+"%";
@@ -368,6 +368,10 @@ function scheduleRecentAccuracy(){setTimeout(analyzeRecentGamesInBackground,1800
 window.addEventListener("coach:games-updated",scheduleRecentAccuracy);
 window.addEventListener("coach:account-changed",()=>{autoRecentAnalysisSignature="";scheduleRecentAccuracy();});
 
+async function analyzeWhenIdle(gameId,options={}){
+ while(busy)await new Promise(resolve=>setTimeout(resolve,180));
+ return analyseSelectedGame(String(gameId),options);
+}
 function openGameInCoach(gameId){
   const id=String(gameId??"");
   document.querySelector('[data-tab="games"]')?.click();
@@ -388,7 +392,7 @@ function openGameInCoach(gameId){
     if(window.CoachReview?.updateAnalysis)window.CoachReview.updateAnalysis(game.analysis.moves,game);
     renderResults(game,{moves:game.analysis.moves});
   }else{
-    analyseSelectedGame(id,{background:true,movetime:600});
+    analyzeWhenIdle(id,{background:true,movetime:600});
   }
   return true;
 }
@@ -398,7 +402,7 @@ window.addEventListener("coach:games-updated",refreshGamePicker);
 window.CoachAnalysis={
  openGame:openGameInCoach,
  analyze:gameId=>openGameInCoach(gameId),
- async analyzeAccuracy(gameId){while(busy)await new Promise(resolve=>setTimeout(resolve,200));return analyseSelectedGame(String(gameId),{background:true,movetime:500});},
+ async analyzeAccuracy(gameId){return analyzeWhenIdle(gameId,{background:true,movetime:500});},
  async analyzePosition(fen){
   const request=++positionRequestId;
   while(busy){
