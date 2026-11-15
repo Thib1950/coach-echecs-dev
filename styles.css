@@ -828,3 +828,39 @@ html,body,button,a,input,select{touch-action:manipulation}
 .personal-puzzle-info span,.personal-puzzle-info small{font-size:11px;color:var(--muted,#93a4b5)}
 .personal-puzzle-row button{flex:0 0 auto;white-space:nowrap}
 @media(max-width:520px){.personal-puzzle-row{align-items:flex-start;flex-direction:column}.personal-puzzle-row button{width:100%}}
+
+
+/* Parcours pédagogiques : navigation discrète, contenu lisible, progression persistante. */
+.curriculum-surface{margin-top:16px}
+.curriculum-tracks{display:flex;gap:7px;flex-wrap:wrap;margin:16px 0}
+.curriculum-track{display:flex;align-items:center;gap:8px;border:1px solid var(--line,rgba(255,255,255,.1));border-radius:999px;padding:8px 12px;background:transparent;color:var(--muted,#a5b3c2);cursor:pointer;font:700 12px Manrope,sans-serif}
+.curriculum-track small{font-size:10px;opacity:.72}
+.curriculum-track.active{background:rgba(141,224,108,.12);border-color:rgba(141,224,108,.38);color:#c9eea8}
+.curriculum-list{display:grid;gap:8px}
+.curriculum-lesson{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px;border:1px solid var(--line,rgba(255,255,255,.08));border-radius:12px;background:rgba(255,255,255,.02)}
+.curriculum-lesson.completed{border-color:rgba(141,224,108,.2)}
+.curriculum-lesson-number{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.06);font-size:12px;font-weight:800;color:var(--muted,#a5b3c2)}
+.curriculum-lesson.completed .curriculum-lesson-number{background:rgba(141,224,108,.13);color:#b9e994}
+.curriculum-lesson-main{min-width:0;display:grid;gap:4px}
+.curriculum-lesson-meta{display:flex;gap:10px;color:var(--muted,#93a4b5);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.curriculum-lesson-main strong{font-size:13px;color:var(--text,#edf3f8)}
+.curriculum-lesson-main p{margin:0;color:var(--muted,#a5b3c2);font-size:11px;line-height:1.45}
+.curriculum-lesson>button{white-space:nowrap}
+.curriculum-detail{margin-top:16px;padding:clamp(14px,3vw,22px);border:1px solid var(--line,rgba(255,255,255,.1));border-radius:14px;background:rgba(255,255,255,.025)}
+.curriculum-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.curriculum-detail-head h3{margin:4px 0 5px}
+.curriculum-detail-head p{margin:0}
+.curriculum-concept,.curriculum-steps,.curriculum-quiz{margin-top:18px}
+.curriculum-concept h4,.curriculum-steps h4,.curriculum-quiz h4{margin:0 0 8px;font-size:13px}
+.curriculum-concept p,.curriculum-quiz>p{margin:0;color:var(--muted,#b0bdca);font-size:13px;line-height:1.65}
+.curriculum-steps ol{margin:0;padding-left:20px;color:var(--muted,#b0bdca);font-size:12px;line-height:1.8}
+.curriculum-answers{display:grid;gap:7px;margin-top:10px}
+.curriculum-answer{padding:10px 12px;text-align:left;border:1px solid var(--line,rgba(255,255,255,.1));border-radius:10px;background:rgba(255,255,255,.025);color:var(--text,#eaf0f5);cursor:pointer;font:500 12px Manrope,sans-serif}
+.curriculum-answer:disabled{cursor:default;opacity:.85}
+.curriculum-answer.answer-correct{border-color:rgba(141,224,108,.55);background:rgba(141,224,108,.1)}
+.curriculum-answer.answer-wrong{border-color:rgba(220,116,106,.5);background:rgba(220,116,106,.08)}
+.curriculum-feedback{margin-top:10px!important;font-size:12px!important;line-height:1.55}
+.curriculum-feedback.correct{color:#bfe99e}
+.curriculum-feedback.review{color:#e6c28d}
+.curriculum-detail-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+@media(max-width:600px){.curriculum-lesson{grid-template-columns:30px minmax(0,1fr)}.curriculum-lesson>button{grid-column:2;width:100%}.curriculum-detail-head{flex-direction:column}.curriculum-detail-head>button{align-self:flex-end}}
