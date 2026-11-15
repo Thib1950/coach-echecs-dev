@@ -84,18 +84,18 @@ function evalPosition(engine,fen,movetime=650){
     };
     const handler=event=>{
       const line=String(event.data||"");
-      const cp=line.match(/\\bscore cp (-?\\d+)/);
-      const mate=line.match(/\\bscore mate (-?\\d+)/);
+      const cp=line.match(/\bscore cp (-?\d+)/);
+      const mate=line.match(/\bscore mate (-?\d+)/);
       if(cp)score=Number(cp[1]);
       if(mate)score=Number(mate[1])>0?10000:-10000;
       if(line.startsWith("info ")){
-        const d=line.match(/\\bdepth (\\d+)/);
+        const d=line.match(/\bdepth (\d+)/);
         if(d)depth=Number(d[1]);
         const pvIndex=line.indexOf(" pv ");
-        if(pvIndex>=0)pv=line.slice(pvIndex+4).trim().split(/\\s+/).filter(Boolean);
+        if(pvIndex>=0)pv=line.slice(pvIndex+4).trim().split(/\s+/).filter(Boolean);
       }
       if(line.startsWith("bestmove")){
-        const bestmoveValue=line.split(/\\s+/)[1]||"";
+        const bestmoveValue=line.split(/\s+/)[1]||"";
         const whiteToMove=fen.split(" ")[1]!=="b";
         finish(resolve,{score,bestmove:bestmoveValue,pv,depth,scoreWhite:score*(whiteToMove?1:-1)});
       }
@@ -339,7 +339,6 @@ async function analyseSelectedGame(gameIdOverride,options={}){
     }
   }finally{
     busy=false;refreshGamePicker();
-setTimeout(scheduleRecentAccuracy,0);
     if(background)window.CoachApp?.refresh?.();
     if(!background){
       $("analyse-game-button").disabled=false;$("analyse-game-button").textContent="Analyser cette partie";
@@ -512,3 +511,4 @@ window.CoachAnalysis={
  }
 };
 refreshGamePicker();
+setTimeout(scheduleRecentAccuracy,0);
