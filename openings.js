@@ -190,15 +190,48 @@ async function startExercise(group){
  const close=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);};
  const candidate=()=>candidates[currentIndex];
  const moveFor=(position,moveUci)=>position.moves({verbose:true}).find(m=>m.from+m.to+(m.promotion||"")===moveUci);
- const describeMove=(position,move)=>{
+ const describeMove=(position,move,moveIndex)=>{
   const piece=position.get(move.from),name=pieceNames[piece?.type]||"pièce";
-  const central=["c4","d4","e4","f4","c5","d5","e5","f5"].includes(move.to);
-  const actor=move.color===side?"Tu":"L’adversaire";
-  if(piece?.type==="p"&&central)return actor+" prend de l’espace au centre et ouvre des lignes pour ses pièces.";
-  if(piece?.type==="n"||piece?.type==="b")return actor+" développe son "+name+" vers une case active pour le rapprocher du jeu.";
-  if(move.captured)return actor+" joue "+move.san+" : ce coup permet de capturer une pièce adverse.";
-  if(piece?.type==="p")return actor+" avance ce pion pour construire sa structure et libérer ses pièces.";
-  return actor+" place son "+name+" sur une case utile pour poursuivre le développement.";
+  const actor=move.color===side?"Tu":"L’adversaire",enemy=move.color==="w"?"b":"w";
+  const center=["d4","e4","d5","e5"],nearCenter=["c4","f4","c5","f5"];
+  const after=new Chess(position.fen());
+  let played=null;try{played=after.move({from:move.from,to:move.to,promotion:move.promotion||"q"});}catch{}
+  if(move.san.includes("#"))return actor+" termine par un mat : le roi adverse n’a plus de réponse légale.";
+  if(move.san.includes("+"))return actor+" donne échec. C’est un coup forcing : l’adversaire doit d’abord mettre son roi à l’abri, ce qui limite ses choix.";
+  if(move.flags?.includes("k")||move.flags?.includes("q"))return actor+" roque pour mettre le roi à l’abri et connecter les tours. La tour se rapproche aussi du centre.";
+  if(move.captured){
+   const capturedName=pieceNames[move.captured]||"pièce";
+   return actor+" échange "+name+" contre "+capturedName+". L’idée est de supprimer un défenseur ou de modifier la structure de pions, pas seulement de gagner du matériel.";
+  }
+  if(piece?.type==="p"&&center.includes(move.to)){
+   const openFile=move.to[0]==="d"?"la colonne d":move.to[0]==="e"?"la colonne e":"les lignes centrales";
+   return actor+" revendique une case centrale. Ce pion contrôle les cases d’espace, gêne les pièces adverses et libère des diagonales pour les fous ; "+openFile+" peut aussi s’ouvrir après un échange.";
+  }
+  if(piece?.type==="p"&&nearCenter.includes(move.to))
+   return actor+" soutient ou conteste le centre depuis le flanc. Ce pion prépare une poussée centrale et contrôle des cases d’entrée pour les cavaliers.";
+  if(piece?.type==="p"&&(move.to[1]==="6"||move.to[1]==="3"))
+   return actor+" gagne de l’espace et peut chasser une pièce installée sur une case avancée. Regarde surtout quelles cases cette pièce devra abandonner et quelles cases deviennent faibles derrière elle.";
+  if(piece?.type==="n"){
+   const purpose=["c3","f3","c6","f6"].includes(move.to)?"contrôler les cases centrales et soutenir les poussées de pions":"installer le cavalier sur une case plus active";
+   return actor+" développe son cavalier pour "+purpose+". Depuis cette case, il peut participer à une attaque, renforcer un pion central et limiter les cases de sortie des pièces adverses.";
+  }
+  if(piece?.type==="b"){
+   const kingSquare=after.board().flat().findIndex(p=>p?.type==="k"&&p.color===enemy);
+   let pinText="";
+   if(kingSquare>=0){
+    const kingFile=kingSquare%8,kingRank=7-Math.floor(kingSquare/8),toFile=move.to.charCodeAt(0)-97,toRank=Number(move.to[1])-1;
+    const df=Math.sign(kingFile-toFile),dr=Math.sign(kingRank-toRank),diag=Math.abs(kingFile-toFile)===Math.abs(kingRank-toRank);
+    if(diag&&df&&dr){let f=toFile+df,r=toRank+dr,blockers=0;while(f!==kingFile&&r!==kingRank){const p=after.get("abcdefgh"[f]+(r+1));if(p){if(p.color===enemy)blockers++;else blockers=99;break;}f+=df;r+=dr;}if(blockers===1)pinText=" Il cloue une pièce devant le roi : bouger cette pièce exposerait le roi à l’attaque.";
+    }
+   }
+   return actor+" place son fou sur une diagonale active pour viser le centre ou une case sensible. Il peut aussi exercer une pression à distance sur un défenseur et restreindre les cases de développement adverses."+pinText;
+  }
+  if(piece?.type==="r")return actor+" place sa tour sur une colonne ouverte ou semi-ouverte pour exercer une pression sur les pions et pénétrer dans le camp adverse.";
+  if(piece?.type==="q")return actor+" repositionne sa dame pour coordonner plusieurs menaces. L’idée est de soutenir une poussée ou de viser une faiblesse, tout en évitant de l’exposer à un tempo de développement.";
+  if(piece?.type==="k")return actor+" améliore la sécurité du roi ou le prépare à participer au jeu. Vérifie si cette avancée autorise des échecs ou des infiltrations adverses.";
+  if(move.to==="b5"||move.to==="g5"||move.to==="b4"||move.to==="g4")
+   return actor+" crée une pression sur une pièce ou un défenseur. Le but peut être de provoquer un échange, de forcer un déplacement ou de détourner une pièce de la défense du centre.";
+  return actor+" améliore le placement de sa "+name+". Observe la case visée, les pièces qu’elle soutient et les cases de l’adversaire qui deviennent moins accessibles.";
  };
  const squareCenter=sq=>{
   const file=sq.charCodeAt(0)-97,rank=Number(sq[1])-1;
@@ -225,8 +258,8 @@ async function startExercise(group){
   if(phase==="guide"){
    const move=activeMove?moveFor(board,activeMove):null;
    status="ÉTAPE 1 · DÉMONSTRATION GUIDÉE";
-   coachTitle=guidePly>=line.length?"Démonstration terminée":"Observe ce coup";
-   coachText=feedback||(move?"Joue le déplacement indiqué par la flèche : "+move.san+", de "+move.from.toUpperCase()+" vers "+move.to.toUpperCase()+". "+describeMove(board,move):"La séquence est terminée. Tu vas maintenant la rejouer sans aide.");
+   coachTitle=guidePly>=line.length?"Démonstration terminée":"Comprends l’idée du coup";
+   coachText=feedback||(move?"Pourquoi ce coup ? "+describeMove(board,move,guidePly)+ " Le déplacement à jouer est "+move.san+" ("+move.from.toUpperCase()+" → "+move.to.toUpperCase()+").":"La séquence est terminée. Tu vas maintenant la rejouer sans aide.");
    actionLabel=guidePly>=line.length?"Rejouer sans les flèches":"";
   }else{
    status="ÉTAPE 2 · À TOI DE JOUER";
