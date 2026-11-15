@@ -40,7 +40,7 @@ function render(){
   const panel='<aside class="puzzle-side"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span>'+sideToMove+'</div><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&legalSolutionMove(board,solution[ply])?"Indice : joue "+legalSolutionMove(board,solution[ply]).from+" vers "+legalSolutionMove(board,solution[ply]).to+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p><small>'+(sessionActive?"Session personnalisée · "+sessionSolved+" / "+sessionTotal+" réussis":currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small>'+sessionAction+'</aside>';
  $("puzzle-board-area").innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div>'+hintArrow+'</div>'+panel;
 }
-function message(text){$("puzzle-feedback").textContent=text;}
+function message(text){const node=$("puzzle-feedback");if(!node)return;node.textContent=text;node.classList.remove("feedback-wrong","feedback-correct","feedback-neutral");if(/^Faux\s*!/i.test(text))node.classList.add("feedback-wrong");else if(/^(Bravo|Bien joué)/i.test(text))node.classList.add("feedback-correct");else node.classList.add("feedback-neutral");}
 const localPuzzleBuckets=[1200,1300,1400,1500,1600,1700];
 const localPuzzleCache=new Map();
 async function getLocalPuzzleBucket(rating){
