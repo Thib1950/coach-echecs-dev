@@ -1,4 +1,4 @@
-import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
+import { Chess } from "./chess-lib.js";
 
 const $ = id => document.getElementById(id);
 let worker = null, engineReady = null, busy = false, positionRequestId = 0;
