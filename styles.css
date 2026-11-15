@@ -1057,3 +1057,115 @@ html,body{width:100%;height:100%;height:100dvh;overflow:hidden}body{min-height:0
 #panel-progress .content-grid{flex:1}
 .app-shell{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 .panel{overscroll-behavior:contain}
+
+
+/* --- Direction artistique renforcée : contrastes, accents et lisibilité --- */
+:root{
+  --bg:#09131f;--panel:#152235;--panel2:#1c2c42;--line:#30445d;
+  --text:#f5f8fc;--muted:#b4c2d2;--green:#55d68b;--green-dark:#173d32;
+  --blue:#38bdf8;--orange:#ff851b;--pink:#ed68b5;
+}
+body{background:radial-gradient(ellipse at 12% 0%,#183b59 0,transparent 38%),radial-gradient(ellipse at 92% 18%,#43264b 0,transparent 30%),var(--bg);color:var(--text)}
+.brand-mark,.home-knight{background:linear-gradient(145deg,#ff9b37,#ff6b16);color:#172235;box-shadow:0 8px 24px #ff7b1b30}
+.eyebrow{color:#55c9f5}
+.tabs{border-color:#30445d}
+.tab{color:#b2c0d0}
+.tab.active{color:#ff9b37;border-bottom-color:#ff851b}
+.tab:hover{color:#fff;background:#ffffff0b}
+.home-brand h1,.home-brand h1 span{color:#f5f8fc}
+.home-brand p:not(.eyebrow){color:#b4c2d2}
+.home-menu-item{background:linear-gradient(145deg,#1a2a40,#142236);border:1px solid #30445d;color:#f5f8fc;box-shadow:0 5px 18px #0002}
+.home-menu-item:nth-child(1) .home-menu-icon{background:#173e55;color:#48c7f3}
+.home-menu-item:nth-child(2) .home-menu-icon{background:#4a2c20;color:#ff9b37}
+.home-menu-item:nth-child(3) .home-menu-icon{background:#3e2850;color:#d28cf2}
+.home-menu-item:nth-child(4) .home-menu-icon{background:#183f35;color:#5ee0a0}
+.home-menu-item:nth-child(5) .home-menu-icon{background:#4a2940;color:#f078ba}
+.home-menu-item strong{color:#fff}.home-menu-item small{color:#bdc9d7}
+.home-menu-arrow{color:#ffad5c}
+.home-menu-item:hover{border-color:#ff9b37;background:#20344d}
+.home-footer{border-color:#30445d;color:#b4c2d2}
+.home-action{background:#1b2c42;border-color:#405773;color:#f2f6fb}
+.primary-button{background:linear-gradient(110deg,#ff7a18,#ff9d26);color:#171d29;box-shadow:0 4px 14px #ff851b26}
+.primary-button:hover{background:linear-gradient(110deg,#ff9639,#ffb04a)}
+.secondary-button{background:#203650;border-color:#45617e;color:#f5f8fc}
+.surface,.stat-card,.training-kpi{background:linear-gradient(145deg,#1a2b41,#142236);border-color:#30445d;color:#f5f8fc}
+.surface h3,.section-heading h2,.training-kpi strong{color:#fff}
+.surface p,.muted{color:#b4c2d2}
+.engine-badge{background:#233a53;border-color:#3b5875;color:#d3e2f1}
+.engine-badge.ready{background:#174333;border-color:#287c57;color:#8bf0b8}
+.filter-row input,.filter-row select,.analysis-controls select{background:#172a40;border-color:#3a526d;color:#f5f8fc}
+.filter-row input::placeholder{color:#a8b8c9}
+.empty-state{background:#142338;border-color:#40556f;color:#c0ccda}
+.home-menu-item,.game-row,.opening-family-row,.opening-variant-row{transition:border-color .16s,background .16s}
+.game-row,.game-row-expanded{display:grid;grid-template-columns:minmax(0,1fr) minmax(88px,112px) auto 38px;align-items:center;gap:12px;min-width:0;padding:12px 14px;background:linear-gradient(110deg,#1b2d43,#152338);border:1px solid #30465f;border-radius:12px}
+.game-row-info{min-width:0;overflow:hidden}
+.game-row-info .player-line{min-width:0;display:flex;align-items:center;gap:9px}
+.game-row-info .game-opponent{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff;font-size:13px}
+.game-row-info .game-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#bdc9d7}
+.game-list-accuracy{min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.game-list-accuracy span,.recent-game-precision span{font-size:9px;letter-spacing:.7px;color:#aebfd1;white-space:nowrap}
+.game-list-accuracy strong{font-size:15px;color:#55d68b;white-space:nowrap}
+.game-result{justify-self:center;white-space:nowrap;padding:7px 10px;font-size:10px}
+.game-result.win{background:#174a37;color:#8bf0b8;border:1px solid #287c57}
+.game-result.loss{background:#512b37;color:#ffb2c0;border:1px solid #824052}
+.game-result.draw{background:#30445c;color:#e1eaf4;border:1px solid #49627e}
+.analysis-icon-button{width:36px;height:36px;display:grid;place-items:center;justify-self:end;background:#203a54;border:1px solid #45617e;color:#55c9f5;border-radius:10px}
+.analysis-icon-button svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8}
+.player-avatar{flex:none}
+.opening-family-row{background:linear-gradient(110deg,#1b2d43,#152338);border:1px solid #30465f;border-radius:13px;padding:15px;margin:9px 0}
+.opening-family-main strong,.opening-variant-row strong{color:#fff}
+.opening-family-main small,.opening-family-stats small,.opening-variant-row small{color:#bdc9d7}
+.opening-family-status .opening-status{font-weight:700}
+.opening-status.needs-work{background:#512b37;color:#ffb4c0;border-color:#824052}
+.opening-status.solid{background:#174a37;color:#8bf0b8;border-color:#287c57}
+.opening-status.neutral{background:#30445c;color:#e1eaf4;border-color:#49627e}
+.opening-family-button,.opening-variant-actions button,.opening-variant-row button{background:#203a54;border:1px solid #45617e;color:#eaf4ff;border-radius:9px}
+.opening-family-button:hover,.opening-variant-actions button:hover{background:#2a4c6d;border-color:#55c9f5}
+.opening-family-button.secondary{background:#452a45;color:#f5c1e4;border-color:#74466e}
+.opening-variant-row{border-color:#30445d}
+.opening-variant-preview,.opening-explorer-layout,.opening-practice-layout{background:#142338;border-color:#30445d}
+.puzzle-surface{background:linear-gradient(145deg,#1b2c42,#111f32);border-color:#3a526d}
+.puzzle-board-area{min-width:0}
+.puzzle-side{background:linear-gradient(145deg,#263d57,#1b2e45);border:1px solid #45617e;color:#fff}
+.puzzle-side strong{color:#fff}.puzzle-side p,.puzzle-side small{color:#d0dbe7}
+.puzzle-turn-indicator{color:#fff}
+.turn-dot{box-shadow:0 0 0 3px #ffffff20}
+.puzzle-square.light{background:#f1dfbd}.puzzle-square.dark{background:#b58a65}
+.puzzle-square.selected{box-shadow:inset 0 0 0 5px #42c5f5}
+.puzzle-square.legal-target:after{background:#24b8ee;box-shadow:0 0 0 3px #24b8ee35}
+.puzzle-square.capture-target{box-shadow:inset 0 0 0 5px #ff8b36}
+.puzzle-progress-label{color:#b9c9d9}
+#panel-puzzles .puzzle-board-area{grid-template-columns:minmax(0,1fr) 220px;align-items:center;gap:16px}
+#panel-puzzles .puzzle-board-wrap{width:min(100%,min(62vh,620px));height:auto;max-width:none;aspect-ratio:1;justify-self:center}
+#panel-puzzles .puzzle-board{width:100%;height:100%}
+#panel-puzzles .puzzle-side{align-self:center;min-width:0}
+#panel-puzzles .puzzle-footer{border-top:1px solid #30445d;padding-top:10px}
+#panel-puzzles .puzzle-footer p{color:#d5e0eb}
+#panel-puzzles .puzzle-actions button{white-space:nowrap}
+@media(max-width:900px){
+ .app-shell{padding-left:18px;padding-right:18px}
+ #panel-puzzles .puzzle-board-area{grid-template-columns:minmax(0,1fr) 190px;gap:12px}
+ #panel-puzzles .puzzle-board-wrap{width:min(100%,min(58vh,560px))}
+ .game-row,.game-row-expanded{grid-template-columns:minmax(0,1fr) 90px auto 34px;gap:8px;padding:10px}
+}
+@media(max-width:760px){
+ #panel-puzzles .puzzle-board-area{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto;gap:7px}
+ #panel-puzzles .puzzle-board-wrap{width:min(100%,min(53vh,72vw));height:auto}
+ #panel-puzzles .puzzle-side{width:100%;padding:8px 12px}
+ #panel-puzzles .puzzle-side p{font-size:11px}
+ #panel-puzzles .puzzle-footer{flex-direction:column;align-items:stretch}
+ #panel-puzzles .puzzle-actions{flex-wrap:wrap}
+ .game-row,.game-row-expanded{grid-template-columns:minmax(0,1fr) 76px auto 32px;gap:6px;padding:9px}
+ .game-row-info .game-opponent{font-size:11px}
+ .game-list-accuracy span{font-size:8px}
+ .game-result{font-size:9px;padding:6px 7px}
+ .analysis-icon-button{width:31px;height:31px}
+}
+@media(max-width:420px){
+ .game-row,.game-row-expanded{grid-template-columns:minmax(0,1fr) 58px auto 30px;gap:4px;padding:8px 6px}
+ .game-row-info .player-avatar{width:27px;height:27px}
+ .game-row-info .game-opponent{font-size:10px}
+ .game-list-accuracy span{font-size:7px;letter-spacing:0}
+ .game-list-accuracy strong{font-size:12px}
+ .game-result{font-size:8px;padding:5px 6px}
+}
