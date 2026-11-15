@@ -2097,3 +2097,46 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 /* v84 — la progression garde les chiffres et résultats, sans conseil générique. */
 #panel-progress .progress-content-grid{grid-template-columns:minmax(0,1fr)!important}
 #panel-progress .progress-results-card{width:100%!important}
+
+
+/* v85 — flèches discrètes, navigation puzzle et progression plus visuelle. */
+#panel-openings.opening-exercise-active .opening-exercise-arrow{
+ width:100%!important;height:100%!important;inset:0!important;overflow:visible!important;
+}
+#panel-puzzles.puzzle-exercise-active .puzzle-title-row{display:none!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-side-actions{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;
+}
+#panel-puzzles.puzzle-exercise-active .puzzle-side-actions [data-puzzle-back]{
+ grid-column:1/-1!important;min-height:38px!important;border-color:#718a4d!important;
+ color:#e4ffad!important;background:#263b2a!important;font-weight:850!important;
+}
+#panel-progress .training-kpi{
+ position:relative!important;overflow:hidden!important;
+ background:linear-gradient(145deg,#172b42 0%,#102033 72%,#182d40 100%)!important;
+ border:1px solid #40566e!important;box-shadow:0 12px 28px #050d1833!important;
+}
+#panel-progress .training-kpi:after{
+ content:"";position:absolute;right:-28px;top:-34px;width:112px;height:112px;
+ border:1px solid #d8f2a522;border-radius:50%;box-shadow:0 0 0 14px #d8f2a20a,0 0 0 29px #d8f2a208;
+ pointer-events:none;
+}
+#panel-progress .training-kpi strong{
+ display:block!important;font-size:clamp(36px,5vw,48px)!important;line-height:1.05!important;
+ font-weight:950!important;letter-spacing:-1.5px!important;color:#e4ffad!important;
+ font-variant-numeric:tabular-nums!important;margin:9px 0 7px!important;
+}
+#panel-progress .training-kpi span{font-size:11px!important;letter-spacing:1.1px!important;font-weight:850!important;color:#b9c9d9!important}
+#panel-progress .training-kpi small{font-size:12px!important;color:#c3d2df!important}
+#panel-progress .progress-results-card{background:linear-gradient(145deg,#14273b,#101d2e)!important;border:1px solid #3b5067!important}
+#panel-progress .bar-item{display:grid!important;grid-template-columns:92px minmax(0,1fr) 64px!important;align-items:center!important;gap:12px!important;margin:16px 0!important}
+#panel-progress .bar-item>span{font-size:13px!important;font-weight:800!important;color:#dce7f1!important}
+#panel-progress .bar-track{height:13px!important;border-radius:99px!important;background:#26394d!important;overflow:hidden!important;box-shadow:inset 0 1px 3px #050b13aa!important}
+#panel-progress .bar-fill{height:100%!important;border-radius:99px!important;background:linear-gradient(90deg,#7da64e,#d8f2a5)!important;box-shadow:0 0 12px #b9e87955!important}
+#panel-progress .bar-item strong{font-size:15px!important;font-weight:900!important;color:#f1f6fb!important;text-align:right!important;font-variant-numeric:tabular-nums!important}
+#panel-progress .results-total strong{font-size:30px!important;color:#e4ffad!important;font-weight:950!important}
+@media(max-width:520px){
+ #panel-puzzles.puzzle-exercise-active .puzzle-side-actions{grid-template-columns:minmax(0,1fr)!important}
+ #panel-progress .bar-item{grid-template-columns:76px minmax(0,1fr) 56px!important;gap:8px!important}
+ #panel-progress .training-kpi strong{font-size:40px!important}
+}
