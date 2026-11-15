@@ -104,13 +104,9 @@ async function readSyncMeta(username){
 }
 function saveGames(){
  const snapshot=games.slice(),account=USERNAME;
- // IndexedDB accepte des historiques bien plus volumineux que localStorage.
  persistGamesIndexed(account,snapshot).catch(error=>console.warn("Sauvegarde IndexedDB impossible",error));
- try{
-  const serialized=JSON.stringify(snapshot);
-  if(serialized.length<1800000)localStorage.setItem(storageKey(),serialized);
-  else localStorage.removeItem(storageKey());
- }catch(e){console.warn("Historique trop volumineux pour localStorage ; IndexedDB prend le relais.",e);}
+ try{if(snapshot.length<=500)localStorage.setItem(storageKey(),JSON.stringify(snapshot));else localStorage.removeItem(storageKey());}
+ catch(e){console.warn("Historique trop volumineux pour localStorage ; IndexedDB prend le relais.",e);}
 }
 async function switchChessAccount(){
  const field=$("chess-account-input"),next=String(field?.value||"").trim().replace(/^@/,"").toLowerCase();
@@ -318,13 +314,14 @@ async function syncChessCom(){
      byId.set(key,merged);
     }
     games=[...byId.values()].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-    completed.add(url);
+    const mergedGames=[...byId.values()].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+    const nextCompleted=new Set(completed);nextCompleted.add(url);
     const nextMeta={
-     fullHistory:fullHistoryDone,completedArchives:[...completed],lastArchive:url,
-     gameCount:games.length,lastSync:Date.now(),syncMode:fullHistoryDone?"incremental":"full"
+     fullHistory:fullHistoryDone,completedArchives:[...nextCompleted],lastArchive:url,
+     gameCount:mergedGames.length,lastSync:Date.now(),syncMode:fullHistoryDone?"incremental":"full"
     };
-    // Une archive validée est enregistrée immédiatement : fermeture ou interruption = reprise au prochain lancement.
     await saveArchiveCheckpoint(accountAtStart,batch,nextMeta);
+    completed.add(url);games=mergedGames;
     try{localStorage.setItem(metaKey,JSON.stringify({gameCount:games.length,lastSync:Date.now(),fullHistory:false}));}catch{}
     if(processed%2===0||processed===1){render();setMessage("Synchronisation en cours · "+games.length.toLocaleString("fr-FR")+" parties sécurisées · "+completed.size+"/"+archivesToCheck.length+" archives traitées.");}
    }catch(error){
@@ -374,7 +371,16 @@ $("chess-account-input")?.addEventListener("keydown",event=>{if(event.key==="Ent
 document.addEventListener("click",e=>{const calculate=e.target.closest("[data-calculate-accuracy]");if(calculate){e.preventDefault();if(calculate.disabled)return;calculate.disabled=true;calculate.textContent="En cours…";window.CoachAnalysis?.analyzeAccuracy?.(calculate.dataset.calculateAccuracy).catch(error=>{console.warn("Calcul de précision impossible",error);calculate.disabled=false;calculate.textContent="Réessayer";});return;}const b=e.target.closest("[data-open-game]");if(!b)return;e.preventDefault();if(window.CoachAnalysis?.openGame){window.CoachAnalysis.openGame(b.dataset.openGame);return;}window.dispatchEvent(new CustomEvent("coach:analyze-game",{detail:{gameId:b.dataset.openGame}}));});
 document.addEventListener("click",e=>{if(e.target.closest("[data-games-back]")){$("panel-games")?.classList.remove("reviewing-game");$("game-replay-area").innerHTML="";$("analysis-results").innerHTML="";}});
 const accountInput=$("chess-account-input");if(accountInput)accountInput.value=USERNAME;const accountMenuName=$("account-menu-name");if(accountMenuName)accountMenuName.textContent=USERNAME;const topAccountName=$("account-name");if(topAccountName)topAccountName.textContent=USERNAME;
-games=readStoredGames();render();fetchPlayerRatings();
+games=[];render();fetchPlayerRatings();
+storageReady=(async()=>{
+ try{
+  const indexed=await loadIndexedGames(USERNAME);
+  if(indexed.length){games=indexed.sort((a,b)=>(b.date||"").localeCompare(a.date||""));render();return true;}
+ }catch(error){console.warn("Chargement IndexedDB indisponible ; mode de stockage historique utilisé.",error);}
+ games=readStoredGames();render();
+ if(games.length)persistGamesIndexed(USERNAME,games).catch(error=>console.warn("Migration de l'historique vers IndexedDB impossible",error));
+ return true;
+})();
 storageReady=(async()=>{
  try{
   const indexed=await loadIndexedGames(USERNAME);
