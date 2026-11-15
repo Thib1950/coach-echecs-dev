@@ -11,6 +11,10 @@ function renderPuzzleProgress(){const node=$("puzzle-progress");if(!node)return;
 function personalKey(game,detail){return String(game.id)+"|"+detail.fen+"|"+detail.bestUci;}
 function markPuzzleSolved(){const key=currentPuzzle?personalKey(currentPuzzle.game,currentPuzzle.detail):currentDailyId;if(!key)return;const list=currentPuzzle?puzzleProgress.personalSolved:puzzleProgress.dailySolved;if(!list.includes(key)){list.push(key);savePuzzleProgress();}else renderPuzzleProgress();renderPersonalized();}
 function uci(move){return move.from+move.to+(move.promotion||"");}
+function legalSolutionMove(position,moveUci){
+ if(!position||!moveUci)return null;
+ return position.moves({verbose:true}).find(move=>uci(move)===moveUci)||null;
+}
 function loadPosition(pgn,initialPly){
  const game=new Chess();game.loadPgn(pgn);const history=game.history({verbose:true});const position=new Chess();
  history.slice(0,initialPly).forEach(m=>position.move({from:m.from,to:m.to,promotion:m.promotion}));
@@ -24,14 +28,14 @@ function render(){
  ranks.forEach(rank=>[...files].forEach(file=>{const sq=file+rank,p=board.get(sq),light=((rank-1+(file.charCodeAt(0)-97))%2)===1;let cls="puzzle-square "+(light?"light":"dark")+(selected===sq?" selected":"")+(targets.get(sq)==="capture"?" puzzle-capture":"");const dot=targets.get(sq)==="move"?'<i class="puzzle-dot"></i>':"";cells+='<button type="button" class="'+cls+'" data-puzzle-square="'+sq+'" aria-label="'+sq+'">'+(p?'<img src="https://lichess1.org/assets/piece/cburnett/'+p.color+p.type.toUpperCase()+'.svg" alt="'+glyph[p.color+p.type]+'">':"")+dot+'</button>';}));
  const sessionAction=sessionActive&&solved?'<button type="button" class="primary-button" data-session-next>'+(sessionQueue.length?"Puzzle suivant →":"Terminer la session")+'</button>':"";
  let hintArrow="";
- if(hinted&&solution[ply]){
-  const from=solution[ply].slice(0,2),to=solution[ply].slice(2,4);
+ if(hinted&&legalSolutionMove(board,solution[ply])){
+  const hintMove=legalSolutionMove(board,solution[ply]),from=hintMove.from,to=hintMove.to;
   const coord=sq=>{const file=sq.charCodeAt(0)-97,rank=Number(sq[1]);const col=orientation==="white"?file:7-file,row=orientation==="white"?8-rank:rank-1;return {x:col*100+50,y:row*100+50};};
   const a=coord(from),b=coord(to);
   hintArrow='<svg class="puzzle-hint-arrow" viewBox="0 0 800 800" aria-hidden="true"><defs><marker id="puzzleHintHead" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="none" stroke="#f5b942" stroke-width="1.4"/></marker></defs><line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#f5b942" stroke-width="13" stroke-linecap="round" opacity=".94" marker-end="url(#puzzleHintHead)"/></svg>';
  }
  const sideToMove=board.turn()==="w"?"Trait aux Blancs":"Trait aux Noirs";
-  const panel='<aside class="puzzle-side"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span>'+sideToMove+'</div><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&solution[ply]?"Indice : cherche à jouer "+solution[ply].slice(0,2)+" vers "+solution[ply].slice(2,4)+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p><small>'+(sessionActive?"Session personnalisée · "+sessionSolved+" / "+sessionTotal+" réussis":currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small>'+sessionAction+'</aside>';
+  const panel='<aside class="puzzle-side"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span>'+sideToMove+'</div><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&legalSolutionMove(board,solution[ply])?"Indice : joue "+legalSolutionMove(board,solution[ply]).from+" vers "+legalSolutionMove(board,solution[ply]).to+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p><small>'+(sessionActive?"Session personnalisée · "+sessionSolved+" / "+sessionTotal+" réussis":currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small>'+sessionAction+'</aside>';
  $("puzzle-board-area").innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div>'+hintArrow+'</div>'+panel;
 }
 function message(text){$("puzzle-feedback").textContent=text;}
@@ -41,7 +45,14 @@ async function loadDaily(){
   const response=await fetch("https://lichess.org/api/puzzle/daily",{headers:{Accept:"application/json"}});
   if(!response.ok)throw new Error("Lichess a répondu HTTP "+response.status);
   const data=await response.json();solution=data.puzzle?.solution||[];currentDailyId=String(data.puzzle?.id||"");if(!solution.length||!data.game?.pgn)throw new Error("Le puzzle reçu est incomplet.");
-  board=loadPosition(data.game.pgn,Number(data.puzzle.initialPly)||0);ply=0;selected=null;hinted=false;solved=false;orientation=board.turn()==="w"?"white":"black";puzzleProgress.attempts++;savePuzzleProgress();
+  board=loadPosition(data.game.pgn,Number(data.puzzle.initialPly)||0);selected=null;hinted=false;solved=false;
+  // Lichess stores the opponent setup move first. Open Chess follows the same
+  // flow: play that move automatically, then let the solver move from ply 1.
+  const setupMove=legalSolutionMove(board,solution[0]);
+  if(!setupMove)throw new Error("La position de départ ne correspond pas au premier coup de la solution Lichess.");
+  board.move({from:setupMove.from,to:setupMove.to,promotion:setupMove.promotion||"q"});ply=1;
+  if(!solution[ply]||!legalSolutionMove(board,solution[ply]))throw new Error("Le coup à trouver ne correspond pas au camp au trait.");
+  orientation=board.turn()==="w"?"white":"black";puzzleProgress.attempts++;savePuzzleProgress();
   $("puzzle-title").textContent="Puzzle du jour · "+data.puzzle.id;
   $("puzzle-rating").textContent=(data.puzzle.rating||"—")+" Elo";
   $("puzzle-themes").textContent="Thèmes : "+(data.puzzle.themes||[]).join(" · ");
@@ -111,7 +122,7 @@ function play(square){
  if(!selected){if(piece&&piece.color===board.turn()){selected=square;render();}return;}
  if(piece&&piece.color===board.turn()){selected=square;render();return;}
  const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;render();return;}
- const played=uci(move),expected=solution[ply];
+ const played=uci(move),expectedMove=legalSolutionMove(board,solution[ply]),expected=expectedMove?uci(expectedMove):"";
  if(played!==expected){selected=null;puzzleProgress.wrongMoves++;savePuzzleProgress();message("Ce coup est légal, mais il ne résout pas le problème. Cherche une autre idée.");render();return;}
  board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});ply++;selected=null;
  if(ply>=solution.length){solved=true;markPuzzleSolved();if(sessionActive)sessionSolved++;message(currentPuzzle?"Bien joué ! Tu as trouvé le coup que Stockfish recommandait dans ta partie.":"Bravo ! Tu as trouvé toute la combinaison.");render();return;}
