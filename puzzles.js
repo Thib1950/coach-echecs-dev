@@ -4,14 +4,17 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const glyph={wk:"♔",wq:"♕",wr:"♖",wb:"♗",wn:"♘",wp:"♙",bk:"♚",bq:"♛",br:"♜",bb:"♝",bn:"♞",bp:"♟"};
 const LEGACY_PROGRESS_KEY="coach-echecs-dev-puzzle-progress-v1";
 const progressKey=()=>LEGACY_PROGRESS_KEY+":"+String(window.CoachApp?.getUsername?.()||"gone_1950").toLowerCase();
-let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,currentDailyId="",personalized=[],showAllPersonal=false,sessionActive=false,sessionQueue=[],sessionTotal=0,sessionSolved=0,sessionLabel="Session personnalisée";
+let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,solved=false,loading=false,currentPuzzle=null,currentDailyId="",personalized=[],showAllPersonal=false,sessionActive=false,sessionQueue=[],sessionTotal=0,sessionSolved=0,sessionLabel="Session personnalisée",sessionMode="",sessionLives=3,sessionTimeLeft=180,sessionTimer=null,sessionPuzzleIds=[],sessionFinished=false;
+function stopPuzzleTimer(){if(sessionTimer){clearInterval(sessionTimer);sessionTimer=null;}}
+function startPuzzleTimer(){stopPuzzleTimer();sessionTimeLeft=180;sessionTimer=setInterval(()=>{if(!sessionActive||sessionMode!=="timed")return;sessionTimeLeft=Math.max(0,sessionTimeLeft-1);if(sessionTimeLeft<=0){sessionActive=false;sessionFinished=true;stopPuzzleTimer();message("Temps écoulé ! Tu as résolu "+sessionSolved+" puzzle(s) en 3 minutes.");}render();},1000);}
+function sessionStatus(){if(sessionMode==="lives")return "Vies : "+ "♥".repeat(Math.max(0,sessionLives))+"♡".repeat(Math.max(0,3-sessionLives))+" · "+sessionSolved+" réussi(s)";if(sessionMode==="timed")return "Temps : "+Math.floor(sessionTimeLeft/60)+":"+String(sessionTimeLeft%60).padStart(2,"0")+" · "+sessionSolved+" réussi(s)";if(sessionActive)return sessionLabel+" · "+sessionSolved+" réussi(s)";if(sessionFinished)return "Session terminée · "+sessionSolved+" réussi(s)";return "";}
 let puzzleProgress={dailySolved:[],personalSolved:[],attempts:0,wrongMoves:0};
 let puzzleFeedbackText="Repère la meilleure suite pour les Blancs ou les Noirs.",puzzleFeedbackClass="feedback-neutral";
 function loadPuzzleProgress(){try{const raw=localStorage.getItem(progressKey())||(String(window.CoachApp?.getUsername?.()||"gone_1950").toLowerCase()==="gone_1950"?localStorage.getItem(LEGACY_PROGRESS_KEY):null);const p=JSON.parse(raw||"{}");puzzleProgress={dailySolved:Array.isArray(p.dailySolved)?p.dailySolved:[],personalSolved:Array.isArray(p.personalSolved)?p.personalSolved:[],attempts:Number(p.attempts)||0,wrongMoves:Number(p.wrongMoves)||0};}catch{}}
 function savePuzzleProgress(){try{localStorage.setItem(progressKey(),JSON.stringify(puzzleProgress));}catch{}renderPuzzleProgress();}
 function renderPuzzleProgress(){const node=$("puzzle-progress");const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length;if(node)node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" tentative"+(puzzleProgress.attempts>1?"s":"")+" · "+puzzleProgress.wrongMoves+" erreur"+(puzzleProgress.wrongMoves>1?"s":"");const solved=$("puzzle-hub-solved"),attempts=$("puzzle-hub-attempts"),errors=$("puzzle-hub-errors");if(solved)solved.textContent=String(total);if(attempts)attempts.textContent=String(puzzleProgress.attempts);if(errors)errors.textContent=String(puzzleProgress.wrongMoves);}
 function openPuzzleExercise(){const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(hub)hub.hidden=true;if(exercise)exercise.hidden=false;$("panel-puzzles")?.classList.add("puzzle-exercise-active");}
-function closePuzzleExercise(){const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(exercise)exercise.hidden=true;if(hub)hub.hidden=false;$("panel-puzzles")?.classList.remove("puzzle-exercise-active");sessionActive=false;sessionQueue=[];loading=false;selected=null;}
+function closePuzzleExercise(){const hub=$("puzzle-hub"),exercise=$("puzzle-exercise");if(exercise)exercise.hidden=true;if(hub)hub.hidden=false;$("panel-puzzles")?.classList.remove("puzzle-exercise-active");sessionActive=false;sessionQueue=[];sessionMode="";sessionFinished=false;stopPuzzleTimer();loading=false;selected=null;}
 function personalKey(game,detail){return String(game.id)+"|"+detail.fen+"|"+detail.bestUci;}
 function markPuzzleSolved(){const key=currentPuzzle?personalKey(currentPuzzle.game,currentPuzzle.detail):currentDailyId;if(!key)return;const list=currentPuzzle?puzzleProgress.personalSolved:puzzleProgress.dailySolved;if(!list.includes(key)){list.push(key);savePuzzleProgress();}else renderPuzzleProgress();renderPersonalized();}
 function uci(move){return move.from+move.to+(move.promotion||"");}
@@ -68,7 +71,7 @@ function render(){
  const legal=selected?board.moves({square:selected,verbose:true}):[],targets=new Map(legal.map(m=>[m.to,m.captured?"capture":"move"]));
  let cells="";
  ranks.forEach(rank=>[...files].forEach(file=>{const sq=file+rank,p=board.get(sq),light=((rank-1+(file.charCodeAt(0)-97))%2)===1;let cls="puzzle-square "+(light?"light":"dark")+(selected===sq?" selected":"")+(targets.get(sq)==="capture"?" puzzle-capture":"");const dot=targets.get(sq)==="move"?'<i class="puzzle-dot"></i>':"";cells+='<button type="button" class="'+cls+'" data-puzzle-square="'+sq+'" aria-label="'+sq+'">'+(p?'<img src="https://lichess1.org/assets/piece/cburnett/'+p.color+p.type.toUpperCase()+'.svg" alt="'+glyph[p.color+p.type]+'">':"")+dot+'</button>';}));
- const sessionAction=sessionActive&&solved?'<button type="button" class="primary-button" data-session-next>'+(sessionQueue.length?"Puzzle suivant →":"Terminer la session")+'</button>':"";
+ const sessionAction=sessionActive&&solved?'<button type="button" class="primary-button" data-session-next>Puzzle suivant →</button>':"";
  let hintArrow="";
  if(hinted&&legalSolutionMove(board,solution[ply])){
   const hintMove=legalSolutionMove(board,solution[ply]),from=hintMove.from,to=hintMove.to;
@@ -76,9 +79,10 @@ function render(){
   const a=coord(from),b=coord(to);
   hintArrow='<svg class="puzzle-hint-arrow" viewBox="0 0 800 800" aria-hidden="true"><defs><marker id="puzzleHintHead" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="none" stroke="#f5b942" stroke-width="1.4"/></marker></defs><line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#f5b942" stroke-width="13" stroke-linecap="round" opacity=".94" marker-end="url(#puzzleHintHead)"/></svg>';
  }
- const lessonMarkup=currentPuzzle?personalLessonMarkup(currentPuzzle,solved):"";
- const sideToMove=board.turn()==="w"?"Trait aux Blancs":"Trait aux Noirs";
-  const panel='<aside class="puzzle-side"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span>'+sideToMove+'</div><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&legalSolutionMove(board,solution[ply])?"Indice : joue "+legalSolutionMove(board,solution[ply]).from+" vers "+legalSolutionMove(board,solution[ply]).to+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p>'+lessonMarkup+'<div class="puzzle-feedback-stage"><p id="puzzle-feedback" aria-live="polite" class="'+puzzleFeedbackClass+'">'+esc(puzzleFeedbackText)+'</p></div><small>'+(sessionActive?sessionLabel+" · "+sessionSolved+" / "+sessionTotal+" réussis":currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small><div class="puzzle-side-actions"><button type="button" class="secondary-button" id="puzzle-hint">Indice</button><button type="button" class="primary-button" id="puzzle-reload">Puzzle suivant</button><button type="button" class="secondary-button" data-puzzle-back>← Menu puzzles</button></div>'+sessionAction+'</aside>';
+ const sideToMove=board.turn()==="w"?"Aux Blancs":"Aux Noirs";
+ const status=solved?"Bravo, c’est juste !":sessionFinished?"Session terminée":puzzleFeedbackText.startsWith("Faux")?"Pas bon, réessaie.":"À toi de jouer";
+ const session=sessionStatus();
+ const panel='<aside class="puzzle-side puzzle-side-minimal"><div class="puzzle-turn-indicator '+(board.turn()==="w"?"white-turn":"black-turn")+'"><span class="turn-dot"></span>'+sideToMove+'</div><div class="puzzle-result-state '+(solved?"is-correct":puzzleFeedbackText.startsWith("Faux")?"is-wrong":"")+'"><strong>'+(sessionFinished?"Fin de session":status)+'</strong><p id="puzzle-feedback" aria-live="polite" class="'+puzzleFeedbackClass+'">'+esc(puzzleFeedbackText)+'</p></div>'+(session?'<div class="puzzle-session-status">'+esc(session)+'</div>':"")+'<div class="puzzle-side-actions"><button type="button" class="secondary-button" id="puzzle-hint">💡 Indice</button>'+(sessionAction||'<button type="button" class="primary-button" id="puzzle-reload">Puzzle suivant</button>')+'<button type="button" class="secondary-button" data-puzzle-back>← Menu puzzles</button></div></aside>';
  $("puzzle-board-area").innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div>'+hintArrow+'</div>'+panel;
 }
 function message(text){puzzleFeedbackText=String(text??"");puzzleFeedbackClass=/^Faux\s*!/i.test(puzzleFeedbackText)?"feedback-wrong":/^(Bravo|Bien joué)/i.test(puzzleFeedbackText)?"feedback-correct":"feedback-neutral";const node=$("puzzle-feedback");if(!node)return;node.textContent=puzzleFeedbackText;node.classList.remove("feedback-wrong","feedback-correct","feedback-neutral");node.classList.add(puzzleFeedbackClass);}
@@ -108,7 +112,7 @@ function puzzleFromLocalRow(row){
  }
  return {id:String(id),fen,solution:sequence,rating:Number(rating)||1400,themes:String(themes||"").split(/\s+/).filter(Boolean)};
 }
-async function loadLocalDailyPuzzle(randomize=false){
+async function loadLocalDailyPuzzle(randomize=false,excluded=[]){
  const bands=[1200,1300,1400,1500,1600,1700];
  const day=Math.floor(Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),new Date().getUTCDate())/86400000);
  const band=bands[randomize?Math.floor(Math.random()*bands.length):day%bands.length];
@@ -116,19 +120,19 @@ async function loadLocalDailyPuzzle(randomize=false){
  // Shuffle a short sample and skip any corrupt row rather than failing the whole session.
  const startAt=randomize?Math.floor(Math.random()*rows.length):Math.abs((day*2654435761)%rows.length);
  let lastError=null;
- for(let n=0;n<Math.min(24,rows.length);n++){
-  try{return puzzleFromLocalRow(rows[(startAt+n)%rows.length]);}
+ for(let n=0;n<Math.min(80,rows.length);n++){
+  try{const candidate=puzzleFromLocalRow(rows[(startAt+n)%rows.length]);if(!excluded.includes(candidate.id))return candidate;}
   catch(error){lastError=error;}
  }
  throw lastError||new Error("Aucun puzzle exploitable dans cette banque.");
 }
 async function loadDaily(randomize=false){
- if(loading)return;loading=true;currentPuzzle=null;sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;board=null;
+ if(loading)return;loading=true;currentPuzzle=null;if(!sessionMode){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;sessionFinished=false;stopPuzzleTimer();}board=null;
  $("puzzle-board-area").innerHTML='<div class="empty-state">Chargement de la banque tactique…</div>';
  message("Chargement des puzzles intégrés à l’application…");
  try{
-  const data=await loadLocalDailyPuzzle(randomize);
-  solution=data.solution;currentDailyId=data.id;
+  const data=await loadLocalDailyPuzzle(randomize,sessionMode?sessionPuzzleIds:[]);
+  solution=data.solution;currentDailyId=data.id;if(sessionMode){sessionPuzzleIds.push(data.id);sessionTotal++;}
   board=new Chess(data.fen);selected=null;hinted=false;solved=false;
   const setupMove=legalSolutionMove(board,solution[0]);
   if(!setupMove)throw new Error("Le coup de préparation n’est pas légal dans la position.");
@@ -141,7 +145,7 @@ async function loadDaily(randomize=false){
   $("puzzle-title").textContent="Puzzle tactique · "+data.id;
   $("puzzle-rating").textContent=data.rating+" Elo";
   $("puzzle-themes").textContent="Thèmes : "+data.themes.join(" · ");
-  message(puzzleProgress.dailySolved.includes(currentDailyId)?"Tu as déjà résolu ce puzzle. Tu peux le refaire pour t’entraîner.":"Puzzle chargé. À toi de trouver la combinaison !");
+  message(puzzleProgress.dailySolved.includes(currentDailyId)?"Tu as déjà résolu ce puzzle. Tu peux le refaire pour t’entraîner.":"Trouve la combinaison. Tu peux demander un indice si nécessaire.");
   render();renderPersonalized();renderPuzzleProgress();
  }catch(error){
   $("puzzle-title").textContent="Puzzle indisponible";
@@ -194,10 +198,17 @@ function startPersonalPuzzle(item,fromSession=false){
  render();
 }
 
+function startPuzzleMode(mode){
+ sessionMode=mode;sessionActive=true;sessionFinished=false;sessionSolved=0;sessionTotal=0;sessionQueue=[];sessionPuzzleIds=[];sessionLives=3;
+ sessionLabel=mode==="lives"?"Série · 3 vies":"Défi chronométré · 3 minutes";
+ if(mode==="timed")startPuzzleTimer();else stopPuzzleTimer();
+ openPuzzleExercise();loadDaily(true);
+}
 function startPuzzleSession(){
  sessionLabel="Session personnalisée";
  const available=personalized.filter(item=>!puzzleProgress.personalSolved.includes(item.id));
- if(!available.length){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;message("Aucune position nouvelle pour le moment. Analyse quelques parties avec Stockfish pour créer ta première session personnalisée.");return;}
+ if(!available.length){sessionActive=false;sessionQueue=[];sessionTotal=0;sessionSolved=0;sessionMode="";message("Aucune position nouvelle pour le moment. Analyse quelques parties avec Stockfish pour créer ta première session personnalisée.");return;}
+ sessionMode="adaptive";sessionFinished=false;stopPuzzleTimer();
  sessionQueue=available.slice(0,5);sessionTotal=sessionQueue.length;sessionSolved=0;sessionActive=true;
  loadNextSessionPuzzle();
 }
@@ -213,7 +224,11 @@ function play(square){
  if(piece&&piece.color===board.turn()){selected=square;render();return;}
  const move=board.moves({square:selected,verbose:true}).find(m=>m.to===square);if(!move){selected=null;message("Coup impossible : choisis une case indiquée par un point.");render();return;}
  const played=uci(move),expectedMove=legalSolutionMove(board,solution[ply]),expected=expectedMove?uci(expectedMove):"";
- if(played!==expected){selected=null;puzzleProgress.wrongMoves++;savePuzzleProgress();message("Faux ! Ce n’est pas le bon coup. Réessaie, la position n’a pas changé.");render();return;}
+ if(played!==expected){selected=null;puzzleProgress.wrongMoves++;savePuzzleProgress();
+  if(sessionMode==="lives"){sessionLives=Math.max(0,sessionLives-1);if(sessionLives===0){sessionActive=false;sessionFinished=true;stopPuzzleTimer();message("Faux ! Tu as perdu tes 3 vies. Score : "+sessionSolved+" puzzle(s) réussi(s).");}else message("Faux ! Il te reste "+sessionLives+" vie(s). Réessaie cette position.");}
+  else message("Faux ! Ce n’est pas le bon coup. La position ne change pas : prends un instant pour calculer.");
+  render();return;
+ }
  const playedMove=board.move({from:move.from,to:move.to,promotion:move.promotion||"q"});window.CoachSound?.play(playedMove);ply++;selected=null;
  if(ply>=solution.length){solved=true;markPuzzleSolved();if(sessionActive)sessionSolved++;message(currentPuzzle?"Bravo ! Tu as trouvé le meilleur coup de cette position.":"Bravo ! Tu as terminé toute la combinaison.");render();return;}
  loading=true;message("Bien joué ! L’adversaire réfléchit…");render();
@@ -228,15 +243,15 @@ function play(square){
 }
 document.addEventListener("click",event=>{
  const mode=event.target.closest("[data-puzzle-mode]");
- if(mode){openPuzzleExercise();if(mode.dataset.puzzleMode==="session"||mode.dataset.puzzleMode==="mistakes")startPuzzleSession();else if(mode.dataset.puzzleMode==="adaptive"){startAdaptive();}else loadDaily(false);return;}
+ if(mode){if(mode.dataset.puzzleMode==="lives"||mode.dataset.puzzleMode==="timed"){startPuzzleMode(mode.dataset.puzzleMode);}else{openPuzzleExercise();if(mode.dataset.puzzleMode==="session"||mode.dataset.puzzleMode==="mistakes")startPuzzleSession();else if(mode.dataset.puzzleMode==="adaptive"){startAdaptive();}else{sessionMode="";sessionFinished=false;loadDaily(false);}}return;}
  if(event.target.closest("[data-puzzle-back]")){closePuzzleExercise();return;}
  if(event.target.closest("[data-start-puzzle-session]")){startPuzzleSession();return;}
- if(event.target.closest("[data-session-next]")){loadNextSessionPuzzle();return;}
+ if(event.target.closest("[data-session-next]")){if(sessionMode==="lives"||sessionMode==="timed"){loadDaily(true);}else loadNextSessionPuzzle();return;}
  const square=event.target.closest("[data-puzzle-square]");if(square){play(square.dataset.puzzleSquare);return;}
  if(event.target.closest("#puzzle-hint")){if(solution[ply]){hinted=true;message("Indice affiché sur le panneau du puzzle.");render();}return;}
  const more=event.target.closest("[data-personal-puzzle-more]");if(more){showAllPersonal=!showAllPersonal;renderPersonalized();return;}
   const personal=event.target.closest("[data-personal-puzzle]");if(personal){startPersonalPuzzle(personalized[Number(personal.dataset.personalPuzzle)]);return;}
-  if(event.target.closest("#puzzle-reload"))loadDaily(true);
+  if(event.target.closest("#puzzle-reload")){sessionMode="";sessionActive=false;sessionFinished=false;stopPuzzleTimer();loadDaily(true);}
 });
 window.addEventListener("coach:tab-changing",event=>{if(event.detail?.tab!=="puzzles"||event.detail?.fromPanel==="panel-puzzles")closePuzzleExercise();});
 window.addEventListener("coach:games-updated",renderPersonalized);
