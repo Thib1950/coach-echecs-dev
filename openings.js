@@ -1,4 +1,4 @@
-import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
+import { Chess } from "./chess-lib.js";
 const $=id=>document.getElementById(id),currentUser=()=>String(window.CoachApp?.getUsername?.()||"").toLowerCase();
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let database=[],dbError="",databaseLoadPromise=null,groups=[],currentKey=null,exercise=null,showAllOpenings=false;
