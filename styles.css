@@ -1964,3 +1964,42 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 #panel-games .game-row-expanded .game-opponent{font-size:19px;font-weight:850}
 #panel-games .game-row-expanded .game-result{font-size:13px;padding:8px 12px}
 @media(max-width:600px){#panel-games .game-elo{gap:5px}#panel-games .game-elo span{font-size:9px;padding:5px 7px}#panel-games .game-elo b{font-size:18px}}
+
+
+/* v80 — correctifs ciblés demandés : défilement, plateau et navigation. */
+.app-shell:has(#panel-openings.opening-exercise-active.active) .tabs{
+ display:flex!important;visibility:visible!important;position:relative!important;z-index:20!important;
+}
+#panel-openings.opening-exercise-active .opening-exercise-screen>.surface-heading{display:none!important}
+#panel-openings.opening-exercise-active .opening-practice-board{
+ width:min(100%,calc(100dvh - 185px),650px)!important;max-width:650px!important;
+}
+#panel-games.games-page.active{
+ display:block!important;height:calc(100dvh - 128px)!important;max-height:calc(100dvh - 128px)!important;
+ min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;
+ overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:28px!important;
+}
+#panel-games .games-library-card,#panel-games .games-library-card #games-list{
+ height:auto!important;max-height:none!important;overflow:visible!important;
+}
+#panel-games .game-elo{margin-top:8px!important}
+#panel-games .game-elo span{font-size:10px!important}
+#panel-puzzles.puzzle-exercise-active .puzzle-board-wrap{
+ width:min(100%,calc(100dvh - 190px),650px)!important;max-width:650px!important;
+}
+@media(max-width:900px){
+ .app-shell:has(#panel-openings.opening-exercise-active.active) .tabs{
+  display:flex!important;visibility:visible!important;flex-wrap:nowrap!important;overflow-x:auto!important;
+ }
+ #panel-openings.opening-exercise-active{height:auto!important;min-height:calc(100dvh - 115px)!important;overflow:visible!important}
+ #panel-openings.opening-exercise-active #opening-detail{height:auto!important;overflow:visible!important}
+ #panel-openings.opening-exercise-active .opening-exercise-screen{height:auto!important;max-height:none!important;overflow:visible!important}
+ #panel-openings.opening-exercise-active .opening-practice-layout{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto auto!important;justify-items:center!important}
+ #panel-openings.opening-exercise-active .opening-practice-board{width:min(88vw,calc(100dvh - 235px),610px)!important;max-width:610px!important}
+ #panel-openings.opening-exercise-active .opening-practice-coach{width:min(100%,610px)!important;max-width:610px!important}
+ #panel-games.games-page.active{height:calc(100dvh - 120px)!important;max-height:calc(100dvh - 120px)!important}
+ #panel-puzzles.puzzle-exercise-active .puzzle-board-wrap{width:min(88vw,calc(100dvh - 260px),560px)!important;max-width:560px!important}
+}
+@media(max-width:520px){
+ #panel-puzzles.puzzle-exercise-active .puzzle-board-wrap{width:min(88vw,calc(100dvh - 285px),520px)!important;max-width:520px!important}
+}
