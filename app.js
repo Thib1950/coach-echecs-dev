@@ -296,7 +296,7 @@ async function syncChessCom(){
   const needsHistoryRepair=!games.length||(Number(syncMeta.gameCount)>0&&games.length<Number(syncMeta.gameCount));
   const fullHistoryDone=!!syncMeta.fullHistory&&!needsHistoryRepair;
   const archivesToCheck=fullHistoryDone?urls.slice(-3):urls;
-  const completed=new Set(fullHistoryDone?[]:(syncMeta.completedArchives||[]));
+  const completed=new Set(syncMeta.completedArchives||[]);
   let newCount=0,verified=0,successfulArchives=0,failedArchives=0,processed=0;
   const byId=new Map(games.map(g=>[String(g.id),g]));
   for(let i=archivesToCheck.length-1;i>=0;i--){
@@ -320,7 +320,7 @@ async function syncChessCom(){
     games=[...byId.values()].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
     completed.add(url);
     const nextMeta={
-     fullHistory:false,completedArchives:[...completed],lastArchive:url,
+     fullHistory:fullHistoryDone,completedArchives:[...completed],lastArchive:url,
      gameCount:games.length,lastSync:Date.now(),syncMode:fullHistoryDone?"incremental":"full"
     };
     // Une archive validée est enregistrée immédiatement : fermeture ou interruption = reprise au prochain lancement.
