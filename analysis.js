@@ -2,6 +2,8 @@ import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
 
 const $ = id => document.getElementById(id);
 let worker = null, engineReady = null, busy = false, positionRequestId = 0;
+let backgroundPauseRequested=false;
+const isGamesPanelActive=()=>document.getElementById("panel-games")?.classList.contains("active")===true;
 let accuracyQueueRunning=false,accuracyQueueTotal=0,accuracyQueueDone=0,accuracyQueueSkipped=0;
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const user = () => String(window.CoachApp?.getUsername?.() || "").toLowerCase();
@@ -217,6 +219,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
     $("analysis-results").innerHTML="";if(window.CoachReview?.open)window.CoachReview.open(game.id);
   }
   const report={moves:[],depth:0,covered:0,positions:[],positionDetails:[]};
+  let interruptedForNavigation=false;
   try{
     const parsed=new Chess();parsed.loadPgn(game.pgn);
     const history=parsed.history({verbose:true});
@@ -279,6 +282,17 @@ async function analyseSelectedGame(gameIdOverride,options={}){
         $("analysis-progress-fill").style.width=Math.round((i+1)/history.length*100)+"%";
         $("analysis-progress-label").textContent="Analyse en cours · "+(i+1)+" / "+history.length+" demi-coups · "+elapsedText(startedAt);
       }
+      // Dès que l'utilisateur quitte Mes parties, on libère Stockfish pour
+      // que l'écran demandé soit prioritaire. Les coups déjà évalués sont conservés.
+      if(background&&(backgroundPauseRequested||!isGamesPanelActive())){
+        interruptedForNavigation=true;
+        break;
+      }
+    }
+    if(interruptedForNavigation){
+      game.analysis={date:new Date().toISOString(),moves:report.moves,positions:report.positions,positionDetails:report.positionDetails,covered:report.covered,accuracy:accuracyFromMoves(report.moves),partial:true,paused:true};
+      window.CoachApp.saveGames();
+      return;
     }
     game.analysis={date:new Date().toISOString(),moves:report.moves,positions:report.positions,positionDetails:report.positionDetails,covered:report.covered,accuracy:accuracyFromMoves(report.moves),partial:false,depth:report.depth};
     window.CoachApp.saveGames();
@@ -348,7 +362,7 @@ $("accuracy-queue-button")?.addEventListener("click",analyzeMissingAccuracies);
 let autoRecentAnalysisSignature="";
 let autoRecentAnalysisRunning=false;
 async function analyzeRecentGamesInBackground(){
- if(autoRecentAnalysisRunning||busy||accuracyQueueRunning)return;
+ if(autoRecentAnalysisRunning||busy||accuracyQueueRunning||backgroundPauseRequested||!isGamesPanelActive())return;
  const recent=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).filter(g=>g.pgn).slice(0,5);
  const signature=user()+":"+recent.map(g=>String(g.id)).join("|");
  if(!recent.length||signature===autoRecentAnalysisSignature)return;
@@ -362,11 +376,23 @@ async function analyzeRecentGamesInBackground(){
    try{await analyseSelectedGame(game.id,{background:true,movetime:320});}
    catch(error){console.info("Précision différée pour",game.id,error);}
   }
- }finally{autoRecentAnalysisRunning=false;window.CoachApp?.refresh?.();}
+ }finally{
+  autoRecentAnalysisRunning=false;
+  if(backgroundPauseRequested||!isGamesPanelActive())autoRecentAnalysisSignature="";
+  window.CoachApp?.refresh?.();
+ }
 }
 function scheduleRecentAccuracy(){setTimeout(analyzeRecentGamesInBackground,1800);}
 window.addEventListener("coach:games-updated",scheduleRecentAccuracy);
 window.addEventListener("coach:account-changed",()=>{autoRecentAnalysisSignature="";scheduleRecentAccuracy();});
+window.addEventListener("coach:tab-changing",event=>{
+ if(event.detail?.tab==="games"){
+  backgroundPauseRequested=false;
+  scheduleRecentAccuracy();
+ }else{
+  backgroundPauseRequested=true;
+ }
+});
 
 async function analyzeWhenIdle(gameId,options={}){
  while(busy)await new Promise(resolve=>setTimeout(resolve,180));
