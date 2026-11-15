@@ -31,6 +31,7 @@ function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||"{}");state={c
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch{}}
 function render(){
  const progress=$("curriculum-progress");if(progress)progress.textContent=state.completed.length+" / "+LESSONS.length;
+ const resume=$("curriculum-resume"),last=LESSONS.find(l=>l.id===state.lastLesson);if(resume){resume.hidden=!last;resume.textContent=last?(state.completed.includes(last.id)?"Revoir la dernière leçon →":"Reprendre : "+last.title+" →"):"Reprendre →";}
  const tracks=$("curriculum-tracks"),list=$("curriculum-list");if(!tracks||!list)return;
  tracks.innerHTML=TRACKS.map(t=>{const all=LESSONS.filter(l=>l.track===t.id),done=all.filter(l=>state.completed.includes(l.id)).length;return '<button type="button" class="curriculum-track '+(activeTrack===t.id?"active":"")+'" data-track="'+t.id+'"><span>'+t.name+'</span><small>'+done+'/'+all.length+'</small></button>';}).join("");
  const items=LESSONS.filter(l=>l.track===activeTrack);
@@ -51,6 +52,7 @@ function answer(index){
  $("curriculum-detail").querySelectorAll("[data-answer]").forEach((b,i)=>{b.disabled=true;if(i===opened.correct)b.classList.add("answer-correct");else if(i===index)b.classList.add("answer-wrong");});
 }
 document.addEventListener("click",event=>{
+ if(event.target.closest("#curriculum-resume")&&state.lastLesson){const last=LESSONS.find(l=>l.id===state.lastLesson);if(last){activeTrack=last.track;render();openLesson(last.id);}return;}
  const track=event.target.closest("[data-track]");if(track){activeTrack=track.dataset.track;render();return;}
  const lesson=event.target.closest("[data-lesson]");if(lesson){openLesson(lesson.dataset.lesson);return;}
  const ans=event.target.closest("[data-answer]");if(ans){answer(Number(ans.dataset.answer));return;}
