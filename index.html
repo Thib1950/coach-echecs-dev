@@ -84,9 +84,26 @@
 <div class="page-intro-row"><div><p class="eyebrow">APPRENDRE ET PROGRESSER</p><h1>Apprendre</h1><p>Choisis un module pour travailler un aspect précis de ton jeu.</p></div><span class="page-intro-mark">♞</span></div>
 <div id="learn-hub" class="learn-entry-grid learn-module-grid">
 <button type="button" class="learn-entry-card learn-visual-opening" data-learn-module="openings"><span>♞</span><strong>Ouvertures</strong></button>
-<button type="button" class="learn-entry-card learn-visual-training" data-goto="puzzles" data-start-puzzle-session><span>◎</span><strong>Entraînement personnalisé</strong><small>Positions et séquences issues de tes parties</small></button>
-<button type="button" class="learn-entry-card learn-visual-errors" data-goto="puzzles" data-puzzle-mode="mistakes"><span>↻</span><strong>Mes erreurs à revoir</strong></button>
+<button type="button" class="learn-entry-card learn-visual-training" data-learn-module="training"><span>◎</span><strong>Entraînement personnalisé</strong><small>Des exercices tirés de tes parties et adaptés à tes faiblesses</small></button>
+<button type="button" class="learn-entry-card learn-visual-errors" data-learn-module="errors"><span>↻</span><strong>Revoir mes erreurs</strong><small>Retravailler les gaffes et imprécisions importantes</small></button>
 </div>
+<section id="learn-training-choice" class="learn-subview" hidden>
+<div class="learn-subview-heading"><button type="button" class="text-button" data-learn-back>← Apprendre</button><div><p class="eyebrow">PARCOURS PERSONNALISÉ</p><h2>Travailler mes points faibles</h2><p class="muted">Les positions viennent de tes parties analysées. Le coach choisit les thèmes à travailler selon tes erreurs réelles.</p></div></div>
+<div class="learn-training-focus-grid">
+<button type="button" class="learn-training-focus" data-learn-training-category="endgame"><span>♔</span><strong>Travailler les finales</strong><small>Technique du roi, pions passés et finales de pièces</small><b id="learn-count-endgame">— position(s)</b></button>
+<button type="button" class="learn-training-focus" data-learn-training-category="tactics"><span>⚡</span><strong>Travailler les tactiques</strong><small>Coups forcing, prises, échecs et menaces manquées</small><b id="learn-count-tactics">— position(s)</b></button>
+<button type="button" class="learn-training-focus" data-learn-training-category="traps"><span>♟</span><strong>Travailler les pièges</strong><small>Éviter les pièges et erreurs dès l'ouverture</small><b id="learn-count-traps">— position(s)</b></button>
+</div>
+<div class="learn-personal-list-wrap"><div class="surface-heading"><div><p class="eyebrow">RECOMMANDATIONS DU COACH</p><h3 id="learn-training-list-title">Tes exercices prioritaires</h3></div><span id="learn-training-count" class="muted"></span></div><div id="learn-training-list"><div class="empty-state compact">Analyse tes parties pour construire ton parcours personnalisé.</div></div></div>
+</section>
+<section id="learn-errors-view" class="learn-subview" hidden>
+<div class="learn-subview-heading"><button type="button" class="text-button" data-learn-back>← Apprendre</button><div><p class="eyebrow">POSITIONS IMPORTANTES</p><h2>Revoir mes erreurs</h2><p class="muted">Uniquement les gaffes, erreurs et imprécisions significatives de tes parties. Rejoue la meilleure suite pour ne plus reproduire ces erreurs.</p></div></div>
+<div class="learn-personal-list-wrap"><div class="surface-heading"><div><p class="eyebrow">À CORRIGER EN PRIORITÉ</p><h3>Les positions à retravailler</h3></div><span id="learn-errors-count" class="muted"></span></div><div id="learn-errors-list"><div class="empty-state compact">Analyse tes parties pour retrouver tes erreurs importantes.</div></div></div>
+</section>
+<section id="learn-training-exercise" class="learn-subview" hidden>
+<div class="learn-subview-heading"><button type="button" class="text-button" data-puzzle-back>← Retour à mon entraînement</button><div><p class="eyebrow">POSITION ISSUE DE TES PARTIES</p><h2 id="learn-exercise-title">À toi de jouer</h2><p class="muted">Retrouve la meilleure suite et comprends le moment critique de ta partie.</p></div></div>
+<div id="learn-training-board-area" class="puzzle-board-area learn-training-board-area"></div>
+</section>
 <section id="learn-opening-choice" class="learn-subview" hidden><div class="learn-subview-heading"><button type="button" class="text-button" data-learn-back>← Apprendre</button><div><p class="eyebrow">MODULE OUVERTURES</p><h2>Comment veux-tu travailler ?</h2><p class="muted">Choisis ton répertoire personnel ou explore une bibliothèque de référence.</p></div></div><div class="learn-entry-grid learn-choice-grid">
 <button type="button" class="learn-entry-card" data-learn-opening-view="detected"><span>♜</span><strong>Travailler mes ouvertures</strong><small>Les ouvertures et variantes détectées dans tes propres parties.</small><b>Voir mon répertoire →</b></button>
 <button type="button" class="learn-entry-card" data-learn-opening-view="explorer"><span>⌕</span><strong>Explorer les ouvertures</strong><small>Consulte une base de données d'ouvertures et découvre de nouvelles lignes.</small><b>Ouvrir la bibliothèque →</b></button>
