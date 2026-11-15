@@ -299,41 +299,47 @@ async function syncChessCom(){
  const accountAtStart=USERNAME;
  try{
   await storageReady;
+  if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé avant le début de la synchronisation.");
   setMessage("Connexion à l'archive Chess.com de "+accountAtStart+"…");
   const response=await fetch("https://api.chess.com/pub/player/"+encodeURIComponent(accountAtStart)+"/games/archives",{headers:{"Accept":"application/json"},cache:"no-store"});
-  if(!response.ok)throw new Error("Chess.com a répondu "+response.status);
+  if(!response.ok)throw new Error("Chess.com a répondu "+response.status+" lors de la lecture des archives.");
   const archiveData=await response.json(),urls=Array.isArray(archiveData.archives)?archiveData.archives:[];
-  if(!urls.length)throw new Error("Aucune archive trouvée pour ce compte.");
+  if(!urls.length)throw new Error("Chess.com ne renvoie aucune archive pour le pseudo "+accountAtStart+". Vérifie l'identifiant exact du compte.");
   const metaKey=LEGACY_STORAGE_KEY+":sync-meta:"+accountAtStart;
   let syncMeta=await readSyncMeta(accountAtStart);
-  if(!syncMeta?.completedArchives){
-   try{syncMeta=JSON.parse(localStorage.getItem(metaKey)||"{}")||syncMeta||{};}catch{}
+  if(!syncMeta||!Object.keys(syncMeta).length){
+   try{syncMeta=JSON.parse(localStorage.getItem(metaKey)||"{}")||{};}catch{syncMeta={};}
   }
-  const needsHistoryRepair=!games.length||(Number(syncMeta.gameCount)>0&&games.length<Number(syncMeta.gameCount));
-  const fullHistoryDone=!!syncMeta.fullHistory&&!needsHistoryRepair;
-  const archivesToCheck=fullHistoryDone?urls.slice(-3):urls;
-  // Un checkpoint ne vaut que si les parties annoncées sont réellement présentes.
-  // En cas d'écart, on reprend toutes les archives au lieu de sauter celles déjà marquées.
-  const completed=new Set(needsHistoryRepair?[]:(syncMeta.completedArchives||[]));
-  let newCount=0,verified=0,successfulArchives=0,failedArchives=0,processed=0;
+  // Seul un historique marqué par le nouveau protocole, avec le même nombre
+  // d'archives ET le même nombre de parties réellement chargées, est fiable.
+  // Les anciens marqueurs fullHistory (qui pouvaient valider seulement 10 parties)
+  // ne sont volontairement plus considérés comme une preuve d'historique complet.
+  const trustedFullHistory=syncMeta.historyVersion===2&&syncMeta.fullHistory===true&&
+   Number(syncMeta.verifiedArchiveCount)===urls.length&&
+   Number(syncMeta.verifiedGameCount)===games.length&&games.length>0;
+  const archivesToCheck=trustedFullHistory?urls.slice(-3):urls;
+  const completed=new Set(trustedFullHistory?[]:[]);
   const byId=new Map(games.map(g=>[String(g.id),g]));
-  const pendingArchives=archivesToCheck.filter(url=>!completed.has(url)).reverse();
-  const concurrency=3;
+  let newCount=0,successfulArchives=0,failedArchives=0,verified=0;
+  const pendingArchives=archivesToCheck.slice().reverse();
+  const concurrency=2;
   for(let offset=0;offset<pendingArchives.length;offset+=concurrency){
    if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé pendant la synchronisation.");
    const group=pendingArchives.slice(offset,offset+concurrency);
-   setMessage("Synchronisation de "+accountAtStart+" · récupération de "+group.length+" archives en parallèle · "+games.length.toLocaleString("fr-FR")+" parties déjà sécurisées…");
+   setMessage("Historique "+accountAtStart+" · "+(offset+1)+"/"+pendingArchives.length+" archives lancées · "+byId.size.toLocaleString("fr-FR")+" parties enregistrées…");
    const results=await Promise.all(group.map(async url=>{
     try{
      const res=await fetch(url,{headers:{"Accept":"application/json"},cache:"no-store"});
      if(!res.ok)throw new Error("HTTP "+res.status);
      const data=await res.json();
-     return {url,batch:Array.isArray(data.games)?data.games.map(normalizeGame):[],error:null};
+     if(!Array.isArray(data.games))throw new Error("Réponse Chess.com sans liste de parties");
+     return {url,batch:data.games.map(normalizeGame),error:null};
     }catch(error){return {url,batch:[],error};}
    }));
    for(const result of results){
+    if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé pendant la synchronisation.");
     const {url,batch,error}=result;
-    if(error){failedArchives++;console.warn("Archive Chess.com à reprendre",url,error);continue;}
+    if(error){failedArchives++;console.error("Archive Chess.com non récupérée",accountAtStart,url,error);continue;}
     successfulArchives++;verified+=batch.length;
     for(const game of batch){
      const key=String(game.id),previous=byId.get(key);
@@ -343,36 +349,38 @@ async function syncChessCom(){
      byId.set(key,merged);
     }
     const mergedGames=[...byId.values()].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-    const nextCompleted=new Set(completed);nextCompleted.add(url);
     const persistedBatch=batch.map(game=>byId.get(String(game.id)));
     const nextMeta={
-     fullHistory:fullHistoryDone,completedArchives:[...nextCompleted],lastArchive:url,
-     gameCount:mergedGames.length,lastSync:Date.now(),syncMode:fullHistoryDone?"incremental":"full"
+     historyVersion:2,fullHistory:false,completedArchives:[],lastArchive:url,
+     gameCount:mergedGames.length,lastSync:Date.now(),syncMode:"full-scan",
+     verifiedArchiveCount:0,verifiedGameCount:0
     };
     await saveArchiveCheckpoint(accountAtStart,persistedBatch,nextMeta);
-    completed.add(url);games=mergedGames;
-    try{localStorage.setItem(metaKey,JSON.stringify({gameCount:games.length,lastSync:Date.now(),fullHistory:false}));}catch{}
+    games=mergedGames;
     render();
-    setMessage("Synchronisation en cours · "+games.length.toLocaleString("fr-FR")+" parties sécurisées · "+completed.size+"/"+archivesToCheck.length+" archives traitées.");
+    setMessage("Historique "+accountAtStart+" · "+completed.size+" / "+urls.length+" archives validées · "+games.length.toLocaleString("fr-FR")+" parties sauvegardées.");
    }
   }
-  if(!successfulArchives&&!fullHistoryDone&&completed.size===0)throw new Error("Aucune archive n'a pu être récupérée. Les parties déjà enregistrées sont conservées.");
-  if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé avant l'enregistrement.");
-  if(!fullHistoryDone&&completed.size===urls.length&&failedArchives===0){
-   syncMeta={username:accountAtStart,fullHistory:true,completedArchives:[],gameCount:games.length,lastSync:Date.now(),syncMode:"complete"};
+  if(!successfulArchives)throw new Error("Aucune archive n'a pu être téléchargée ("+failedArchives+" échec(s)). Vérifie la connexion et réessaie.");
+  if(failedArchives>0){
+   await saveArchiveCheckpoint(accountAtStart,[],{historyVersion:2,fullHistory:false,completedArchives:[],gameCount:games.length,lastSync:Date.now(),syncMode:"incomplete",verifiedArchiveCount:0,verifiedGameCount:0});
+   throw new Error(failedArchives+" archive(s) sur "+urls.length+" n'ont pas pu être récupérées. L'historique reste incomplet : relance la synchronisation pour réessayer.");
+  }
+  if(USERNAME!==accountAtStart)throw new Error("Le compte actif a changé avant la finalisation.");
+  if(!trustedFullHistory){
+   const finalMeta={username:accountAtStart,historyVersion:2,fullHistory:true,completedArchives:[],gameCount:games.length,lastSync:Date.now(),syncMode:"complete",verifiedArchiveCount:urls.length,verifiedGameCount:games.length};
    const db=await openChessDB();
-   await new Promise((resolve,reject)=>{const tx=db.transaction("sync","readwrite");tx.objectStore("sync").put(syncMeta);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});
-  }else if(fullHistoryDone){
-   await saveArchiveCheckpoint(accountAtStart,[],{...syncMeta,fullHistory:true,gameCount:games.length,lastSync:Date.now(),completedArchives:[]});
+   await new Promise((resolve,reject)=>{const tx=db.transaction("sync","readwrite");tx.objectStore("sync").put(finalMeta);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error("Validation de l'historique interrompue"));});
+   try{localStorage.setItem(metaKey,JSON.stringify(finalMeta));}catch{}
+  }else{
+   await saveArchiveCheckpoint(accountAtStart,[],{...syncMeta,historyVersion:2,fullHistory:true,gameCount:games.length,lastSync:Date.now(),verifiedArchiveCount:urls.length,verifiedGameCount:games.length,completedArchives:[]});
   }
   render();await fetchPlayerRatings();
-  const pending=fullHistoryDone?"Les archives récentes ont été vérifiées.":completed.size+"/"+urls.length+" archives de l'historique complet sécurisées.";
-  const status=failedArchives?(" "+failedArchives+" archive(s) seront réessayées à la prochaine ouverture."):"";
-  setMessage("Synchronisation terminée · "+games.length.toLocaleString("fr-FR")+" parties conservées · "+newCount.toLocaleString("fr-FR")+" nouvelle(s) · "+pending+status);
-  $("sync-state").textContent="Compte connecté · "+accountAtStart;
+  setMessage((trustedFullHistory?"Vérification des archives récentes terminée":"Import complet terminé")+" · "+games.length.toLocaleString("fr-FR")+" parties enregistrées pour "+accountAtStart+" · "+urls.length+" archives vérifiées · "+newCount.toLocaleString("fr-FR")+" nouvelle(s).");
+  const state=$("sync-state");if(state)state.textContent="Compte connecté · "+accountAtStart;
  }catch(e){
-  setMessage("Synchronisation interrompue : "+e.message+" Les archives déjà sauvegardées restent disponibles et seront reprises.");
-  console.error("Chess.com sync failed",e);
+  setMessage("Synchronisation incomplète : "+e.message+" Les parties déjà sauvegardées sont conservées.");
+  console.error("Chess.com sync failed for "+accountAtStart,e);
  }finally{
   buttons.forEach(b=>{b.disabled=false;b.textContent=labelMap.get(b)||"Synchroniser mes parties";});
   syncInFlight=false;
