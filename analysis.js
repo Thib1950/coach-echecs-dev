@@ -360,6 +360,8 @@ function updateAccuracyQueueStatus(){
   :accuracyQueueTotal
    ?"Terminé : "+accuracyQueueDone+" partie(s) analysée(s), "+accuracyQueueSkipped+" ignorée(s)."
    :"Les précisions se calculent automatiquement, une partie après l’autre, dans Mes parties.";
+ if(status)status.textContent=statusText;
+ if(visibleStatus)visibleStatus.textContent=statusText;
  if(button){button.disabled=false;button.textContent=accuracyQueueRunning?"Calcul en cours…":"Calculer les précisions manquantes";}
 }
 let accuracyQueueIds=[];
