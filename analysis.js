@@ -390,24 +390,12 @@ function startAccuracyQueue(){
  })();
  return accuracyQueuePromise;
 }
-function analyzeMissingAccuracies(){
- const games=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
- const pending=games.filter(needsAccuracy);
- accuracyQueueTotal=accuracyQueueDone+accuracyQueueSkipped+pending.length;
- pending.forEach(game=>enqueueAccuracy(game.id));
- updateAccuracyQueueStatus();
- if(!pending.length&&!accuracyQueueRunning){
-  const status=$("accuracy-queue-status");
-  if(status)status.textContent="Toutes les parties avec PGN disposent déjà d’une analyse complète.";
-  return Promise.resolve();
- }
- return startAccuracyQueue();
-}
 function scheduleRecentAccuracy(){
  setTimeout(()=>{
   if(!isGamesPanelActive()||backgroundPauseRequested)return;
   const games=(window.CoachApp?.getGames?.()||[]).slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-  const pending=games.filter(needsAccuracy);
+  // Automatique uniquement sur les cinq parties les plus récentes.
+  const pending=games.slice(0,5).filter(needsAccuracy);
   pending.forEach(game=>enqueueAccuracy(game.id));
   if(pending.length){
    accuracyQueueTotal=Math.max(accuracyQueueTotal,accuracyQueueDone+accuracyQueueSkipped+pending.length);
@@ -416,7 +404,6 @@ function scheduleRecentAccuracy(){
   }
  },120);
 }
-$("accuracy-queue-button")?.addEventListener("click",analyzeMissingAccuracies);
 window.addEventListener("coach:games-updated",scheduleRecentAccuracy);
 window.addEventListener("coach:account-changed",()=>{
  accuracyQueueIds=[];accuracyQueueDone=0;accuracyQueueSkipped=0;accuracyQueueTotal=0;
