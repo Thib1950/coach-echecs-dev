@@ -871,3 +871,6 @@ html,body,button,a,input,select{touch-action:manipulation}
 .puzzle-heading-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
 .puzzle-progress-label{font-size:10px;color:var(--muted,#a5b3c2);white-space:nowrap}
 .puzzle-solved-mark{display:inline-flex;align-items:center;margin-left:6px;padding:2px 6px;border-radius:999px;background:rgba(141,224,108,.12);color:#bfe99e;font-size:9px;font-weight:800;vertical-align:middle}
+
+.puzzle-side [data-session-next]{margin-top:12px;width:100%}
+@media(max-width:520px){.puzzle-actions{flex-wrap:wrap}.puzzle-actions button{flex:1 1 100%}}
