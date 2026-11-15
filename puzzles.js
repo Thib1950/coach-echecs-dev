@@ -189,7 +189,7 @@ function startPersonalPuzzle(item,fromSession=false){
  orientation=board.turn()==="w"?"white":"black";
  $("puzzle-title").textContent="À toi de corriger ce coup";
  $("puzzle-rating").textContent="Ton analyse";
- $("puzzle-themes").textContent="Partie contre "+((item.game.white||"").toLowerCase()==="gone_1950"?item.game.black:item.game.white)+" · "+(item.detail.label||"Position à revoir");
+ $("puzzle-themes").textContent="Partie contre "+((item.game.white||"").toLowerCase()===String(window.CoachApp?.getUsername?.()||"").toLowerCase()?item.game.black:item.game.white)+" · "+(item.detail.label||"Position à revoir");
  message("Rejoue la meilleure suite de Stockfish et comprends pourquoi ton coup a laissé passer une meilleure idée.");
  render();
 }
