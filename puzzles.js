@@ -7,7 +7,7 @@ let board=null,solution=[],ply=0,selected=null,orientation="white",hinted=false,
 let puzzleProgress={dailySolved:[],personalSolved:[],attempts:0,wrongMoves:0};
 function loadPuzzleProgress(){try{const p=JSON.parse(localStorage.getItem(PROGRESS_KEY)||"{}");puzzleProgress={dailySolved:Array.isArray(p.dailySolved)?p.dailySolved:[],personalSolved:Array.isArray(p.personalSolved)?p.personalSolved:[],attempts:Number(p.attempts)||0,wrongMoves:Number(p.wrongMoves)||0};}catch{}}
 function savePuzzleProgress(){try{localStorage.setItem(PROGRESS_KEY,JSON.stringify(puzzleProgress));}catch{}renderPuzzleProgress();}
-function renderPuzzleProgress(){const node=$("puzzle-progress");if(!node)return;const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length;node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" session"+(puzzleProgress.attempts>1?"s":"")+" · "+puzzleProgress.wrongMoves+" erreur"+(puzzleProgress.wrongMoves>1?"s":"");}
+function renderPuzzleProgress(){const node=$("puzzle-progress");if(!node)return;const total=puzzleProgress.dailySolved.length+puzzleProgress.personalSolved.length;node.textContent=total+" résolu"+(total>1?"s":"")+" · "+puzzleProgress.attempts+" tentative"+(puzzleProgress.attempts>1?"s":"")+" · "+puzzleProgress.wrongMoves+" erreur"+(puzzleProgress.wrongMoves>1?"s":"");}
 function personalKey(game,detail){return String(game.id)+"|"+detail.fen+"|"+detail.bestUci;}
 function markPuzzleSolved(){const key=currentPuzzle?personalKey(currentPuzzle.game,currentPuzzle.detail):currentDailyId;if(!key)return;const list=currentPuzzle?puzzleProgress.personalSolved:puzzleProgress.dailySolved;if(!list.includes(key)){list.push(key);savePuzzleProgress();}else renderPuzzleProgress();renderPersonalized();}
 function uci(move){return move.from+move.to+(move.promotion||"");}
@@ -23,8 +23,15 @@ function render(){
  let cells="";
  ranks.forEach(rank=>[...files].forEach(file=>{const sq=file+rank,p=board.get(sq),light=((rank-1+(file.charCodeAt(0)-97))%2)===1;let cls="puzzle-square "+(light?"light":"dark")+(selected===sq?" selected":"")+(targets.get(sq)==="capture"?" puzzle-capture":"");const dot=targets.get(sq)==="move"?'<i class="puzzle-dot"></i>':"";cells+='<button type="button" class="'+cls+'" data-puzzle-square="'+sq+'" aria-label="'+sq+'">'+(p?'<img src="https://lichess1.org/assets/piece/cburnett/'+p.color+p.type.toUpperCase()+'.svg" alt="'+glyph[p.color+p.type]+'">':"")+dot+'</button>';}));
  const sessionAction=sessionActive&&solved?'<button type="button" class="primary-button" data-session-next>'+(sessionQueue.length?"Puzzle suivant →":"Terminer la session")+'</button>':"";
+ let hintArrow="";
+ if(hinted&&solution[ply]){
+  const from=solution[ply].slice(0,2),to=solution[ply].slice(2,4);
+  const coord=sq=>{const file=sq.charCodeAt(0)-97,rank=Number(sq[1]);const col=orientation==="white"?file:7-file,row=orientation==="white"?8-rank:rank-1;return {x:col*100+50,y:row*100+50};};
+  const a=coord(from),b=coord(to);
+  hintArrow='<svg class="puzzle-hint-arrow" viewBox="0 0 800 800" aria-hidden="true"><defs><marker id="puzzleHintHead" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6" fill="none" stroke="#f5b942" stroke-width="1.4"/></marker></defs><line x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'" stroke="#f5b942" stroke-width="13" stroke-linecap="round" opacity=".94" marker-end="url(#puzzleHintHead)"/></svg>';
+ }
  const panel='<aside class="puzzle-side"><strong>'+(solved?"Problème résolu !":currentPuzzle?"Position issue de ta partie":"À toi de jouer")+'</strong><p>'+(solved?(currentPuzzle?"Dans ta partie, tu avais joué "+currentPuzzle.detail.played+". Le meilleur coup était "+(currentPuzzle.detail.best||"celui que tu viens de trouver")+".":"Bravo, tu as trouvé la suite tactique."):(hinted&&solution[ply]?"Indice : cherche à jouer "+solution[ply].slice(0,2)+" vers "+solution[ply].slice(2,4)+".":"Trouve le meilleur coup. Les points indiquent les déplacements légaux."))+'</p><small>'+(sessionActive?"Session personnalisée · "+sessionSolved+" / "+sessionTotal+" réussis":currentPuzzle?"Exercice construit à partir de ton analyse Stockfish.":"Ton objectif : trouver toute la combinaison, pas seulement le premier coup.")+'</small>'+sessionAction+'</aside>';
- $("puzzle-board-area").innerHTML='<div class="puzzle-board">'+cells+'</div>'+panel;
+ $("puzzle-board-area").innerHTML='<div class="puzzle-board-wrap"><div class="puzzle-board">'+cells+'</div>'+hintArrow+'</div>'+panel;
 }
 function message(text){$("puzzle-feedback").textContent=text;}
 async function loadDaily(){
