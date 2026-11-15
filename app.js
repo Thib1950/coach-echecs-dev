@@ -40,7 +40,7 @@ function switchChessAccount(){
  if(!/^[a-z0-9_-]{2,30}$/.test(next)){setMessage("Saisis un identifiant Chess.com valide (2 à 30 caractères).");return;}
  if(next===USERNAME){setMessage("Ce compte est déjà sélectionné.");return;}
  saveGames();USERNAME=next;localStorage.setItem("coach-echecs-dev-account",USERNAME);games=readStoredGames();
- const greeting=$("dashboard-greeting-name");if(greeting)greeting.textContent=USERNAME;
+ const greeting=$("dashboard-greeting-name");if(greeting)greeting.textContent=USERNAME;const accountName=$("account-menu-name");if(accountName)accountName.textContent=USERNAME;
  render();fetchPlayerRatings();window.dispatchEvent(new CustomEvent("coach:account-changed",{detail:{username:USERNAME}}));
  setMessage("Compte actif : "+USERNAME+". Synchronise ou importe ses parties pour construire son répertoire.");
 }
@@ -221,7 +221,7 @@ $("change-chess-account")?.addEventListener("click",switchChessAccount);
 $("chess-account-input")?.addEventListener("keydown",event=>{if(event.key==="Enter")switchChessAccount();});$("pgn-file").addEventListener("change",e=>importPgnFile(e.target.files[0]));$("game-search").addEventListener("input",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));$("result-filter").addEventListener("change",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));
 document.addEventListener("click",e=>{const b=e.target.closest("[data-open-game]");if(!b)return;e.preventDefault();if(window.CoachAnalysis?.openGame){window.CoachAnalysis.openGame(b.dataset.openGame);return;}window.dispatchEvent(new CustomEvent("coach:analyze-game",{detail:{gameId:b.dataset.openGame}}));});
 document.addEventListener("click",e=>{if(e.target.closest("[data-games-back]")){$("panel-games")?.classList.remove("reviewing-game");$("game-replay-area").innerHTML="";$("analysis-results").innerHTML="";}});
-const accountInput=$("chess-account-input");if(accountInput)accountInput.value=USERNAME;
+const accountInput=$("chess-account-input");if(accountInput)accountInput.value=USERNAME;const accountMenuName=$("account-menu-name");if(accountMenuName)accountMenuName.textContent=USERNAME;
 games=readStoredGames();render();fetchPlayerRatings();
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load",async()=>{
