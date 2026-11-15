@@ -1,4 +1,4 @@
-import { Chess } from "https://cdn.jsdelivr.net/npm/chess.js@1.4.0/+esm";
+import { Chess } from "./chess-lib.js";
 const $=id=>document.getElementById(id),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let active=null,moves=[],index=0,analysisMoves=[],activeAnalysisMove=null,variationIndex=0;
 let ecoOpeningPromise=null;
