@@ -311,7 +311,8 @@ async function analyseSelectedGame(gameIdOverride,options={}){
     }
   }finally{
     busy=false;refreshGamePicker();
-scheduleRecentAccuracy();
+    if(background)window.CoachApp?.refresh?.();
+    scheduleRecentAccuracy();
     if(!background){
       $("analyse-game-button").disabled=false;$("analyse-game-button").textContent="Analyser cette partie";
 
@@ -397,7 +398,7 @@ window.addEventListener("coach:games-updated",refreshGamePicker);
 window.CoachAnalysis={
  openGame:openGameInCoach,
  analyze:gameId=>openGameInCoach(gameId),
- analyzeAccuracy:gameId=>analyseSelectedGame(String(gameId),{background:true,movetime:500}),
+ async analyzeAccuracy(gameId){while(busy)await new Promise(resolve=>setTimeout(resolve,200));return analyseSelectedGame(String(gameId),{background:true,movetime:500});},
  async analyzePosition(fen){
   const request=++positionRequestId;
   while(busy){
