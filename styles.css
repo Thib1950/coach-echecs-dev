@@ -2063,3 +2063,33 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
   min-height:28px!important;
  }
 }
+
+
+/* v83 — progression allégée et apprentissage des ouvertures en deux phases. */
+#panel-progress .progress-highlight{display:none!important}
+#panel-progress{min-width:0!important;box-sizing:border-box!important;overflow-x:hidden!important}
+#panel-progress .progress-kpis,
+#panel-progress .progress-content-grid,
+#panel-progress .training-kpi,
+#panel-progress .progress-results-card,
+#panel-progress .progress-coach-card{min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+#panel-progress .progress-kpis{margin-top:0!important}
+#panel-progress .progress-content-grid{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr)!important}
+#panel-progress .progress-results-card,
+#panel-progress .progress-coach-card{overflow:hidden!important}
+#panel-openings.opening-exercise-active .opening-practice-layout{margin-top:0!important}
+#panel-openings.opening-exercise-active .opening-practice-board-wrap{position:relative!important;width:min(100%,min(68vh,calc(100vw - 320px),720px))!important;aspect-ratio:1/1!important;justify-self:center!important;min-width:0!important}
+#panel-openings.opening-exercise-active .opening-practice-board{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important}
+#panel-openings.opening-exercise-active .opening-exercise-arrow{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;z-index:5!important;pointer-events:none!important}
+#panel-openings.opening-exercise-active .opening-practice-coach{min-width:0!important}
+#panel-openings.opening-exercise-active .opening-practice-coach .eyebrow{font-size:10px!important;letter-spacing:.08em!important}
+#panel-openings.opening-exercise-active .opening-practice-coach strong{font-size:16px!important}
+@media(max-width:900px){
+ #panel-openings.opening-exercise-active .opening-practice-board-wrap{width:min(100%,min(68vh,calc(100vw - 280px),560px))!important}
+ #panel-progress .progress-content-grid{grid-template-columns:minmax(0,1fr)!important}
+}
+@media(max-width:620px){
+ #panel-openings.opening-exercise-active .opening-practice-board-wrap{width:min(90vw,calc(100dvh - 250px),520px)!important}
+ #panel-progress .progress-kpis{grid-template-columns:minmax(0,1fr)!important}
+ #panel-progress .progress-content-grid{grid-template-columns:minmax(0,1fr)!important}
+}
