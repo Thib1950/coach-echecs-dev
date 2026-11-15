@@ -240,7 +240,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
         playedMate:playedBoard.isCheckmate(),...facts,depth:beforeEval.depth
       };
       report.positionDetails.push(detail);
-      if(move.color===user()Side)report.moves.push(detail);
+      if(move.color===userSide)report.moves.push(detail);
       report.covered=i+1;
       game.analysis={
         date:new Date().toISOString(),moves:report.moves,positions:report.positions,
@@ -257,7 +257,7 @@ async function analyseSelectedGame(gameIdOverride,options={}){
       const quality=(isOpeningPhase&&winLossPercent<5)?{label:"Théorie",kind:"book"}:classify(winLossPercent,playedUci===beforeEval.bestmove);
       if(quality.kind!=="book"&&playedUci===beforeEval.bestmove&&((winPercentBefore<35&&afterWinPercent>=45)||(winPercentBefore>=45&&winPercentBefore<65&&afterWinPercent>=75))){quality.label="Grand coup";quality.kind="great";}
       const previousOpponentMove=report.positionDetails[report.positionDetails.length-1];
-      if(quality.kind!=="book"&&move.color===user()Side&&previousOpponentMove&&previousOpponentMove.color!==userSide&&previousOpponentMove.winLossPercent>=10&&winLossPercent>=2){quality.label="Occasion manquée";quality.kind="miss";}
+      if(quality.kind!=="book"&&move.color===userSide&&previousOpponentMove&&previousOpponentMove.color!==userSide&&previousOpponentMove.winLossPercent>=10&&winLossPercent>=2){quality.label="Occasion manquée";quality.kind="miss";}
       if(quality.kind!=="book"&&playedUci===beforeEval.bestmove&&isBrilliantSacrifice(beforeFen,playedUci,winLossPercent,beforeEval,afterEval)){quality.label="Coup brillant";quality.kind="brilliant";}
       Object.assign(detail,{afterEvalWhite:afterEval.scoreWhite,loss,winPercentBefore,winLossPercent,...quality});
       report.covered=i+1;
@@ -269,9 +269,9 @@ async function analyseSelectedGame(gameIdOverride,options={}){
         positionDetails:report.positionDetails,covered:report.covered,
         accuracy:accuracyFromMoves(report.moves),partial:true
       };
-      if(move.color===user()Side)window.CoachApp.saveGames();
+      if(move.color===userSide)window.CoachApp.saveGames();
       if(!background){
-        if(move.color===user()Side&&(report.moves.length%3===0||i===history.length-1))renderResults(game,report);
+        if(move.color===userSide&&(report.moves.length%3===0||i===history.length-1))renderResults(game,report);
         $("analysis-progress-fill").style.width=Math.round((i+1)/history.length*100)+"%";
         $("analysis-progress-label").textContent="Analyse en cours · "+(i+1)+" / "+history.length+" demi-coups · "+elapsedText(startedAt);
       }
