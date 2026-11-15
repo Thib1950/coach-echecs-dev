@@ -372,7 +372,8 @@ function startAccuracyQueue(){
     while(busy&&!backgroundPauseRequested&&isGamesPanelActive())await new Promise(resolve=>setTimeout(resolve,180));
     if(backgroundPauseRequested||!isGamesPanelActive()){accuracyQueueIds.unshift(id);break;}
     try{
-     await analyseSelectedGame(id,{background:true,movetime:500});
+     await analyseSelectedGame(id,{background:true,movetime:320});
+     if(backgroundPauseRequested||!isGamesPanelActive()){accuracyQueueIds.unshift(id);break;}
      const latest=(window.CoachApp?.getGames?.()||[]).find(g=>String(g.id)===id);
      if(latest?.analysis?.partial===false&&Array.isArray(latest.analysis.moves))accuracyQueueDone++;
      else accuracyQueueSkipped++;
