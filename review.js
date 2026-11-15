@@ -191,7 +191,8 @@ function render(){
 
 }
 function open(id){
- document.querySelector('[data-tab="training"]')?.click();
+ document.querySelector('[data-tab="games"]')?.click();
+ $("panel-games")?.classList.add("reviewing-game");
  const game=(window.CoachApp?.getGames?.()||[]).find(g=>String(g.id)===String(id));
  if(!game){$("game-replay-area").innerHTML='<div class="empty-state">Partie introuvable dans les données de cet appareil.</div>';return false;}
  if(!game.pgn){$("game-replay-area").innerHTML='<div class="empty-state">Le PGN de cette partie est absent. Réimporte-la pour la rejouer.</div>';return false;}
