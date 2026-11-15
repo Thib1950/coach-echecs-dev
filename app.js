@@ -9,7 +9,7 @@ window.CoachSound={play(move){try{
  const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;
  if(!coachAudioContext)coachAudioContext=new AudioCtx();
  const ctx=coachAudioContext;if(ctx.state==="suspended")ctx.resume();
- const capture=!!move?.captured,duration=capture?.11:.075;
+ const capture=!!move?.captured,duration=capture ? .11 : .075;
  const osc=ctx.createOscillator(),gain=ctx.createGain(),filter=ctx.createBiquadFilter();
  osc.type="triangle";osc.frequency.setValueAtTime(capture?430:760,ctx.currentTime);
  osc.frequency.exponentialRampToValueAtTime(capture?260:510,ctx.currentTime+duration);
@@ -221,6 +221,7 @@ $("change-chess-account")?.addEventListener("click",switchChessAccount);
 $("chess-account-input")?.addEventListener("keydown",event=>{if(event.key==="Enter")switchChessAccount();});$("pgn-file").addEventListener("change",e=>importPgnFile(e.target.files[0]));$("game-search").addEventListener("input",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));$("result-filter").addEventListener("change",()=>renderGames([...games].sort((a,b)=>(b.date||"").localeCompare(a.date||""))));
 document.addEventListener("click",e=>{const b=e.target.closest("[data-open-game]");if(!b)return;e.preventDefault();if(window.CoachAnalysis?.openGame){window.CoachAnalysis.openGame(b.dataset.openGame);return;}window.dispatchEvent(new CustomEvent("coach:analyze-game",{detail:{gameId:b.dataset.openGame}}));});
 document.addEventListener("click",e=>{if(e.target.closest("[data-games-back]")){$("panel-games")?.classList.remove("reviewing-game");$("game-replay-area").innerHTML="";$("analysis-results").innerHTML="";}});
+const accountInput=$("chess-account-input");if(accountInput)accountInput.value=USERNAME;
 games=readStoredGames();render();fetchPlayerRatings();
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load",async()=>{
