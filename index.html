@@ -24,28 +24,90 @@
     </header>
     <main>
       <nav class="tabs" aria-label="Navigation principale">
-        <button class="tab active" data-tab="dashboard">Accueil</button>
-        <button class="tab" data-tab="games">Mes parties</button>
-        <button class="tab" data-tab="training">Entraînement</button><button class="tab" data-tab="puzzles">Puzzles</button>
-        <button class="tab" data-tab="openings">Ouvertures</button>
-        <button class="tab" data-tab="progress">Progression</button>
+        <button class="tab active" data-tab="dashboard"><span class="tab-icon">⌂</span>Accueil</button>
+        <button class="tab" data-tab="games"><span class="tab-icon">▤</span>Parties</button>
+        <button class="tab" data-tab="openings"><span class="tab-icon">♞</span>Ouvertures</button>
+        <button class="tab" data-tab="puzzles"><span class="tab-icon">♟</span>Puzzles</button>
+        <button class="tab" data-tab="training"><span class="tab-icon">◎</span>Entraînement</button>
+        <button class="tab" data-tab="progress"><span class="tab-icon">↗</span>Progression</button>
       </nav>
 
       <section class="panel active" id="panel-dashboard">
-      <section class="welcome">
-        <div>
-          <p class="eyebrow">TON ESPACE D'ENTRAÎNEMENT</p>
-          <h1>On progresse <em>un coup à la fois.</em></h1>
-          <p class="welcome-copy">Tes parties, tes habitudes et tes prochains objectifs réunis au même endroit.</p>
+        <section class="dashboard-hero">
+          <div class="dashboard-hero-copy">
+            <p class="eyebrow">TON ESPACE PERSONNEL · CHESS.COM</p>
+            <h1>Bonjour <span id="dashboard-greeting-name">gone_1950</span>.</h1>
+            <p>Retrouve tes parties, travaille tes points faibles et construis ta progression, un coup après l’autre.</p>
+            <div class="dashboard-hero-actions">
+              <button class="primary-button" data-goto="training">Reprendre l'entraînement <span aria-hidden="true">→</span></button>
+              <button class="hero-secondary" data-goto="games">Voir mes parties</button>
+            </div>
+          </div>
+          <div class="dashboard-hero-art" aria-hidden="true"><span class="hero-board-glow"></span><span class="hero-knight">♞</span></div>
+        </section>
+
+        <div class="dashboard-topline">
+          <div><p class="eyebrow">VUE D'ENSEMBLE</p><h2>Ton activité</h2></div>
+          <div class="dashboard-toolbar-right">
+            <div class="button-row">
+              <button class="secondary-button" id="sync-button">↻ Synchroniser</button>
+              <label class="secondary-button file-button">Importer un PGN<input type="file" id="pgn-file" accept=".pgn,text/plain" hidden></label>
+            </div>
+            <span class="sync-state" id="sync-state">Version publiée · 15/11/2026 · v40</span>
+          </div>
         </div>
-        <div class="welcome-piece" aria-hidden="true">♞</div>
-      </section>
-        <div class="section-heading dashboard-heading"><div><p class="eyebrow">TABLEAU DE BORD</p><h2>Salut, gone_1950 👋</h2></div></div>
-        <div class="dashboard-toolbar"><div class="dashboard-toolbar-right"><div class="button-row"><button class="primary-button" id="sync-button">Synchroniser les parties</button><label class="secondary-button file-button">Importer un PGN<input type="file" id="pgn-file" accept=".pgn,text/plain" hidden></label></div><span class="sync-state" id="sync-state">Version publiée · 15/11/2026 · v39</span></div></div>
         <p class="small muted dashboard-sync-message" id="sync-message" aria-live="polite"></p>
-        <div class="stats-grid dashboard-stats"><article class="stat-card"><span class="stat-label">PARTIES IMPORTÉES</span><strong id="stat-games">0</strong></article><article class="stat-card stat-win"><span class="stat-label">VICTOIRES</span><strong id="stat-wins">0</strong></article><article class="stat-card stat-loss"><span class="stat-label">DÉFAITES</span><strong id="stat-losses">0</strong></article></div>
-        <article class="surface ratings-surface"><div class="ratings-grid"><div class="rating-card"><svg class="rating-mode-icon blitz-icon" viewBox="0 0 32 32" role="img" aria-label="Icône Blitz"><path d="M18.5 2 7 18h8l-1.5 12L25 13h-8z" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/></svg><span>BLITZ</span><strong id="rating-blitz">…</strong></div><div class="rating-card"><svg class="rating-mode-icon rapid-icon" viewBox="0 0 32 32" role="img" aria-label="Icône partie rapide"><circle cx="16" cy="17" r="11.5" fill="none" stroke="currentColor" stroke-width="3"/><path d="M16 9v8l5 3M12 2h8M16 2v3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>RAPIDE · 10 MIN</span><strong id="rating-rapid">…</strong></div></div></article>
-        <div class="dashboard-shortcuts"><button type="button" class="dashboard-shortcut puzzle-shortcut" data-goto="puzzles"><span class="shortcut-icon">♟</span><span><strong>Résoudre des problèmes</strong><small>Un défi tactique pour progresser</small></span><span class="shortcut-arrow">↗</span></button><button type="button" class="dashboard-shortcut puzzle-shortcut" data-goto="puzzles" data-start-puzzle-session><span class="shortcut-icon">◈</span><span><strong>Session de puzzles</strong><small>5 positions issues de tes parties</small></span><span class="shortcut-arrow">↗</span></button><button type="button" class="dashboard-shortcut" data-goto="training"><span class="shortcut-icon">♜</span><span><strong>Continuer à apprendre</strong><small>Reprendre ton entraînement</small></span><span class="shortcut-arrow">↗</span></button><button type="button" class="dashboard-shortcut" data-goto="openings"><span class="shortcut-icon">♞</span><span><strong>Réviser ton répertoire</strong><small>Travailler tes ouvertures</small></span><span class="shortcut-arrow">↗</span></button></div><article class="surface recent-surface"><div class="surface-heading"><div><p class="eyebrow">ACTIVITÉ RÉCENTE</p><h3>Dernières parties</h3></div><button class="text-button" data-goto="games">Tout voir →</button></div><div id="recent-games" class="empty-state">Tes parties apparaîtront ici après l'import.</div><p id="accuracy-queue-status" class="small muted" aria-live="polite"></p></article>
+
+        <div class="dashboard-overview-grid">
+          <article class="dashboard-stat-card main-stat">
+            <span class="stat-label">PARTIES IMPORTÉES</span>
+            <strong id="stat-games">0</strong>
+            <small>Ton historique analysable</small>
+            <span class="stat-card-mark">▤</span>
+          </article>
+          <article class="dashboard-stat-card win-stat">
+            <span class="stat-label">VICTOIRES</span>
+            <strong id="stat-wins">0</strong>
+            <small>Parties remportées</small>
+            <span class="stat-card-mark">↗</span>
+          </article>
+          <article class="dashboard-stat-card loss-stat">
+            <span class="stat-label">DÉFAITES</span>
+            <strong id="stat-losses">0</strong>
+            <small>Occasions d'apprendre</small>
+            <span class="stat-card-mark">↘</span>
+          </article>
+        </div>
+
+        <article class="surface ratings-surface dashboard-ratings">
+          <div class="surface-heading"><div><p class="eyebrow">TON NIVEAU CHESS.COM</p><h3>Classement actuel</h3></div><span class="rating-live-label"><i></i> Synchronisé</span></div>
+          <div class="ratings-grid">
+            <div class="rating-card"><svg class="rating-mode-icon blitz-icon" viewBox="0 0 32 32" role="img" aria-label="Icône Blitz"><path d="M18.5 2 7 18h8l-1.5 12L25 13h-8z" fill="currentColor" stroke="currentColor" stroke-linejoin="round"/></svg><span>BLITZ</span><strong id="rating-blitz">…</strong></div>
+            <div class="rating-card"><svg class="rating-mode-icon rapid-icon" viewBox="0 0 32 32" role="img" aria-label="Icône partie rapide"><circle cx="16" cy="17" r="11.5" fill="none" stroke="currentColor" stroke-width="3"/><path d="M16 9v8l5 3M12 2h8M16 2v3" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>RAPIDE · 10 MIN</span><strong id="rating-rapid">…</strong></div>
+          </div>
+        </article>
+
+        <div class="dashboard-section-heading"><div><p class="eyebrow">ACCÈS RAPIDE</p><h2>Que veux-tu travailler ?</h2></div></div>
+        <div class="dashboard-shortcuts">
+          <button type="button" class="dashboard-shortcut" data-goto="openings"><span class="shortcut-icon">♞</span><span><strong>Répertoire d'ouvertures</strong><small>Retrouver tes lignes et tes plans</small></span><span class="shortcut-arrow">→</span></button>
+          <button type="button" class="dashboard-shortcut" data-goto="puzzles"><span class="shortcut-icon">♟</span><span><strong>Puzzles tactiques</strong><small>Développer ton calcul et tes réflexes</small></span><span class="shortcut-arrow">→</span></button>
+          <button type="button" class="dashboard-shortcut" data-goto="puzzles" data-start-puzzle-session><span class="shortcut-icon">◈</span><span><strong>Session personnalisée</strong><small>5 positions tirées de tes parties</small></span><span class="shortcut-arrow">→</span></button>
+          <button type="button" class="dashboard-shortcut" data-goto="training"><span class="shortcut-icon">◎</span><span><strong>Analyser et apprendre</strong><small>Stockfish et parcours guidés</small></span><span class="shortcut-arrow">→</span></button>
+        </div>
+
+        <div class="dashboard-lower-grid">
+          <article class="surface recent-surface dashboard-recent">
+            <div class="surface-heading"><div><p class="eyebrow">TON HISTORIQUE</p><h3>Parties récentes</h3></div><button class="text-button" data-goto="games">Tout voir →</button></div>
+            <div id="recent-games" class="empty-state">Tes parties apparaîtront ici après l'import.</div>
+            <p id="accuracy-queue-status" class="small muted" aria-live="polite"></p>
+          </article>
+          <article class="surface dashboard-focus">
+            <p class="eyebrow">UN CONSEIL POUR PROGRESSER</p>
+            <h3>La régularité fait la différence.</h3>
+            <p>Après chaque partie, prends quelques minutes pour revoir les moments critiques. Comprendre une erreur vaut mieux que mémoriser dix coups sans en connaître l'idée.</p>
+            <button class="text-button" data-goto="training">Ouvrir mon espace d'entraînement →</button>
+          </article>
+        </div>
       </section>
 
       <section class="panel" id="panel-games">
@@ -84,7 +146,7 @@
         <div class="progress-kpis"><article class="training-kpi"><span>TAUX DE VICTOIRE</span><strong id="progress-win-rate">—</strong><small id="progress-win-rate-detail">Sur les parties décidées</small></article><article class="training-kpi"><span>PLUS HAUT ELO BATTU</span><strong id="progress-best-win-elo">—</strong><small id="progress-best-win-opponent">—</small></article></div><div class="content-grid"><article class="surface"><h3>Résultats des parties importées</h3><div id="result-bars" class="bar-list"><p class="muted">Les statistiques apparaîtront après l’import.</p></div></article></div>
       </section>
     </main>
-    <footer><span>MON COACH D'ÉCHECS</span><span>Version publiée · 15/11/2026 · v39</span></footer>
+    <footer><span>MON COACH D'ÉCHECS</span><span>Version publiée · 15/11/2026 · v40</span></footer>
   </div>
   <script src="app.js"></script>
   <script type="module" src="review.js"></script>
