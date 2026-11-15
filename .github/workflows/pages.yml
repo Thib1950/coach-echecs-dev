@@ -28,6 +28,7 @@ jobs:
           node --input-type=module --check < lesson.js
           node --input-type=module --check < openings.js
           node --input-type=module --check < puzzles.js
+          node --input-type=module --check < curriculum.js
           node --input-type=module --check < engine-worker.js
           node --input-type=module --check < sw.js
       - name: Configure Pages
