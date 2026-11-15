@@ -285,7 +285,6 @@ async function analyseSelectedGame(gameIdOverride,options={}){
       $("analysis-progress-fill").style.width="100%";
       $("analysis-progress-label").textContent="Analyse terminée · "+elapsedText(startedAt)+" · Précision : "+game.analysis.accuracy+" %.";
     }else{
-      window.CoachApp.refresh?.();
       updateAccuracyQueueStatus();
     }
   }catch(error){
