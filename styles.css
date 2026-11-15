@@ -2544,3 +2544,7 @@ button:focus-visible{outline:3px solid #f0c46f;outline-offset:3px}
 #panel-puzzles .puzzle-side-back{display:block;width:min(100%,680px);margin:12px auto 0;padding:0}
 #panel-puzzles .puzzle-side-back button{width:100%}
 @media(max-width:760px){.learn-training-focus-grid{grid-template-columns:1fr}.learn-training-focus{min-height:125px}}
+
+#panel-puzzles .puzzle-hearts{font-size:32px;letter-spacing:6px}
+#panel-puzzles .puzzle-side-back{grid-column:1/-1;justify-self:center}
+#learn-training-exercise .puzzle-side-back{grid-column:1/-1;justify-self:center}
