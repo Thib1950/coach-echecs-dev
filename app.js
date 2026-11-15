@@ -50,7 +50,7 @@ function positionWinPercent(cp){const x=Math.max(-1000,Math.min(1000,Number(cp)|
 function gameAccuracy(g){
  const moves=(g.analysis?.moves||[]).filter(m=>m.kind!=="book"&&m.color);
  const accuracies=moves.map(m=>{
-  let loss=Number(m.winLossPercent);
+  let loss=m.winLossPercent===null||m.winLossPercent===undefined?NaN:Number(m.winLossPercent);
   if(!Number.isFinite(loss)){
    if(m.evalWhite===null||m.evalWhite===undefined||m.afterEvalWhite===null||m.afterEvalWhite===undefined)return null;
    const sign=m.color==="w"?1:-1;
