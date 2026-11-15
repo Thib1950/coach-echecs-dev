@@ -4,7 +4,7 @@ const $ = id => document.getElementById(id);
 let worker = null, engineReady = null, busy = false, positionRequestId = 0;
 let accuracyQueueRunning=false,accuracyQueueTotal=0,accuracyQueueDone=0,accuracyQueueSkipped=0;
 const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const user = "gone_1950";
+const user = () => String(window.CoachApp?.getUsername?.() || "").toLowerCase();
 
 
 function getEngine(){
@@ -162,14 +162,14 @@ function gameAccuracyFromMoves(moves){
   return Math.round(rows.reduce((sum,value)=>sum+value,0)/rows.length);
 }
 function resultName(g){
-  const white = (g.white || "").toLowerCase() === user;
-  const black = (g.black || "").toLowerCase() === user;
+  const white = (g.white || "").toLowerCase() === user();
+  const black = (g.black || "").toLowerCase() === user();
   const won = (white && g.result === "1-0") || (black && g.result === "0-1");
   const draw = g.result === "1/2-1/2";
   return won ? "Victoire" : draw ? "Nulle" : "Défaite";
 }
 function labelGame(g){
-  const opponent = (g.white || "").toLowerCase() === user ? g.black : g.white;
+  const opponent = (g.white || "").toLowerCase() === user() ? g.black : g.white;
   return (g.date || "Date inconnue") + " · " + (opponent || "Adversaire") + " · " + resultName(g);
 }
 function refreshGamePicker(){
