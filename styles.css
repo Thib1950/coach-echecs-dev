@@ -2918,3 +2918,115 @@ body{
 .learn-exercise-overlay .puzzle-side{max-width:680px;margin:18px auto 0;}
 .learn-exercise-overlay .puzzle-side-back{max-width:680px;margin:16px auto 0;}
 @media(max-width:700px){.learn-exercise-overlay{padding:12px}.learn-exercise-overlay .learn-subview-heading{align-items:flex-start;flex-direction:column}.learn-exercise-overlay .puzzle-board-wrap{width:min(100%,calc(100vw - 24px));}}
+
+
+/* v86 — échiquiers et panneaux du coach légèrement agrandis dans toutes les vues d'exercice. */
+#panel-openings.opening-exercise-active .opening-practice-layout{
+ grid-template-columns:minmax(0,1fr) minmax(250px,290px)!important;
+ gap:20px!important;
+}
+#panel-openings.opening-exercise-active .opening-practice-board-wrap{
+ width:min(100%,min(72vh,760px))!important;
+}
+#panel-openings.opening-exercise-active .opening-practice-coach{
+ max-width:290px!important;
+ padding:22px!important;
+}
+#panel-openings.opening-exercise-active .opening-practice-coach p{
+ font-size:15px!important;
+ line-height:1.65!important;
+}
+#panel-openings.opening-exercise-active .opening-practice-coach small{
+ font-size:11px!important;
+ line-height:1.55!important;
+}
+#panel-puzzles .puzzle-board-area{
+ grid-template-columns:minmax(0,1fr) 240px!important;
+ gap:18px!important;
+}
+#panel-puzzles .puzzle-board-wrap{
+ height:min(100%,calc(100dvh - 190px))!important;
+}
+#panel-puzzles .puzzle-side{
+ max-width:240px!important;
+ padding:18px!important;
+}
+#panel-puzzles .puzzle-side p{
+ font-size:14px!important;
+ line-height:1.65!important;
+}
+#panel-puzzles .puzzle-side strong{font-size:19px!important}
+.learn-exercise-overlay .puzzle-board-wrap{
+ width:min(100%,min(72vh,720px))!important;
+}
+.learn-exercise-overlay .puzzle-side{
+ max-width:720px!important;
+ padding:20px!important;
+}
+.learn-exercise-overlay .puzzle-side p{
+ font-size:15px!important;
+ line-height:1.65!important;
+}
+#panel-openings.learn-session-active #learn-training-exercise .puzzle-board-area{
+ grid-template-columns:minmax(0,1fr) 240px!important;
+ gap:18px!important;
+}
+#panel-openings.learn-session-active #learn-training-exercise .puzzle-board-wrap{
+ width:min(100%,min(70vh,700px))!important;
+}
+#panel-openings.learn-session-active #learn-training-exercise .puzzle-side{
+ padding:18px!important;
+}
+#panel-openings.learn-session-active #learn-training-exercise .puzzle-side p{
+ font-size:14px!important;
+ line-height:1.65!important;
+}
+@media(max-width:900px){
+ #panel-openings.opening-exercise-active .opening-practice-layout{
+  grid-template-columns:minmax(0,1fr) minmax(220px,270px)!important;
+ }
+ #panel-puzzles .puzzle-board-area,
+ #panel-openings.learn-session-active #learn-training-exercise .puzzle-board-area{
+  grid-template-columns:minmax(0,1fr) 220px!important;
+ }
+ #panel-puzzles .puzzle-side{max-width:220px!important}
+}
+@media(max-width:760px){
+ #panel-puzzles .puzzle-board-area,
+ #panel-openings.learn-session-active #learn-training-exercise .puzzle-board-area{
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-template-rows:minmax(0,1fr) auto!important;
+ }
+ #panel-puzzles .puzzle-board-wrap{
+  width:min(100%,min(58vh,78vw))!important;
+  height:auto!important;
+ }
+ #panel-puzzles .puzzle-side,
+ #panel-openings.learn-session-active #learn-training-exercise .puzzle-side{
+  width:100%!important;
+  max-width:100%!important;
+  padding:14px 16px!important;
+ }
+ #panel-puzzles .puzzle-side p,
+ #panel-openings.learn-session-active #learn-training-exercise .puzzle-side p{
+  font-size:14px!important;
+ }
+ #panel-openings.opening-exercise-active .opening-practice-layout{
+  grid-template-columns:minmax(0,1fr)!important;
+ }
+ #panel-openings.opening-exercise-active .opening-practice-board-wrap{
+  width:min(94vw,min(72vh,600px))!important;
+ }
+ #panel-openings.opening-exercise-active .opening-practice-coach{
+  width:100%!important;
+  max-width:600px!important;
+ }
+}
+@media(max-width:520px){
+ #panel-openings.opening-exercise-active .opening-practice-board-wrap{
+  width:min(94vw,calc(100dvh - 250px),560px)!important;
+ }
+ #panel-puzzles .puzzle-board-wrap{
+  width:min(100%,min(58vh,82vw))!important;
+ }
+}
