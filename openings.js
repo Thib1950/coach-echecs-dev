@@ -385,7 +385,8 @@ function exercisePositions(group,side){
  return [...unique.values()];
 }
 async function startExercise(group,previousKey=""){
- await strategicIdeasPromise;
+ // Les conseils stratégiques sont facultatifs : ne jamais bloquer l’ouverture de l’exercice
+ // sur une requête réseau externe (notamment sur mobile / navigateur intégré).
  const root=$("opening-detail");
  if(!group?.games?.length)return;
  currentKey=group.key;
