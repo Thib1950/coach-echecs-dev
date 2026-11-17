@@ -354,8 +354,7 @@ function launchOpeningLearningSession(config){
  setLearnStep(0);
  return overlay;
 }
-async function startLineStudy(variant,index){
- await strategicIdeasPromise;
+function startLineStudy(variant,index){
  const game=variant.games?.[0]||{},bookLine=variant.book?.moves||[],playedLine=gameMoves(game),sourceLine=bookLine.length>=8?bookLine:playedLine,line=sourceLine.slice(0,24);
  if(!line.length){const preview=$("opening-preview-"+index);if(preview){preview.hidden=false;preview.innerHTML='<p class="muted">Aucune suite de coups exploitable pour cette variante.</p>';}return;}
  const userSide=sideOf(game)==="black"?"b":"w";
@@ -383,8 +382,7 @@ function exercisePositions(group,side){
  }
  return [...unique.values()];
 }
-async function startExercise(group,previousKey=""){
- await strategicIdeasPromise;
+function startExercise(group,previousKey=""){
  currentKey=group.key;
  $("panel-openings")?.classList.add("opening-exercise-active");
  const backTab=$("[data-opening-back]");if(backTab)backTab.hidden=false;
@@ -397,6 +395,7 @@ async function startExercise(group,previousKey=""){
   root.querySelector("#close-opening-exercise").onclick=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);};return;
  }
  const candidateIndex=chooseCandidate(candidates,previousKey),item=candidates[candidateIndex];
+ try{
  launchOpeningLearningSession({
   line:item.line,side,title:item.openingName||group.family,family:group.family,game:item.game,
   onFailure:()=>recordLearning(item,false),
@@ -404,6 +403,14 @@ async function startExercise(group,previousKey=""){
   onNext:()=>startExercise(group,item.key),
   onClose:()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);}
  });
+ }catch(error){
+  console.error("Impossible de lancer l’exercice d’ouverture",error);
+  $("panel-openings")?.classList.remove("opening-exercise-active");
+  const back=$("[data-opening-back]");if(back)back.hidden=true;
+  root.innerHTML='<article class="surface opening-detail-card"><p class="muted">L’exercice n’a pas pu démarrer. Réessaie ; les données de tes parties sont conservées.</p><button type="button" class="primary-button" id="retry-opening-exercise">Réessayer</button><button type="button" class="text-button" id="close-opening-exercise">← Retour</button></article>';
+  root.querySelector("#retry-opening-exercise")?.addEventListener("click",()=>startExercise(group,previousKey));
+  root.querySelector("#close-opening-exercise")?.addEventListener("click",()=>renderDetail(group));
+ }
 }
 
 document.addEventListener("click",event=>{
