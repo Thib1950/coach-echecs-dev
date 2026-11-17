@@ -384,7 +384,8 @@ function exercisePositions(group,side){
  }
  return [...unique.values()];
 }
-function startExercise(group,previousKey=""){
+async function startExercise(group,previousKey=""){
+ await strategicIdeasPromise;
  const root=$("opening-detail");
  if(!group?.games?.length)return;
  currentKey=group.key;
@@ -438,7 +439,7 @@ document.addEventListener("click",event=>{
  const explorerStudy=event.target.closest("[data-explorer-study]");
  if(explorerStudy){const item=$("opening-explorer-lines")._lines?.[Number(explorerStudy.dataset.explorerStudy)];if(item){const game={pgn:item.pgn,white:currentUser(),black:"Bibliothèque",opening:item.name,eco:item.eco};startLineStudy({name:item.display,games:[game],book:item},"explorer");}return;}
  const exerciseButton=event.target.closest("[data-opening-family-exercise]");
- if(exerciseButton){event.preventDefault();const g=groups.find(x=>x.key===exerciseButton.dataset.openingFamilyExercise);if(g)startExercise(g);return;}
+ if(exerciseButton){event.preventDefault();event.stopPropagation();const g=groups.find(x=>x.key===exerciseButton.dataset.openingFamilyExercise);if(g)startExercise(g).catch(error=>{console.error("Erreur de lancement de l’exercice",error);document.querySelectorAll(".opening-study-overlay").forEach(node=>node.remove());$("panel-openings")?.classList.remove("opening-exercise-active");window.alert("Impossible de préparer cet exercice. Réessaie dans quelques instants.");});return;}
  const button=event.target.closest("[data-opening-family]");if(button){const g=groups.find(x=>x.key===button.dataset.openingFamily);if(g)renderDetail(g);}
 });
 $("opening-color-filter")?.addEventListener("change",render);
