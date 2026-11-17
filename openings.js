@@ -296,9 +296,10 @@ function launchOpeningLearningSession(config){
   const panelText=isLearn?moveExplanation:(finished?"Bravo, tu as retrouvé toute la séquence.":feedback||"Retrouve la suite que tu viens d’étudier. Les explications restent masquées pendant cet exercice.");
   const replyNote=isLearn&&feedback?'<p class="opening-learning-reply">'+esc(feedback)+'</p>':"";
   const planMarkup=isLearn?'<div class="opening-learning-plan"><small>PLAN DE L’OUVERTURE</small><p>'+esc(plan)+'</p></div>':"";
+  const practiceAction=finished&&config.onNext?'<button type="button" class="primary-button opening-learning-next" data-opening-learning-next-position>Nouvelle position</button>':'<button type="button" class="primary-button opening-learning-next" data-opening-learning-restart>'+(finished?"Rejouer l’exercice":"Recommencer")+'</button>';
   const controls=isLearn
    ?'<div class="opening-learning-actions"><button type="button" class="secondary-button opening-learning-previous" data-opening-learning-previous '+(step===0?'disabled':'')+'>← Précédent</button><button type="button" class="primary-button opening-learning-next" data-opening-learning-next>'+(isComplete?"Commencer l’exercice":"Continuer")+'</button></div>'
-   :'<div class="opening-learning-actions"><button type="button" class="secondary-button opening-learning-book" data-opening-learning-book>📖 Revoir les explications</button><button type="button" class="primary-button opening-learning-next" data-opening-learning-restart>'+(finished?"Rejouer l’exercice":"Recommencer")+'</button></div>';
+   :'<div class="opening-learning-actions"><button type="button" class="secondary-button opening-learning-book" data-opening-learning-book>📖 Revoir les explications</button>'+practiceAction+'</div>';
   overlay.innerHTML='<div class="opening-study-page opening-learning-page"><header class="opening-study-top opening-learning-top"><div class="opening-learning-heading"><p class="eyebrow">'+status+'</p><h2>'+(isLearn?"Explications":"Exercice")+'</h2><p class="muted">'+esc(title)+' · '+esc(family)+'</p></div><button type="button" class="opening-learning-close" data-opening-session-close aria-label="Fermer">×</button></header><div class="opening-learning-progress"><div class="opening-learning-progress-meta"><strong>'+(isLearn?"Séquence d’apprentissage":"Mémorisation sans aide")+'</strong><span>'+step+' / '+total+' coups</span></div><div class="opening-learning-progress-track"><span style="width:'+percent+'%"></span></div></div><main class="opening-study-content opening-learning-content"><div class="opening-study-board-wrap opening-learning-board-wrap"><div class="opening-study-board">'+cells+'</div>'+(isLearn?arrowFor(activeMove):"")+'</div><aside class="opening-study-side opening-learning-side"><span class="engine-badge ready">'+(isLearn?(isComplete?"PRÊT POUR L’EXERCICE":"COUP "+Math.min(step+1,total)+" · À OBSERVER"):"MODE MÉMORISATION")+'</span><h3>'+esc(panelTitle)+'</h3><p>'+esc(panelText)+'</p>'+replyNote+planMarkup+controls+'</aside></main><div class="opening-learning-mobile-footer">'+controls+'</div></div>';
   overlay.querySelectorAll(".chess-piece-image").forEach(img=>img.addEventListener("error",()=>{const fallback=document.createElement("span");fallback.className="piece";fallback.textContent=img.alt;img.replaceWith(fallback);},{once:true}));
  };
@@ -324,6 +325,7 @@ function launchOpeningLearningSession(config){
    if(mode!=="learn")return;if(ply>=line.length)beginPractice();else advanceGuide();return;
   }
   if(event.target.closest("[data-opening-learning-book]")){setLearnStep(0);return;}
+  if(event.target.closest("[data-opening-learning-next-position]")){const next=config.onNext;close();next?.();return;}
   if(event.target.closest("[data-opening-learning-restart]")){restartPractice();return;}
   if(mode!=="practice"||busy||finished)return;
   const button=event.target.closest("[data-opening-learning-square]");if(!button)return;
@@ -352,7 +354,8 @@ function launchOpeningLearningSession(config){
  setLearnStep(0);
  return overlay;
 }
-function startLineStudy(variant,index){
+async function startLineStudy(variant,index){
+ await strategicIdeasPromise;
  const game=variant.games?.[0]||{},bookLine=variant.book?.moves||[],playedLine=gameMoves(game),sourceLine=bookLine.length>=8?bookLine:playedLine,line=sourceLine.slice(0,24);
  if(!line.length){const preview=$("opening-preview-"+index);if(preview){preview.hidden=false;preview.innerHTML='<p class="muted">Aucune suite de coups exploitable pour cette variante.</p>';}return;}
  const userSide=sideOf(game)==="black"?"b":"w";
@@ -380,7 +383,7 @@ function exercisePositions(group,side){
  }
  return [...unique.values()];
 }
-async function startExercise(group){
+async function startExercise(group,previousKey=""){
  await strategicIdeasPromise;
  currentKey=group.key;
  $("panel-openings")?.classList.add("opening-exercise-active");
@@ -393,11 +396,12 @@ async function startExercise(group){
   root.innerHTML='<article class="surface opening-detail-card"><p class="muted">Je n’ai pas trouvé de séquence assez complète dans tes parties pour construire cet exercice.</p><button type="button" class="text-button" id="close-opening-exercise">← Retour</button></article>';
   root.querySelector("#close-opening-exercise").onclick=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);};return;
  }
- const candidateIndex=chooseCandidate(candidates),item=candidates[candidateIndex];
+ const candidateIndex=chooseCandidate(candidates,previousKey),item=candidates[candidateIndex];
  launchOpeningLearningSession({
   line:item.line,side,title:item.openingName||group.family,family:group.family,game:item.game,
   onFailure:()=>recordLearning(item,false),
   onSuccess:hadError=>recordLearning(item,true,hadError),
+  onNext:()=>startExercise(group,item.key),
   onClose:()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);}
  });
 }
