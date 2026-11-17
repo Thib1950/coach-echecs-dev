@@ -385,31 +385,36 @@ function exercisePositions(group,side){
  return [...unique.values()];
 }
 function startExercise(group,previousKey=""){
+ const root=$("opening-detail");
+ if(!root||!group?.games?.length)return;
  currentKey=group.key;
- $("panel-openings")?.classList.add("opening-exercise-active");
- const backTab=$("[data-opening-back]");if(backTab)backTab.hidden=false;
  const filter=$("opening-color-filter")?.value||"all",white=group.games.filter(g=>sideOf(g)==="white").length,black=group.games.length-white;
  let side=filter==="white"?"w":filter==="black"?"b":(white>=black?"w":"b");
- let candidates=exercisePositions(group,side);if(!candidates.length){side=side==="w"?"b":"w";candidates=exercisePositions(group,side);}
- const root=$("opening-detail");
- if(!candidates.length){
-  root.innerHTML='<article class="surface opening-detail-card"><p class="muted">Je n’ai pas trouvé de séquence assez complète dans tes parties pour construire cet exercice.</p><button type="button" class="text-button" id="close-opening-exercise">← Retour</button></article>';
-  root.querySelector("#close-opening-exercise").onclick=()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);};return;
- }
- const candidateIndex=chooseCandidate(candidates,previousKey),item=candidates[candidateIndex];
  try{
- launchOpeningLearningSession({
-  line:item.line,side,title:item.openingName||group.family,family:group.family,game:item.game,
-  onFailure:()=>recordLearning(item,false),
-  onSuccess:hadError=>recordLearning(item,true,hadError),
-  onNext:()=>startExercise(group,item.key),
-  onClose:()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);}
- });
+  let candidates=exercisePositions(group,side);
+  if(!candidates.length){side=side==="w"?"b":"w";candidates=exercisePositions(group,side);}
+  if(!candidates.length){
+   root.innerHTML='<article class="surface opening-detail-card"><p class="muted">Je n’ai pas trouvé de séquence exploitable dans les parties de cette ouverture. Choisis une autre ligne ou vérifie les parties associées.</p><button type="button" class="text-button" id="close-opening-exercise">← Retour</button></article>';
+   root.querySelector("#close-opening-exercise")?.addEventListener("click",()=>renderDetail(group));
+   return;
+  }
+  const candidateIndex=chooseCandidate(candidates,previousKey),item=candidates[candidateIndex];
+  const overlay=launchOpeningLearningSession({
+   line:item.line,side,title:item.openingName||group.family,family:group.family,game:item.game,
+   onFailure:()=>recordLearning(item,false),
+   onSuccess:hadError=>recordLearning(item,true,hadError),
+   onNext:()=>startExercise(group,item.key),
+   onClose:()=>{$("panel-openings")?.classList.remove("opening-exercise-active");const back=$("[data-opening-back]");if(back)back.hidden=true;renderDetail(group);}
+  });
+  if(!overlay)throw new Error("La séquence d’ouverture ne contient aucun coup jouable.");
+  $("panel-openings")?.classList.add("opening-exercise-active");
+  const backTab=$("[data-opening-back]");if(backTab)backTab.hidden=false;
  }catch(error){
   console.error("Impossible de lancer l’exercice d’ouverture",error);
+  document.querySelectorAll(".opening-study-overlay").forEach(node=>node.remove());
   $("panel-openings")?.classList.remove("opening-exercise-active");
   const back=$("[data-opening-back]");if(back)back.hidden=true;
-  root.innerHTML='<article class="surface opening-detail-card"><p class="muted">L’exercice n’a pas pu démarrer. Réessaie ; les données de tes parties sont conservées.</p><button type="button" class="primary-button" id="retry-opening-exercise">Réessayer</button><button type="button" class="text-button" id="close-opening-exercise">← Retour</button></article>';
+  root.innerHTML='<article class="surface opening-detail-card"><p class="muted">L’exercice n’a pas pu démarrer correctement. Tu peux réessayer sans perdre tes données.</p><button type="button" class="primary-button" id="retry-opening-exercise">Réessayer</button><button type="button" class="text-button" id="close-opening-exercise">← Retour</button></article>';
   root.querySelector("#retry-opening-exercise")?.addEventListener("click",()=>startExercise(group,previousKey));
   root.querySelector("#close-opening-exercise")?.addEventListener("click",()=>renderDetail(group));
  }
