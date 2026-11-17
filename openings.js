@@ -289,7 +289,8 @@ function launchOpeningLearningSession(config){
   const step=mode==="learn"?completedSteps():practiceSteps(),total=userIndices.length,percent=Math.max(0,Math.min(100,Math.round(step/total*100)));
   const activeMove=mode==="learn"&&ply<line.length?moveFor(board,line[ply]):null;
   const moveExplanation=activeMove?openingMoveExplanation(board,activeMove,game,side):"La séquence est terminée. Tu peux maintenant la rejouer sans aide.";
-  const plan=openingStrategicPlan(game,side);
+  let plan="Observe le développement des pièces, le contrôle du centre et la sécurité du roi.";
+  try{plan=openingStrategicPlan(game,side)||plan;}catch(error){console.warn("Conseil stratégique indisponible",error);}
   const isLearn=mode==="learn",isComplete=isLearn&&ply>=line.length;
   const status=isLearn?"APPRENTISSAGE GUIDÉ":"EXERCICE SANS AIDE";
   const panelTitle=isLearn?(isComplete?"Séquence expliquée":"Pourquoi ce coup ?"):(finished?"Séquence maîtrisée !":"À toi de jouer");
@@ -351,7 +352,8 @@ function launchOpeningLearningSession(config){
    draw();
   },420);}else{feedback="Bien joué. Continue la séquence.";draw();}
  });
- setLearnStep(0);
+ try{setLearnStep(0);}
+ catch(error){overlay.remove();throw error;}
  return overlay;
 }
 function startLineStudy(variant,index){
